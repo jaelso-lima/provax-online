@@ -1,94 +1,77 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Mail, ArrowLeft } from "lucide-react";
-
-const schema = z.object({
-  email: z.string().trim().email("Email inválido").max(255),
-});
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { Loader2, ArrowLeft, Mail } from "lucide-react";
 
 export default function ForgotPassword() {
-  const { resetPassword } = useAuth();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const { resetPassword } = useAuth();
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: "" },
-  });
-
-  const onSubmit = async (data: z.infer<typeof schema>) => {
-    setIsSubmitting(true);
-    const { error } = await resetPassword(data.email);
-    setIsSubmitting(false);
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({ title: "Informe seu email", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { error } = await resetPassword(email);
+    setLoading(false);
     if (error) {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
+      toast({ title: "Erro ao enviar email", description: error.message, variant: "destructive" });
     } else {
       setSent(true);
+      toast({ title: "Email enviado!", description: "Verifique sua caixa de entrada." });
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="absolute right-4 top-4"><ThemeToggle /></div>
-
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="font-display text-3xl font-bold text-gradient">PROVAX</h1>
-          <p className="mt-2 text-muted-foreground">Recuperar senha</p>
-        </div>
-
-        <div className="glass-card rounded-xl p-8">
-          {sent ? (
-            <div className="space-y-4 text-center">
-              <Mail className="mx-auto h-12 w-12 text-primary" />
-              <h2 className="font-display text-xl font-semibold">Email enviado!</h2>
-              <p className="text-sm text-muted-foreground">
-                Verifique sua caixa de entrada para redefinir sua senha.
-              </p>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <Link to="/" className="mb-2 inline-block font-display text-2xl font-bold text-primary">ProvaX</Link>
+          <CardTitle className="font-display text-2xl">Recuperar Senha</CardTitle>
+          <CardDescription>
+            {sent ? "Email de recuperação enviado com sucesso" : "Informe seu email para receber o link de recuperação"}
+          </CardDescription>
+        </CardHeader>
+        {sent ? (
+          <CardContent className="space-y-4 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Mail className="h-8 w-8 text-primary" />
             </div>
-          ) : (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="seu@email.com" type="email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                  ) : "Enviar link de recuperação"}
-                </Button>
-              </form>
-            </Form>
-          )}
-        </div>
-
-        <p className="text-center">
-          <Link to="/login" className="inline-flex items-center text-sm text-primary hover:underline">
-            <ArrowLeft className="mr-1 h-4 w-4" /> Voltar ao login
+            <p className="text-sm text-muted-foreground">
+              Enviamos um link de recuperação para <strong>{email}</strong>. Verifique sua caixa de entrada e spam.
+            </p>
+          </CardContent>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required />
+              </div>
+            </CardContent>
+            <CardFooter className="flex-col gap-3">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Enviar link de recuperação
+              </Button>
+            </CardFooter>
+          </form>
+        )}
+        <CardFooter className="justify-center">
+          <Link to="/login" className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" /> Voltar ao login
           </Link>
-        </p>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
