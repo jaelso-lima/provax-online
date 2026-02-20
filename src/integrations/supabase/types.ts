@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      area_materias: {
+        Row: {
+          area_id: string
+          id: string
+          materia_id: string
+        }
+        Insert: {
+          area_id: string
+          id?: string
+          materia_id: string
+        }
+        Update: {
+          area_id?: string
+          id?: string
+          materia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "area_materias_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "area_materias_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      areas: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          modo: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          modo?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          modo?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           acao: string
@@ -158,6 +215,53 @@ export type Database = {
           },
         ]
       }
+      esferas: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          questao_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          questao_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          questao_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_questao_id_fkey"
+            columns: ["questao_id"]
+            isOneToOne: false
+            referencedRelation: "questoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materias: {
         Row: {
           created_at: string
@@ -251,41 +355,66 @@ export type Database = {
       questoes: {
         Row: {
           alternativas: Json
+          ano: number | null
+          area_id: string | null
           banca_id: string | null
           concurso_id: string | null
           created_at: string
           dificuldade: string
           enunciado: string
+          esfera_id: string | null
           explicacao: string | null
           id: string
           materia_id: string | null
+          modo: string
           resposta_correta: string
+          state_id: string | null
+          topic_id: string | null
         }
         Insert: {
           alternativas?: Json
+          ano?: number | null
+          area_id?: string | null
           banca_id?: string | null
           concurso_id?: string | null
           created_at?: string
           dificuldade?: string
           enunciado: string
+          esfera_id?: string | null
           explicacao?: string | null
           id?: string
           materia_id?: string | null
+          modo?: string
           resposta_correta: string
+          state_id?: string | null
+          topic_id?: string | null
         }
         Update: {
           alternativas?: Json
+          ano?: number | null
+          area_id?: string | null
           banca_id?: string | null
           concurso_id?: string | null
           created_at?: string
           dificuldade?: string
           enunciado?: string
+          esfera_id?: string | null
           explicacao?: string | null
           id?: string
           materia_id?: string | null
+          modo?: string
           resposta_correta?: string
+          state_id?: string | null
+          topic_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "questoes_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "questoes_banca_id_fkey"
             columns: ["banca_id"]
@@ -301,13 +430,61 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "questoes_esfera_id_fkey"
+            columns: ["esfera_id"]
+            isOneToOne: false
+            referencedRelation: "esferas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "questoes_materia_id_fkey"
             columns: ["materia_id"]
             isOneToOne: false
             referencedRelation: "materias"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "questoes_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questoes_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      rate_limits: {
+        Row: {
+          action: string
+          count: number
+          created_at: string
+          id: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          count?: number
+          created_at?: string
+          id?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          action?: string
+          count?: number
+          created_at?: string
+          id?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
       }
       redacoes: {
         Row: {
@@ -414,14 +591,18 @@ export type Database = {
       simulados: {
         Row: {
           acertos: number | null
+          area_id: string | null
           banca_id: string | null
           carreira_id: string | null
           created_at: string
+          esfera_id: string | null
           finished_at: string | null
           id: string
           materia_id: string | null
+          modo: string
           pontuacao: number | null
           quantidade: number
+          state_id: string | null
           status: string
           tempo_gasto: number | null
           tipo: string
@@ -430,14 +611,18 @@ export type Database = {
         }
         Insert: {
           acertos?: number | null
+          area_id?: string | null
           banca_id?: string | null
           carreira_id?: string | null
           created_at?: string
+          esfera_id?: string | null
           finished_at?: string | null
           id?: string
           materia_id?: string | null
+          modo?: string
           pontuacao?: number | null
           quantidade?: number
+          state_id?: string | null
           status?: string
           tempo_gasto?: number | null
           tipo?: string
@@ -446,14 +631,18 @@ export type Database = {
         }
         Update: {
           acertos?: number | null
+          area_id?: string | null
           banca_id?: string | null
           carreira_id?: string | null
           created_at?: string
+          esfera_id?: string | null
           finished_at?: string | null
           id?: string
           materia_id?: string | null
+          modo?: string
           pontuacao?: number | null
           quantidade?: number
+          state_id?: string | null
           status?: string
           tempo_gasto?: number | null
           tipo?: string
@@ -461,6 +650,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "simulados_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "simulados_banca_id_fkey"
             columns: ["banca_id"]
@@ -476,7 +672,74 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "simulados_esfera_id_fkey"
+            columns: ["esfera_id"]
+            isOneToOne: false
+            referencedRelation: "esferas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "simulados_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulados_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      states: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          regiao: string
+          sigla: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          regiao: string
+          sigla: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          regiao?: string
+          sigla?: string
+        }
+        Relationships: []
+      }
+      topics: {
+        Row: {
+          created_at: string
+          id: string
+          materia_id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          materia_id: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          materia_id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_materia_id_fkey"
             columns: ["materia_id"]
             isOneToOne: false
             referencedRelation: "materias"
@@ -517,6 +780,15 @@ export type Database = {
       }
       atualizar_plano: {
         Args: { _novo_plano: string; _user_id: string }
+        Returns: boolean
+      }
+      check_rate_limit: {
+        Args: {
+          _action: string
+          _max_count: number
+          _user_id: string
+          _window_minutes: number
+        }
         Returns: boolean
       }
       descontar_moedas: {
