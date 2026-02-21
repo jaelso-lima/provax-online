@@ -31,7 +31,19 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     // --- Body ---
-    const { quantidade = 10, nivel = "media", modo = "concurso", materia, banca, carreira, area, ano } = await req.json();
+    const { quantidade = 10, nivel = "media", modo = "concurso", materia, banca, carreira, area, ano, state, esfera } = await req.json();
+
+    // --- Rate Limiting ---
+    const { data: allowed, error: rlError } = await supabase.rpc("check_rate_limit", {
+      _user_id: userId,
+      _action: "generate_questions",
+      _max_count: 10,
+      _window_minutes: 60,
+    });
+
+    if (rlError || !allowed) {
+      return new Response(JSON.stringify({ error: "Limite de requisições atingido. Aguarde alguns minutos." }), { status: 429, headers: corsHeaders });
+    }
 
     // --- Verificar saldo ---
     const { data: profile } = await supabase.from("profiles").select("saldo_moedas").eq("id", userId).single();
@@ -40,12 +52,32 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Saldo insuficiente" }), { status: 402, headers: corsHeaders });
     }
 
+    // --- Resolve filter names for prompt context ---
+    const filterParts: string[] = [];
+
+    const resolveFilter = async (table: string, id: string | undefined, label: string) => {
+      if (!id) return;
+      const { data } = await supabase.from(table).select("nome").eq("id", id).single();
+      if (data?.nome) filterParts.push(`${label}: ${data.nome}`);
+    };
+
+    await Promise.all([
+      resolveFilter("materias", materia, "Matéria"),
+      resolveFilter("bancas", banca, "Banca"),
+      resolveFilter("carreiras", carreira, "Carreira"),
+      resolveFilter("areas", area, "Área"),
+      resolveFilter("states", state, "Estado"),
+      resolveFilter("esferas", esfera, "Esfera"),
+    ]);
+
     // --- Prompt ---
+    const filterContext = filterParts.length > 0 ? ` Contexto dos filtros: ${filterParts.join(". ")}.` : "";
+
     let systemPrompt: string;
     if (modo === "enem") {
-      systemPrompt = `Você é um professor especialista em questões do ENEM. Gere ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.${area ? ` Área: ${area}.` : ""}${ano ? ` Baseadas no estilo do ENEM ${ano}.` : ""} As questões devem seguir o padrão do ENEM com textos motivadores, gráficos descritos textualmente quando aplicável, e alternativas plausíveis. Cada questão deve ter explicação detalhada da resposta correta.`;
+      systemPrompt = `Você é um professor especialista em questões do ENEM. Gere ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.${filterContext}${ano ? ` Baseadas no estilo do ENEM ${ano}.` : ""} As questões devem seguir o padrão do ENEM com textos motivadores, gráficos descritos textualmente quando aplicável, e alternativas plausíveis. Cada questão deve ter explicação detalhada da resposta correta.`;
     } else {
-      systemPrompt = `Você é um professor especialista em questões de concursos públicos brasileiros. Gere ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.${materia ? ` Matéria: ${materia}.` : ""}${banca ? ` Estilo da banca: ${banca}.` : ""}${carreira ? ` Carreira: ${carreira}.` : ""}${ano ? ` Ano de referência: ${ano}.` : ""} As questões devem ser realistas, no padrão de bancas federais, com alternativas plausíveis e pegadinhas típicas. Cada questão deve ter explicação detalhada.`;
+      systemPrompt = `Você é um professor especialista em questões de concursos públicos brasileiros. Gere ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.${filterContext}${ano ? ` Ano de referência: ${ano}.` : ""} As questões devem ser realistas, no padrão de bancas federais, com alternativas plausíveis e pegadinhas típicas. Cada questão deve ter explicação detalhada.`;
     }
 
     // --- AI Gateway with tool calling ---
