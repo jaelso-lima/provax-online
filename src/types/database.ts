@@ -32,6 +32,41 @@ export interface Banca {
   created_at: string;
 }
 
+export interface State {
+  id: string;
+  nome: string;
+  sigla: string;
+  regiao: string;
+  created_at: string;
+}
+
+export interface Esfera {
+  id: string;
+  nome: string;
+  created_at: string;
+}
+
+export interface Area {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  modo: 'concurso' | 'enem' | 'ambos';
+  created_at: string;
+}
+
+export interface Topic {
+  id: string;
+  nome: string;
+  materia_id: string;
+  created_at: string;
+}
+
+export interface AreaMateria {
+  id: string;
+  area_id: string;
+  materia_id: string;
+}
+
 export interface Concurso {
   id: string;
   nome: string;
@@ -50,6 +85,12 @@ export interface Questao {
   materia_id: string | null;
   banca_id: string | null;
   concurso_id: string | null;
+  state_id: string | null;
+  esfera_id: string | null;
+  area_id: string | null;
+  topic_id: string | null;
+  ano: number | null;
+  modo: 'concurso' | 'enem';
   dificuldade: 'facil' | 'media' | 'dificil';
   created_at: string;
 }
@@ -62,6 +103,10 @@ export interface Simulado {
   carreira_id: string | null;
   materia_id: string | null;
   banca_id: string | null;
+  state_id: string | null;
+  esfera_id: string | null;
+  area_id: string | null;
+  modo: 'concurso' | 'enem';
   quantidade: number;
   pontuacao: number | null;
   acertos: number;
@@ -97,6 +142,13 @@ export interface Redacao {
   sugestoes: string | null;
   feedback_completo: Record<string, unknown> | null;
   status: 'pendente' | 'corrigida';
+  created_at: string;
+}
+
+export interface Favorite {
+  id: string;
+  user_id: string;
+  questao_id: string;
   created_at: string;
 }
 
