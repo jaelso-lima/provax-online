@@ -1,51 +1,54 @@
 
+# PROVAX – Plano de Arquitetura Nacional
 
-# Fase 2 -- Edge Functions de IA (generate-questions + correct-essay)
+## Status Atual
 
-## O que sera implementado
+### ✅ Fase 1 – Estrutura do Banco (CONCLUÍDA)
+- Tabelas criadas: `states` (27 UF + DF), `esferas` (3), `areas` (24 – concurso + enem), `topics`, `area_materias`, `favorites`, `rate_limits`
+- Questões expandidas com: `state_id`, `esfera_id`, `area_id`, `topic_id`, `ano`, `modo`
+- Simulados expandidos com: `state_id`, `esfera_id`, `area_id`, `modo`
+- 43 matérias cadastradas, vinculadas a 24 áreas via `area_materias`
+- Índices otimizados em todas as colunas de filtro
+- RLS em todas as tabelas
+- Função `check_rate_limit()` para controle de abuso
+- Dados populados: 27 estados, 3 esferas, 24 áreas, 43 matérias, vínculos área-matéria
 
-As paginas de Simulado e Redacao ja chamam `supabase.functions.invoke("generate-questions")` e `supabase.functions.invoke("correct-essay")` mas essas funcoes ainda nao existem. Vamos cria-las usando o Lovable AI Gateway (modelo `google/gemini-3-flash-preview`).
+### 🔄 Fase 2 – Filtros no Frontend
+- Atualizar página de Simulado com filtros: Estado, Esfera, Área, Matéria, Banca, Ano
+- Filtros em cascata (área filtra matérias, etc.)
+- Modo ENEM com áreas separadas logicamente
 
----
+### 🔄 Fase 3 – Edge Functions Atualizadas
+- Atualizar `generate-questions` para usar novos filtros (state, esfera, area, topic)
+- Implementar rate limiting via `check_rate_limit()`
+- Validação de filtros no backend (nunca retornar questão fora do filtro)
 
-## 1. Edge Function: `generate-questions`
+### 🔄 Fase 4 – Importador de Questões
+- Criar edge function para importação em lote via CSV
+- Validação automática de campos obrigatórios
+- Mapeamento automático de matéria/área/banca por nome
 
-**Arquivo:** `supabase/functions/generate-questions/index.ts`
+### 🔄 Fase 5 – Segurança Avançada
+- Rate limiting implementado (banco pronto)
+- Sanitização de payload nas edge functions
+- Logs de abuso e tentativas de fraude (audit_logs existente)
 
-- Recebe: `{ quantidade, nivel, modo, materia?, banca?, carreira?, area?, ano? }`
-- Valida JWT do usuario via `getClaims()`
-- Monta prompt especifico para modo "concurso" ou "enem"
-- Chama Lovable AI Gateway com tool calling para extrair JSON estruturado (array de questoes)
-- Cada questao retornada tera: `enunciado`, `alternativas` (A-E), `resposta_correta`, `explicacao`
-- Retorna `{ questoes: [...] }`
-- Trata erros 429 (rate limit) e 402 (creditos)
+## Arquitetura do Banco
 
-## 2. Edge Function: `correct-essay`
+```
+states ←── questoes ──→ esferas
+              ↓
+areas ←── area_materias ──→ materias ←── topics
+              ↓
+         simulados ──→ respostas
+              ↓
+         profiles ──→ favorites
+              ↓
+         rate_limits, audit_logs
+```
 
-**Arquivo:** `supabase/functions/correct-essay/index.ts`
-
-- Recebe: `{ tema, texto }`
-- Valida JWT do usuario
-- Monta prompt de correcao no padrao ENEM/banca federal (5 competencias, 0-200 cada)
-- Chama Lovable AI Gateway com tool calling para extrair:
-  - `nota_total` (0-1000)
-  - `competencia_1` a `competencia_5` (0-200)
-  - `pontos_fortes` (array de strings)
-  - `pontos_fracos` (array de strings)
-  - `sugestoes` (array de strings)
-  - `feedback` (string geral)
-- Retorna o objeto completo
-
-## 3. Configuracao
-
-- Atualizar `supabase/config.toml` para registrar ambas funcoes com `verify_jwt = false` (validacao em codigo)
-- Usa `LOVABLE_API_KEY` (ja configurado como secret)
-- Modelo padrao: `google/gemini-3-flash-preview`
-
-## Detalhes tecnicos
-
-- Ambas funcoes usam CORS headers padrao
-- Autenticacao via `getClaims()` no codigo
-- Tool calling para garantir output JSON estruturado (sem pedir JSON no prompt)
-- Tratamento de erros 429/402 do gateway com mensagens claras para o usuario
-
+## Escalabilidade
+- Banco preparado para 100k+ questões com índices otimizados
+- Paginação nativa via Supabase
+- Rate limiting por ação/janela de tempo
+- Schema 100% portável para Supabase externo
