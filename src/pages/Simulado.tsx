@@ -209,6 +209,7 @@ export default function Simulado() {
   return (
     <div className="min-h-screen bg-background"><AppHeader /><main className="container max-w-lg py-8">
       <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : "🎯 Gerar Simulado"}</h1>
+      <p className="mb-4 text-sm text-muted-foreground">Selecione os filtros abaixo para gerar um simulado personalizado no padrão da sua banca.</p>
       <Card><CardContent className="space-y-4 pt-6">
         {modo === "concurso" ? (<>
           <div className="space-y-2"><Label>Estado</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>

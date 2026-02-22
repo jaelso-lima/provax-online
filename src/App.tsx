@@ -19,6 +19,7 @@ import Planos from "./pages/Planos";
 import Ranking from "./pages/Ranking";
 import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
+import TermosDeUso from "./pages/TermosDeUso";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/planos" element={<ProtectedRoute><Planos /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><Ranking /></ProtectedRoute>} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+            <Route path="/termos" element={<TermosDeUso />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

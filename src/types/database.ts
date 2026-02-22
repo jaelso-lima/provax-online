@@ -94,6 +94,7 @@ export interface Questao {
   ano: number | null;
   modo: 'concurso' | 'enem';
   dificuldade: 'facil' | 'media' | 'dificil';
+  status_questao: 'valida' | 'anulada' | 'alterada';
   created_at: string;
 }
 
