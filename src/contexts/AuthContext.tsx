@@ -143,3 +143,18 @@ export function useAuth() {
   }
   return context;
 }
+
+const defaultAuth: AuthContextType = {
+  user: null, session: null, profile: null, loading: false,
+  signUp: async () => ({ error: null }),
+  signIn: async () => ({ error: null }),
+  signOut: async () => {},
+  resetPassword: async () => ({ error: null }),
+  updatePassword: async () => ({ error: null }),
+  refreshProfile: async () => {},
+};
+
+export function useOptionalAuth() {
+  const context = useContext(AuthContext);
+  return context ?? defaultAuth;
+}

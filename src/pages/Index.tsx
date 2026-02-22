@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { useOptionalAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   ArrowRight, CheckCircle, X, Zap, Shield, Brain, Target, BarChart3,
@@ -14,7 +14,7 @@ const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0
 const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true } };
 
 export default function Index() {
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
   const [showSticky, setShowSticky] = useState(false);
 
   useEffect(() => {
