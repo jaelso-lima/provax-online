@@ -8,7 +8,7 @@ import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, Grad
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import CarreirasList from "@/components/CarreirasList";
+import CascadingFilters from "@/components/CascadingFilters";
 
 type Modo = "concurso" | "enem" | null;
 
@@ -119,9 +119,19 @@ export default function Dashboard() {
 
         <Card className="mb-8"><CardContent className="pt-6 flex items-center justify-between"><div><p className="text-sm font-medium flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> Seu código de indicação</p><p className="text-xs text-muted-foreground mt-1">Compartilhe e ganhe 20 moedas por cada amigo</p></div><Button variant="outline" size="sm" onClick={copiarCodigo} className="gap-2"><Copy className="h-4 w-4" />{profile?.codigo_indicacao || "..."}</Button></CardContent></Card>
 
-        {modo === "concurso" && (<><h2 className="mb-4 font-display text-xl font-semibold">Carreiras Disponíveis</h2><div className="mb-8"><CarreirasList /></div></>)}
+        {modo === "concurso" && (
+          <div className="mb-8">
+            <h2 className="mb-4 font-display text-xl font-semibold">🎯 Filtros do Concurso</h2>
+            <Card><CardContent className="pt-6"><CascadingFilters modo="concurso" onFiltersChange={() => {}} /></CardContent></Card>
+          </div>
+        )}
 
-        {modo === "enem" && (<><h2 className="mb-4 font-display text-xl font-semibold">Áreas do ENEM</h2><div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[{nome:"Linguagens",desc:"Língua Portuguesa, Literatura, Inglês/Espanhol"},{nome:"Matemática",desc:"Matemática e suas Tecnologias"},{nome:"Ciências Humanas",desc:"História, Geografia, Filosofia, Sociologia"},{nome:"Ciências da Natureza",desc:"Química, Física, Biologia"},{nome:"Redação",desc:"Redação dissertativo-argumentativa"}].map(a=>(<Card key={a.nome} className="transition-shadow hover:shadow-md"><CardHeader className="pb-2"><div className="flex items-center gap-2"><BookMarked className="h-5 w-5 text-accent" /><CardTitle className="text-base">{a.nome}</CardTitle></div><CardDescription>{a.desc}</CardDescription></CardHeader></Card>))}</div></>)}
+        {modo === "enem" && (
+          <div className="mb-8">
+            <h2 className="mb-4 font-display text-xl font-semibold">🎓 Filtros do ENEM</h2>
+            <Card><CardContent className="pt-6"><CascadingFilters modo="enem" onFiltersChange={() => {}} /></CardContent></Card>
+          </div>
+        )}
 
         <h2 className="mb-4 font-display text-xl font-semibold">Ações</h2>
         <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
