@@ -309,12 +309,14 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string
           avatar_url: string | null
           codigo_indicacao: string
           created_at: string
           email: string
           id: string
           indicado_por: string | null
+          last_credit_reset: string | null
           nivel: number
           nome: string
           plano: string
@@ -323,12 +325,14 @@ export type Database = {
           xp: number
         }
         Insert: {
+          account_status?: string
           avatar_url?: string | null
           codigo_indicacao?: string
           created_at?: string
           email?: string
           id: string
           indicado_por?: string | null
+          last_credit_reset?: string | null
           nivel?: number
           nome?: string
           plano?: string
@@ -337,12 +341,14 @@ export type Database = {
           xp?: number
         }
         Update: {
+          account_status?: string
           avatar_url?: string | null
           codigo_indicacao?: string
           created_at?: string
           email?: string
           id?: string
           indicado_por?: string | null
+          last_credit_reset?: string | null
           nivel?: number
           nome?: string
           plano?: string
@@ -540,6 +546,39 @@ export type Database = {
           tema?: string
           texto?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      registration_logs: {
+        Row: {
+          blocked_reason: string | null
+          created_at: string
+          device_fingerprint: string | null
+          email: string
+          id: string
+          ip_address: string | null
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          blocked_reason?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          email: string
+          id?: string
+          ip_address?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          blocked_reason?: string | null
+          created_at?: string
+          device_fingerprint?: string | null
+          email?: string
+          id?: string
+          ip_address?: string | null
+          status?: string
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -791,6 +830,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_registration_rate: {
+        Args: { _fingerprint: string; _ip: string }
+        Returns: Json
+      }
       descontar_moedas: {
         Args: { _descricao: string; _user_id: string; _valor: number }
         Returns: boolean
@@ -803,6 +846,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      reset_daily_credits: { Args: { _user_id: string }; Returns: Json }
+      suspend_account: {
+        Args: { _reason: string; _target_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
