@@ -50,11 +50,11 @@ export default function Index() {
           <motion.div {...fadeUp}>
             <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
               <Zap className="h-4 w-4" />
-              Método Estudo Reverso — Treine como quem passa
+              Método Estudo Reverso — Treine com estratégia e foco no padrão da banca
             </div>
             <h1 className="mx-auto max-w-4xl font-display text-4xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              Quem passa em concurso não estuda mais…{" "}
-              <span className="text-gradient">ele treina.</span>
+              Aprovação não é questão de horas de estudo.{" "}
+              <span className="text-gradient">É questão de método.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
               Descubra o método do <strong className="text-foreground">Estudo Reverso</strong> que acelera
@@ -62,13 +62,13 @@ export default function Index() {
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" asChild className="text-base px-10 h-14 text-lg shadow-lg shadow-primary/25">
-                <Link to="/register">Quero treinar como quem passa <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <Link to="/register">Iniciar minha preparação estratégica <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="h-14 text-lg">
                 <Link to="#metodo">Entender o método <ChevronDown className="ml-2 h-5 w-5" /></Link>
               </Button>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">20 créditos grátis por dia. Sem cartão.</p>
+            <p className="mt-4 text-sm text-muted-foreground">20 créditos gratuitos por dia. Sem necessidade de cartão.</p>
           </motion.div>
         </div>
       </section>
@@ -87,9 +87,9 @@ export default function Index() {
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: Target, step: "1", title: "Faça o simulado", desc: "Questões geradas por IA no padrão exato da sua banca. Sem teoria antes." },
-              { icon: BarChart3, step: "2", title: "Veja suas falhas", desc: "Relatório detalhado mostra exatamente onde você errou e por quê." },
-              { icon: TrendingUp, step: "3", title: "Estude o que erra", desc: "Foco cirúrgico. Estude só o que você realmente precisa. Evolução mensurável." },
+              { icon: Target, step: "1", title: "Realize o simulado", desc: "Questões geradas por IA no padrão exato da sua banca. Pratique desde o primeiro dia." },
+              { icon: BarChart3, step: "2", title: "Identifique seus pontos fracos", desc: "Relatório detalhado indica exatamente onde você precisa melhorar e por quê." },
+              { icon: TrendingUp, step: "3", title: "Estude com foco no que importa", desc: "Direcionamento preciso. Estude apenas o que realmente fará diferença na sua aprovação." },
             ].map((item, i) => (
               <motion.div key={item.step} {...stagger} transition={{ delay: i * 0.15 }}>
                 <Card className="relative border-0 bg-secondary/50 h-full">
@@ -115,7 +115,7 @@ export default function Index() {
             <h2 className="font-display text-3xl font-bold md:text-4xl">
               Estudo Tradicional <span className="text-destructive">vs</span> Estudo Reverso
             </h2>
-            <p className="mt-3 text-muted-foreground">Veja por que quem treina passa mais rápido</p>
+            <p className="mt-3 text-muted-foreground">Entenda por que a prática direcionada é mais eficiente</p>
           </motion.div>
           <div className="grid md:grid-cols-2 gap-6">
             {/* Tradicional */}
@@ -128,13 +128,13 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {[
-                    "Meses lendo PDF sem praticar",
-                    "Conteúdo infinito sem direção",
-                    "Não sabe o nível real da banca",
-                    "Sensação de estar estudando muito",
-                    "Baixa retenção do conteúdo",
-                    "Cansaço mental e desmotivação",
-                    "Resultado: insegurança na prova",
+                    "Meses estudando teoria sem aplicação prática",
+                    "Volume extenso de conteúdo sem direcionamento",
+                    "Desconhecimento do nível de exigência da banca",
+                    "Falsa sensação de progresso",
+                    "Baixa retenção do conteúdo estudado",
+                    "Desgaste e desmotivação progressivos",
+                    "Resultado: insegurança no dia da prova",
                   ].map(t => (
                     <div key={t} className="flex items-start gap-2">
                       <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
@@ -154,13 +154,13 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {[
-                    "Simulados idênticos à banca desde o dia 1",
+                    "Simulados no padrão da banca desde o primeiro dia",
                     "Treino direcionado e estratégico",
-                    "Identifica fraquezas reais em minutos",
-                    "Estuda apenas o que erra",
-                    "Alta retenção com prática ativa",
-                    "Evolução mensurável com XP e relatórios",
-                    "Resultado: preparação estratégica e confiança",
+                    "Identificação precisa dos pontos fracos",
+                    "Estudo focado nas lacunas reais de conhecimento",
+                    "Alta retenção por meio de prática ativa",
+                    "Evolução mensurável com indicadores e relatórios",
+                    "Resultado: preparação sólida e confiança fundamentada",
                   ].map(t => (
                     <div key={t} className="flex items-start gap-2">
                       <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
@@ -184,12 +184,12 @@ export default function Index() {
           </motion.div>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
-              { icon: Clock, text: "Trabalha o dia todo e tem pouco tempo pra estudar" },
-              { icon: BookOpen, text: "Já comprou curso caro e não terminou" },
-              { icon: Target, text: "Não sabe se está no caminho certo pra prova" },
-              { icon: Shield, text: "Tem medo de reprovar mais uma vez" },
-              { icon: Brain, text: "Sente que estuda muito mas não evolui" },
-              { icon: TrendingUp, text: "Quer um método que funcione com pouco tempo" },
+              { icon: Clock, text: "Tem pouco tempo disponível para estudar" },
+              { icon: BookOpen, text: "Investiu em cursos, mas não conseguiu manter a constância" },
+              { icon: Target, text: "Tem dúvidas se está no caminho certo para a prova" },
+              { icon: Shield, text: "Preocupa-se com a possibilidade de não ser aprovado" },
+              { icon: Brain, text: "Sente que o esforço não se reflete nos resultados" },
+              { icon: TrendingUp, text: "Busca um método eficiente, mesmo com tempo limitado" },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.08 }}
                 className="flex items-center gap-3 rounded-xl border bg-background/50 p-4"
@@ -319,14 +319,14 @@ export default function Index() {
         <div className="container text-center max-w-2xl">
           <motion.div {...fadeUp}>
             <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">
-              Pare de ler. Comece a <span className="text-gradient">treinar.</span>
+              Pare de apenas ler. Comece a <span className="text-gradient">praticar.</span>
             </h2>
             <p className="text-muted-foreground mb-8 text-lg">
-              Cada dia sem praticar é um dia a mais até a sua aprovação.
-              Comece agora com o Estudo Reverso.
+              Cada dia sem prática é um dia a mais até a sua aprovação.
+              Inicie agora com o Método Estudo Reverso.
             </p>
             <Button size="lg" asChild className="text-lg px-10 h-14 shadow-lg shadow-primary/25">
-              <Link to="/register">Começar meu Estudo Reverso agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              <Link to="/register">Iniciar meu Estudo Reverso agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
             </Button>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
@@ -344,13 +344,14 @@ export default function Index() {
           className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md p-3 md:hidden"
         >
           <Button className="w-full h-12 text-base shadow-lg shadow-primary/25" asChild>
-            <Link to="/register">Começar meu Estudo Reverso <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            <Link to="/register">Iniciar meu Estudo Reverso <ArrowRight className="ml-2 h-5 w-5" /></Link>
           </Button>
         </motion.div>
       )}
 
-      <footer className="border-t py-8 text-center text-sm text-muted-foreground">
+      <footer className="border-t py-8 text-center text-sm text-muted-foreground space-y-2">
         <p>© 2026 ProvaX. Todos os direitos reservados.</p>
+        <p><Link to="/termos" className="text-primary hover:underline">Termos de Uso e Política de Privacidade</Link></p>
       </footer>
     </div>
   );
