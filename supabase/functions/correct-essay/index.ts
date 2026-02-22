@@ -30,9 +30,14 @@ serve(async (req) => {
     }
 
     // --- Body ---
-    const { tema, texto } = await req.json();
-    if (!tema || !texto || texto.trim().length < 100) {
-      return new Response(JSON.stringify({ error: "Tema e texto (mín. 100 caracteres) são obrigatórios" }), { status: 400, headers: corsHeaders });
+    const body = await req.json();
+    const tema = typeof body.tema === "string" ? body.tema.trim().slice(0, 500) : "";
+    const texto = typeof body.texto === "string" ? body.texto.trim().slice(0, 15000) : "";
+    if (!tema || tema.length < 3) {
+      return new Response(JSON.stringify({ error: "Tema inválido (mín. 3 caracteres)" }), { status: 400, headers: corsHeaders });
+    }
+    if (!texto || texto.length < 100) {
+      return new Response(JSON.stringify({ error: "Texto muito curto (mín. 100 caracteres)" }), { status: 400, headers: corsHeaders });
     }
 
     // --- AI Gateway with tool calling ---
