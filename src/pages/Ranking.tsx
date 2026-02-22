@@ -9,7 +9,7 @@ export default function Ranking() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("profiles").select("id, nome, xp, nivel").order("xp", { ascending: false }).limit(50)
+    supabase.from("ranking_view" as any).select("nome, xp, nivel")
       .then(({ data }) => { if (data) setRanking(data); setLoading(false); });
   }, []);
 
@@ -25,7 +25,7 @@ export default function Ranking() {
     {loading ? <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> :
     ranking.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum estudante ainda.</p> :
     <div className="space-y-2">{ranking.map((r, i) => (
-      <Card key={r.id} className={i < 3 ? "border-l-4 border-l-coin" : ""}><CardContent className="flex items-center justify-between py-3">
+      <Card key={i} className={i < 3 ? "border-l-4 border-l-coin" : ""}><CardContent className="flex items-center justify-between py-3">
         <div className="flex items-center gap-3"><div className="w-8 text-center">{getIcon(i)}</div><div><p className="text-sm font-medium">{r.nome || "Estudante"}</p><p className="text-xs text-muted-foreground">Nível {r.nivel}</p></div></div>
         <span className="text-sm font-bold text-primary">{r.xp} XP</span>
       </CardContent></Card>

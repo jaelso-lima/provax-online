@@ -31,7 +31,21 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
 
     // --- Body ---
-    const { quantidade = 10, nivel = "media", modo = "concurso", materia, banca, carreira, area, ano, state, esfera } = await req.json();
+    const body = await req.json();
+    const allowedQuantidades = [5, 10, 20, 60];
+    const allowedNiveis = ["facil", "media", "dificil"];
+    const allowedModos = ["concurso", "enem"];
+
+    const quantidade = allowedQuantidades.includes(body.quantidade) ? body.quantidade : 10;
+    const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "media";
+    const modo = allowedModos.includes(body.modo) ? body.modo : "concurso";
+    const materia = typeof body.materia === "string" ? body.materia.slice(0, 100) : undefined;
+    const banca = typeof body.banca === "string" ? body.banca.slice(0, 100) : undefined;
+    const carreira = typeof body.carreira === "string" ? body.carreira.slice(0, 100) : undefined;
+    const area = typeof body.area === "string" ? body.area.slice(0, 100) : undefined;
+    const ano = typeof body.ano === "number" && body.ano >= 1990 && body.ano <= 2030 ? body.ano : undefined;
+    const state = typeof body.state === "string" ? body.state.slice(0, 100) : undefined;
+    const esfera = typeof body.esfera === "string" ? body.esfera.slice(0, 100) : undefined;
 
     // --- Rate Limiting ---
     const { data: allowed, error: rlError } = await supabase.rpc("check_rate_limit", {
