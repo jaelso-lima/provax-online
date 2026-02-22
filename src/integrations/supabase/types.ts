@@ -886,7 +886,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ranking_view: {
+        Row: {
+          nivel: number | null
+          nome: string | null
+          xp: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       adicionar_moedas: {
