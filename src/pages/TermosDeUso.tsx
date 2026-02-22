@@ -102,7 +102,30 @@ export default function TermosDeUso() {
             </section>
 
             <section>
-              <h3 className="font-display text-lg font-semibold">9. Disposições Gerais</h3>
+              <h3 className="font-display text-lg font-semibold">9. Programa de Indicação</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                A ProvaX oferece um Programa de Indicação que recompensa usuários com XP (pontos de experiência) e moedas
+                ao convidarem novos usuários para a plataforma. O programa funciona da seguinte forma:
+              </p>
+              <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
+                <li><strong>Cadastro confirmado:</strong> O indicador recebe 20 XP e 20 moedas quando o indicado conclui o cadastro com conta válida.</li>
+                <li><strong>Bônus Plano Free:</strong> Usuários no plano gratuito recebem +10 XP extras por indicação válida.</li>
+                <li><strong>Assinatura paga:</strong> O indicador recebe 30 XP adicionais quando o indicado assina um plano pago (bônus Free de +10 XP também se aplica).</li>
+              </ul>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+                <strong>Regras antifraude:</strong> São vedados o autocadastro, a criação de múltiplas contas, o uso de e-mails
+                temporários e qualquer artifício para obter recompensas indevidas. A plataforma monitora IPs, dispositivos e
+                padrões de comportamento. Em caso de irregularidade, a ProvaX poderá remover XP concedido, bloquear contas e
+                suspender a participação no programa.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+                A ProvaX reserva-se o direito de auditar todas as indicações, cancelar recompensas indevidas e atualizar
+                as regras do programa a qualquer momento, sem aviso prévio.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-display text-lg font-semibold">10. Disposições Gerais</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 A ProvaX reserva-se o direito de atualizar estes Termos de Uso a qualquer momento, notificando os
                 usuários sobre alterações relevantes. O uso continuado da plataforma após a publicação de alterações

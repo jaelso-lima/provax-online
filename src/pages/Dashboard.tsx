@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
-import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked } from "lucide-react";
+import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import CascadingFilters from "@/components/CascadingFilters";
+import { Badge } from "@/components/ui/badge";
 
 type Modo = "concurso" | "enem" | null;
 
@@ -17,6 +18,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalSimulados: 0, notaMedia: 0, totalRedacoes: 0 });
   const [recentSimulados, setRecentSimulados] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [xpTransactions, setXpTransactions] = useState<any[]>([]);
   const [modo, setModo] = useState<Modo>(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("provax_modo") as Modo) || null;
@@ -27,9 +30,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [{ data: sims }, { data: reds }] = await Promise.all([
+      const [{ data: sims }, { data: reds }, { data: refs }, { data: xpTx }] = await Promise.all([
         supabase.from("simulados").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
         supabase.from("redacoes").select("id").eq("user_id", user.id),
+        supabase.from("referrals").select("*").eq("referrer_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("xp_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
       ]);
       if (sims) {
         setRecentSimulados(sims);
@@ -40,6 +45,8 @@ export default function Dashboard() {
           totalRedacoes: reds?.length ?? 0,
         });
       }
+      if (refs) setReferrals(refs);
+      if (xpTx) setXpTransactions(xpTx);
     };
     load();
   }, [user]);
@@ -53,6 +60,36 @@ export default function Dashboard() {
     if (profile?.codigo_indicacao) {
       navigator.clipboard.writeText(profile.codigo_indicacao);
       toast({ title: "Código copiado!" });
+    }
+  };
+
+  const copiarLink = () => {
+    if (profile?.codigo_indicacao) {
+      const link = `${window.location.origin}/register?ref=${profile.codigo_indicacao}`;
+      navigator.clipboard.writeText(link);
+      toast({ title: "Link de indicação copiado!" });
+    }
+  };
+
+  const referralsValidados = referrals.filter(r => r.status === 'validado').length;
+  const referralsPendentes = referrals.filter(r => r.status === 'pendente').length;
+  const xpTotalIndicacoes = referrals.reduce((acc: number, r: any) => acc + (r.xp_total || 0), 0);
+
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case 'validado': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'pendente': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'cancelado': return <XCircle className="h-4 w-4 text-destructive" />;
+      default: return null;
+    }
+  };
+
+  const statusLabel = (status: string) => {
+    switch (status) {
+      case 'validado': return 'Validado';
+      case 'pendente': return 'Pendente';
+      case 'cancelado': return 'Cancelado';
+      default: return status;
     }
   };
 
@@ -117,7 +154,89 @@ export default function Dashboard() {
 
         <Card className="mb-8"><CardContent className="pt-6"><div className="flex items-center justify-between mb-2"><span className="text-sm font-medium">Nível {nivel}</span><span className="text-xs text-muted-foreground">{xp} / {xpParaProximo} XP</span></div><Progress value={xpProgresso} className="h-3" /></CardContent></Card>
 
-        <Card className="mb-8"><CardContent className="pt-6 flex items-center justify-between"><div><p className="text-sm font-medium flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> Seu código de indicação</p><p className="text-xs text-muted-foreground mt-1">Compartilhe e ganhe 20 moedas por cada amigo</p></div><Button variant="outline" size="sm" onClick={copiarCodigo} className="gap-2"><Copy className="h-4 w-4" />{profile?.codigo_indicacao || "..."}</Button></CardContent></Card>
+        <Card className="mb-8">
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium flex items-center gap-2"><Share2 className="h-4 w-4 text-primary" /> Programa de Indicação</p>
+                <p className="text-xs text-muted-foreground mt-1">Convide amigos e ganhe 20 moedas + XP por cada indicação válida</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" size="sm" onClick={copiarCodigo} className="gap-2">
+                <Copy className="h-4 w-4" />Código: {profile?.codigo_indicacao || "..."}
+              </Button>
+              <Button variant="default" size="sm" onClick={copiarLink} className="gap-2">
+                <LinkIcon className="h-4 w-4" />Copiar Link de Indicação
+              </Button>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg border p-3 text-center">
+                <p className="text-2xl font-bold">{referrals.length}</p>
+                <p className="text-xs text-muted-foreground">Total</p>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{referralsValidados}</p>
+                <p className="text-xs text-muted-foreground">Validados</p>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <p className="text-2xl font-bold text-primary">{xpTotalIndicacoes}</p>
+                <p className="text-xs text-muted-foreground">XP Ganho</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {referrals.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Histórico de Indicações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {referrals.slice(0, 10).map((r: any) => (
+                  <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      {statusIcon(r.status)}
+                      <div>
+                        <p className="text-sm font-medium">Indicação #{r.id.slice(0, 8)}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={r.status === 'validado' ? 'default' : r.status === 'cancelado' ? 'destructive' : 'secondary'}>
+                        {statusLabel(r.status)}
+                      </Badge>
+                      <span className="text-sm font-bold text-primary">+{r.xp_total} XP</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {xpTransactions.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">📊 Histórico de XP</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {xpTransactions.map((tx: any) => (
+                  <div key={tx.id} className="flex items-center justify-between rounded-lg border p-2 px-3">
+                    <div>
+                      <p className="text-sm">{tx.descricao}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString("pt-BR")}</p>
+                    </div>
+                    <span className="text-sm font-bold text-primary">+{tx.valor} XP</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
 
         {modo === "concurso" && (
           <div className="mb-8">
