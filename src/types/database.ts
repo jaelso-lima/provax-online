@@ -155,6 +155,29 @@ export interface Favorite {
   created_at: string;
 }
 
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  referred_user_id: string;
+  status: 'pendente' | 'validado' | 'cancelado';
+  xp_cadastro: number;
+  xp_assinatura: number;
+  xp_bonus_free: number;
+  xp_total: number;
+  created_at: string;
+  validated_at: string | null;
+}
+
+export interface XpTransaction {
+  id: string;
+  user_id: string;
+  tipo: 'indicacao_cadastro' | 'indicacao_assinatura' | 'bonus_free' | 'simulado' | 'redacao' | 'outro';
+  valor: number;
+  referral_id: string | null;
+  descricao: string;
+  created_at: string;
+}
+
 export interface MoedaTransacao {
   id: string;
   user_id: string;

@@ -552,6 +552,45 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referred_user_id: string
+          referrer_id: string
+          status: string
+          validated_at: string | null
+          xp_assinatura: number
+          xp_bonus_free: number
+          xp_cadastro: number
+          xp_total: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referred_user_id: string
+          referrer_id: string
+          status?: string
+          validated_at?: string | null
+          xp_assinatura?: number
+          xp_bonus_free?: number
+          xp_cadastro?: number
+          xp_total?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referred_user_id?: string
+          referrer_id?: string
+          status?: string
+          validated_at?: string | null
+          xp_assinatura?: number
+          xp_bonus_free?: number
+          xp_cadastro?: number
+          xp_total?: number
+        }
+        Relationships: []
+      }
       registration_logs: {
         Row: {
           blocked_reason: string | null
@@ -807,6 +846,44 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_transactions: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          referral_id: string | null
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          referral_id?: string | null
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          referral_id?: string | null
+          tipo?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xp_transactions_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -824,6 +901,10 @@ export type Database = {
         Args: { _novo_plano: string; _user_id: string }
         Returns: boolean
       }
+      cancelar_referral: {
+        Args: { _reason: string; _referral_id: string }
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: {
           _action: string
@@ -835,6 +916,14 @@ export type Database = {
       }
       check_registration_rate: {
         Args: { _fingerprint: string; _ip: string }
+        Returns: Json
+      }
+      conceder_xp_assinatura: {
+        Args: { _referred_user_id: string }
+        Returns: Json
+      }
+      conceder_xp_indicacao: {
+        Args: { _referred_user_id: string; _referrer_id: string }
         Returns: Json
       }
       descontar_moedas: {

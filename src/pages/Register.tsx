@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateFingerprint } from "@/lib/fingerprint";
 
 export default function Register() {
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref") || "";
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [codigoIndicacao, setCodigoIndicacao] = useState("");
+  const [codigoIndicacao, setCodigoIndicacao] = useState(refCode);
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
