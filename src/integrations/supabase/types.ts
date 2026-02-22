@@ -886,14 +886,7 @@ export type Database = {
       }
     }
     Views: {
-      ranking_view: {
-        Row: {
-          nivel: number | null
-          nome: string | null
-          xp: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       adicionar_moedas: {
@@ -936,6 +929,14 @@ export type Database = {
       descontar_moedas: {
         Args: { _descricao: string; _user_id: string; _valor: number }
         Returns: boolean
+      }
+      get_ranking: {
+        Args: never
+        Returns: {
+          nivel: number
+          nome: string
+          xp: number
+        }[]
       }
       has_role: {
         Args: {

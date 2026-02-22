@@ -9,7 +9,7 @@ export default function Ranking() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("ranking_view" as any).select("nome, xp, nivel")
+    supabase.rpc("get_ranking")
       .then(({ data }) => { if (data) setRanking(data); setLoading(false); });
   }, []);
 
