@@ -375,6 +375,7 @@ export type Database = {
           modo: string
           resposta_correta: string
           state_id: string | null
+          status_questao: string
           topic_id: string | null
         }
         Insert: {
@@ -393,6 +394,7 @@ export type Database = {
           modo?: string
           resposta_correta: string
           state_id?: string | null
+          status_questao?: string
           topic_id?: string | null
         }
         Update: {
@@ -411,6 +413,7 @@ export type Database = {
           modo?: string
           resposta_correta?: string
           state_id?: string | null
+          status_questao?: string
           topic_id?: string | null
         }
         Relationships: [
