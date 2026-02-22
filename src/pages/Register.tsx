@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { generateFingerprint } from "@/lib/fingerprint";
 
 export default function Register() {
   const [nome, setNome] = useState("");
@@ -22,10 +24,30 @@ export default function Register() {
     if (!nome || !email || !password) { toast({ title: "Preencha todos os campos", variant: "destructive" }); return; }
     if (password.length < 8) { toast({ title: "Senha deve ter no mínimo 8 caracteres", variant: "destructive" }); return; }
     setLoading(true);
-    const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined);
+
+    try {
+      // Anti-fraud check
+      const fingerprint = generateFingerprint();
+      const { data: checkData, error: checkError } = await supabase.functions.invoke("check-registration", {
+        body: { email, fingerprint, user_agent: navigator.userAgent },
+      });
+
+      if (checkError) {
+        console.error("Registration check error:", checkError);
+        // Allow registration if check fails (fail-open for UX)
+      } else if (checkData && !checkData.allowed) {
+        toast({ title: "Cadastro bloqueado", description: checkData.reason, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined);
+      if (error) { toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" }); }
+      else { toast({ title: "Conta criada!", description: "Verifique seu email para confirmar." }); navigate("/login"); }
+    } catch (err: any) {
+      toast({ title: "Erro ao criar conta", description: err.message, variant: "destructive" });
+    }
     setLoading(false);
-    if (error) { toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" }); }
-    else { toast({ title: "Conta criada!", description: "Verifique seu email para confirmar." }); navigate("/login"); }
   };
 
   return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><Card className="w-full max-w-md">
