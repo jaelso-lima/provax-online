@@ -64,8 +64,8 @@ export default function Index() {
               <Button size="lg" asChild className="text-base px-10 h-14 text-lg shadow-lg shadow-primary/25">
                 <Link to="/register">Iniciar minha preparação estratégica <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="h-14 text-lg">
-                <Link to="#metodo">Entender o método <ChevronDown className="ml-2 h-5 w-5" /></Link>
+              <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("metodo")?.scrollIntoView({ behavior: "smooth" })}>
+                Entender o método <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">20 créditos gratuitos por dia. Sem necessidade de cartão.</p>
