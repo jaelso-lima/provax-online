@@ -39,7 +39,16 @@ export default function Login() {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
-      toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials")) {
+        toast({ 
+          title: "Credenciais inválidas", 
+          description: "Email ou senha incorretos. Se você criou a conta com Google, use o botão 'Continuar com Google' abaixo.", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      }
     } else {
       toast({ title: "Bem-vindo de volta!" });
       navigate("/dashboard");
