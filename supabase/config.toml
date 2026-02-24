@@ -1,7 +1,9 @@
 project_id = "shloysxkntqvwwjmhggn"
 
-[functions.check-registration]
-verify_jwt = false
-
-[functions.chat-professor]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.chat-professor]
+    verify_jwt = false
+  [functions.check-registration]
+    verify_jwt = false
