@@ -66,7 +66,10 @@ export default function Dashboard() {
 
   const copiarLink = () => {
     if (profile?.codigo_indicacao) {
-      const link = `${window.location.origin}/register?ref=${profile.codigo_indicacao}`;
+      const baseUrl = window.location.hostname.includes("lovable") 
+        ? "https://provax-teste.lovable.app" 
+        : window.location.origin;
+      const link = `${baseUrl}/register?ref=${profile.codigo_indicacao}`;
       navigator.clipboard.writeText(link);
       toast({ title: "Link de indicação copiado!" });
     }
