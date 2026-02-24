@@ -75,15 +75,11 @@ export default function Register() {
           toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
         }
       } else {
-        // Auto-confirm está ativo, fazer login imediato
-        const { error: loginError } = await signIn(email, password);
-        if (loginError) {
-          toast({ title: "Conta criada!", description: "Faça login para continuar." });
-          navigate("/login");
-        } else {
-          toast({ title: "Conta criada com sucesso!", description: "Bem-vindo ao ProvaX!" });
-          navigate("/dashboard");
-        }
+        toast({ 
+          title: "Conta criada! 📧", 
+          description: "Enviamos um link de confirmação para seu email. Verifique sua caixa de entrada (e spam) para ativar sua conta.",
+        });
+        navigate("/login");
       }
     } catch (err: any) {
       toast({ title: "Erro ao criar conta", description: err.message, variant: "destructive" });
