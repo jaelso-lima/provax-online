@@ -8,7 +8,7 @@ import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, Grad
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import CascadingFilters from "@/components/CascadingFilters";
+
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 
@@ -270,20 +270,6 @@ export default function Dashboard() {
           </Card>
         )}
 
-
-        {modo === "concurso" && (
-          <div className="mb-8">
-            <h2 className="mb-4 font-display text-xl font-semibold">🎯 Filtros do Concurso</h2>
-            <Card><CardContent className="pt-6"><CascadingFilters modo="concurso" onFiltersChange={() => {}} /></CardContent></Card>
-          </div>
-        )}
-
-        {modo === "enem" && (
-          <div className="mb-8">
-            <h2 className="mb-4 font-display text-xl font-semibold">🎓 Filtros do ENEM</h2>
-            <Card><CardContent className="pt-6"><CascadingFilters modo="enem" onFiltersChange={() => {}} /></CardContent></Card>
-          </div>
-        )}
 
         <h2 className="mb-4 font-display text-xl font-semibold">Ações</h2>
         <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">

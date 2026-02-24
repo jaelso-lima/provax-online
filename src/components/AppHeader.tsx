@@ -18,7 +18,7 @@ export default function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-card/80 backdrop-blur-sm">
       <div className="container flex h-14 items-center justify-between">
-        <Link to="/dashboard" className="font-display text-xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span></Link>
+        <Link to="/dashboard" className="font-display text-xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span> <span className="text-foreground">ProvaX</span></Link>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-full bg-[hsl(var(--coin)/0.1)] px-3 py-1 text-sm font-medium">
             <Coins className="h-4 w-4 text-coin" />

@@ -92,7 +92,7 @@ export default function Register() {
   };
 
   return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><Card className="w-full max-w-md">
-    <CardHeader className="text-center"><Link to="/" className="mb-2 inline-block font-display text-2xl font-bold text-primary">ProvaX</Link><CardTitle className="font-display text-2xl">Criar Conta</CardTitle><CardDescription>Crie sua conta e ganhe 30 moedas grátis</CardDescription></CardHeader>
+    <CardHeader className="text-center"><Link to="/" className="mb-2 inline-block font-display text-2xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span> <span className="text-foreground">ProvaX</span></Link><CardTitle className="font-display text-2xl">Criar Conta</CardTitle><CardDescription>Crie sua conta e ganhe 30 moedas grátis</CardDescription></CardHeader>
     <form onSubmit={handleSubmit}><CardContent className="space-y-4">
       <div className="space-y-2"><Label htmlFor="nome">Nome</Label><Input id="nome" placeholder="Seu nome completo" value={nome} onChange={e => setNome(e.target.value)} required /></div>
       <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
