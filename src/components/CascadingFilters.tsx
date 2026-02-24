@@ -102,13 +102,10 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">
-          {isConcurso ? "Selecione os filtros em sequência:" : "Selecione a área e disciplina:"}
-        </p>
+      <div className="flex items-center justify-end">
         {filters.areaId && (
           <Button variant="ghost" size="sm" onClick={resetFilters} className="h-7 gap-1 text-xs text-muted-foreground">
-            <RotateCcw className="h-3 w-3" /> Limpar
+            <RotateCcw className="h-3 w-3" /> Limpar filtros
           </Button>
         )}
       </div>

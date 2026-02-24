@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
-import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon } from "lucide-react";
+import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import CascadingFilters from "@/components/CascadingFilters";
 import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 
 type Modo = "concurso" | "enem" | null;
 
@@ -152,7 +153,39 @@ export default function Dashboard() {
           <Card><CardHeader className="pb-2"><CardDescription>Redações</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.totalRedacoes}</p></CardContent></Card>
         </div>
 
-        <Card className="mb-8"><CardContent className="pt-6"><div className="flex items-center justify-between mb-2"><span className="text-sm font-medium">Nível {nivel}</span><span className="text-xs text-muted-foreground">{xp} / {xpParaProximo} XP</span></div><Progress value={xpProgresso} className="h-3" /></CardContent></Card>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Card className="mb-8 overflow-hidden">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 2, repeatDelay: 3 }}>
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </motion.div>
+                  <span className="text-sm font-semibold">Nível {nivel}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{xp} / {xpParaProximo} XP</span>
+                  <div className="flex items-center gap-1 rounded-full bg-coin/10 px-2 py-0.5">
+                    <Gift className="h-3 w-3 text-coin" />
+                    <span className="text-xs font-medium text-coin">+20 🪙 ao subir</span>
+                  </div>
+                </div>
+              </div>
+              <div className="relative">
+                <Progress value={xpProgresso} className="h-4" />
+                <motion.div 
+                  className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-primary/0 via-primary-foreground/20 to-primary/0"
+                  style={{ width: `${xpProgresso}%` }}
+                  animate={{ x: ["-100%", "200%"] }}
+                  transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground text-center">
+                {xpParaProximo - xp} XP para o nível {nivel + 1} — ganhe 20 moedas de recompensa! 🎉
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         <Card className="mb-8">
           <CardContent className="pt-6 space-y-4">

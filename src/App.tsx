@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import ChatProfessor from "@/components/ChatProfessor";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/termos" element={<TermosDeUso />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatProfessor />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

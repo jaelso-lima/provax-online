@@ -1,11 +1,12 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOptionalAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
   ArrowRight, CheckCircle, X, Zap, Shield, Brain, Target, BarChart3,
-  Users, Star, Clock, TrendingUp, BookOpen, Award, Lock, ChevronDown
+  Users, Star, Clock, TrendingUp, BookOpen, Award, Lock, ChevronDown,
+  Flame, Trophy, MessageCircle, GraduationCap
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -15,7 +16,13 @@ const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 
 
 export default function Index() {
   const { user } = useOptionalAuth();
+  const navigate = useNavigate();
   const [showSticky, setShowSticky] = useState(false);
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    if (user) navigate("/dashboard", { replace: true });
+  }, [user, navigate]);
 
   useEffect(() => {
     const onScroll = () => setShowSticky(window.scrollY > 600);
@@ -28,7 +35,7 @@ export default function Index() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b bg-card/90 backdrop-blur-md">
         <div className="container flex h-14 items-center justify-between">
-          <span className="font-display text-xl font-bold text-primary">ProvaX</span>
+          <span className="font-display text-xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span></span>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             {user ? (
@@ -68,7 +75,7 @@ export default function Index() {
                 Entender o método <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">20 créditos gratuitos por dia. Sem necessidade de cartão.</p>
+            <p className="mt-4 text-sm text-muted-foreground">30 créditos gratuitos por dia. Sem necessidade de cartão.</p>
           </motion.div>
         </div>
       </section>
@@ -217,10 +224,10 @@ export default function Index() {
               { icon: Brain, title: "IA Adaptativa", desc: "Questões no estilo exato da sua banca: FGV, CESPE, VUNESP, FCC" },
               { icon: Target, title: "Filtro por Edital", desc: "Área → Matéria → Estado → Banca → Ano. Estudo cirúrgico." },
               { icon: BarChart3, title: "Relatório Inteligente", desc: "Saiba onde erra, quanto tempo gasta e o que precisa focar" },
-              { icon: Award, title: "Gamificação", desc: "XP, níveis e moedas bônus. Motivação que funciona." },
+              { icon: Award, title: "Gamificação", desc: "XP, níveis e recompensas em moedas. Suba de nível e ganhe bônus!" },
               { icon: BookOpen, title: "Redação com IA", desc: "Correção rigorosa com feedback por competência do ENEM" },
-              { icon: Users, title: "Indicação", desc: "Convide amigos e ganhe créditos automaticamente" },
-              { icon: Zap, title: "ENEM Completo", desc: "Todas as disciplinas com assuntos do Fundamental ao Médio" },
+              { icon: GraduationCap, title: "Professor PX", desc: "Chat com tutor IA especialista que te chama pelo nome e tira dúvidas 24h" },
+              { icon: Users, title: "Indicação", desc: "Convide amigos e ganhe créditos + XP automaticamente" },
               { icon: Shield, title: "Seguro", desc: "Dados protegidos. Sistema anti-fraude integrado." },
             ].map((f, i) => (
               <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.06 }}>
@@ -279,7 +286,7 @@ export default function Index() {
           </motion.div>
           <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3 mt-12">
             {[
-              { name: "Gratuito", price: "R$ 0", sub: "para sempre", features: ["20 créditos/dia", "Simulados de 5 e 10 questões", "Relatório básico", "Sistema de XP e níveis"] },
+              { name: "Gratuito", price: "R$ 0", sub: "para sempre", features: ["30 créditos/dia", "Simulados de 5 e 10 questões", "Relatório básico", "Sistema de XP e níveis", "Professor PX (chat IA)"] },
               { name: "Pro", price: "R$ 29,90", sub: "/mês", features: ["500 créditos/mês acumulativos", "Simulados ilimitados", "5 redações/mês", "Relatório avançado", "Suporte prioritário"], popular: true },
               { name: "Premium", price: "R$ 49,90", sub: "/mês", features: ["1000 créditos/mês acumulativos", "Tudo do Pro", "Provas completas de 60 questões", "Redações ilimitadas", "Probabilidade de aprovação"] },
             ].map(p => (
@@ -311,6 +318,49 @@ export default function Index() {
               <Shield className="h-4 w-4" /> Garantia de 7 dias — não gostou, devolvemos seu dinheiro.
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* NÚMEROS */}
+      <section className="py-16">
+        <div className="container">
+          <motion.div {...fadeUp} className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {[
+              { number: "30", label: "Créditos grátis/dia", icon: Flame },
+              { number: "24h", label: "Professor IA disponível", icon: MessageCircle },
+              { number: "+20🪙", label: "Por nível conquistado", icon: Trophy },
+              { number: "100%", label: "Focado na sua banca", icon: Target },
+            ].map((item, i) => (
+              <motion.div key={i} {...stagger} transition={{ delay: i * 0.1 }} className="text-center">
+                <item.icon className="mx-auto mb-2 h-6 w-6 text-primary" />
+                <p className="text-3xl font-bold text-foreground">{item.number}</p>
+                <p className="text-sm text-muted-foreground">{item.label}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="border-t bg-card py-20">
+        <div className="container max-w-3xl">
+          <motion.div {...fadeUp} className="text-center mb-12">
+            <h2 className="font-display text-3xl font-bold md:text-4xl">Perguntas Frequentes</h2>
+          </motion.div>
+          <div className="space-y-4">
+            {[
+              { q: "Preciso pagar para começar?", a: "Não! Você recebe 30 créditos gratuitos por dia, suficientes para fazer vários simulados. Sem cartão de crédito." },
+              { q: "O Professor PX pode me ajudar com qualquer matéria?", a: "Sim! Ele é especialista em todas as matérias de concursos públicos e ENEM. Disponível 24 horas, 7 dias por semana." },
+              { q: "Como funciona o sistema de recompensas?", a: "A cada nível que você sobe, ganha 20 moedas de bônus. Quanto mais você pratica, mais XP ganha e mais rápido sobe de nível!" },
+              { q: "As questões são iguais às da prova real?", a: "Nossas questões são geradas por IA treinada no padrão exato de cada banca (CESPE, FGV, VUNESP, FCC). É o treino mais próximo da prova real." },
+              { q: "Posso cancelar a qualquer momento?", a: "Sim! Você pode cancelar seu plano pago a qualquer momento. E ainda tem garantia de 7 dias para devolução." },
+            ].map((item, i) => (
+              <motion.div key={i} {...stagger} transition={{ delay: i * 0.05 }} className="rounded-xl border bg-background/50 p-5">
+                <p className="font-medium text-foreground mb-2">{item.q}</p>
+                <p className="text-sm text-muted-foreground">{item.a}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
