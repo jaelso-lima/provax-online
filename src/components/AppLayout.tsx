@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Target, FileText, Coins, Crown, User, Trophy, LogOut, Menu, X,
+  LayoutDashboard, Target, FileText, Coins, Crown, User, Trophy, LogOut, Menu, X, Mail, Instagram,
 } from "lucide-react";
 
 const navItems = [
@@ -123,6 +123,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
         )}
 
         <main className="flex-1 overflow-auto p-4 lg:p-8">{children}</main>
+        <footer className="border-t border-border px-4 py-4 text-center text-sm text-muted-foreground lg:px-8">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <span>© 2026 ProvaX</span>
+            <a href="mailto:provax.online@gmail.com" className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+              <Mail className="h-3.5 w-3.5" /> Email
+            </a>
+            <a href="https://www.instagram.com/provax_online/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+              <Instagram className="h-3.5 w-3.5" /> Instagram
+            </a>
+          </div>
+        </footer>
       </div>
     </div>
   );
