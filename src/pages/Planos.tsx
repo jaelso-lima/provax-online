@@ -1,4 +1,5 @@
 import AppHeader from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
@@ -11,7 +12,7 @@ const PLANOS = [
 ];
 
 export default function Planos() {
-  return (<div className="min-h-screen bg-background"><AppHeader /><main className="container max-w-4xl py-8">
+  return (<div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-4xl flex-1 py-8">
     <h1 className="mb-8 text-center font-display text-3xl font-bold">Planos</h1>
     <div className="grid gap-6 md:grid-cols-3">{PLANOS.map(p => (
       <Card key={p.name} className={p.popular ? "border-2 border-primary" : ""}>
@@ -20,5 +21,5 @@ export default function Planos() {
         <Button className="w-full" variant={p.current ? "outline" : "default"} disabled={p.current} onClick={() => !p.current && toast({ title: "Em breve!" })}>{p.current ? "Plano Atual" : "Assinar"}</Button></CardContent>
       </Card>
     ))}</div>
-  </main></div>);
+  </main><AppFooter /></div>);
 }

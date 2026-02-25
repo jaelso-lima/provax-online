@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ export default function Perfil() {
   const copiarCodigo = () => { if (profile?.codigo_indicacao) { navigator.clipboard.writeText(profile.codigo_indicacao); toast({ title: "Código copiado!" }); } };
   const xp = profile?.xp ?? 0; const nivel = profile?.nivel ?? 1;
 
-  return (<div className="min-h-screen bg-background"><AppHeader /><main className="container max-w-lg py-8">
+  return (<div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg flex-1 py-8">
     <h1 className="mb-6 font-display text-2xl font-bold">Meu Perfil</h1>
     <Card className="mb-6"><CardContent className="space-y-4 pt-6">
       <div className="space-y-2"><Label>Nome</Label><Input value={nome} onChange={e => setNome(e.target.value)} /></div>
@@ -50,5 +51,5 @@ export default function Perfil() {
     {transacoes.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma transação.</p> : (
       <div className="space-y-2">{transacoes.map(t => (<Card key={t.id}><CardHeader className="py-3"><div className="flex items-center justify-between"><div><CardTitle className="text-sm">{t.descricao}</CardTitle><CardDescription>{new Date(t.created_at).toLocaleDateString("pt-BR")}</CardDescription></div><span className={`text-sm font-bold ${t.tipo === "credito" ? "text-accent" : "text-destructive"}`}>{t.tipo === "credito" ? "+" : "-"}{t.valor}</span></div></CardHeader></Card>))}</div>
     )}
-  </main></div>);
+  </main><AppFooter /></div>);
 }
