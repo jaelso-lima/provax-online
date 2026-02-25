@@ -6,7 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import {
   ArrowRight, CheckCircle, X, Zap, Shield, Brain, Target, BarChart3,
   Users, Star, Clock, TrendingUp, BookOpen, Award, Lock, ChevronDown,
-  Flame, Trophy, MessageCircle, GraduationCap
+  Flame, Trophy, MessageCircle, GraduationCap, Mail, Instagram
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -398,6 +398,30 @@ export default function Index() {
           </Button>
         </motion.div>
       )}
+
+      {/* CONTATO */}
+      <section className="border-t py-20">
+        <div className="container max-w-2xl text-center">
+          <motion.div {...fadeUp}>
+            <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">Dúvidas? Fale conosco</h2>
+            <p className="text-muted-foreground mb-8">
+              Entre em contato com a administração do ProvaX para tirar dúvidas ou enviar sugestões.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" variant="outline" className="h-12 text-base gap-2" asChild>
+                <a href="mailto:provax.online@gmail.com">
+                  <Mail className="h-5 w-5" /> Enviar Email
+                </a>
+              </Button>
+              <Button size="lg" variant="outline" className="h-12 text-base gap-2" asChild>
+                <a href="https://www.instagram.com/provax_online/" target="_blank" rel="noopener noreferrer">
+                  <Instagram className="h-5 w-5" /> Instagram
+                </a>
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       <footer className="border-t py-8 text-center text-sm text-muted-foreground space-y-2">
         <p>© 2026 ProvaX. Todos os direitos reservados.</p>
