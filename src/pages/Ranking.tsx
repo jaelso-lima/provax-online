@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Medal, Award, Loader2 } from "lucide-react";
 
@@ -20,7 +21,7 @@ export default function Ranking() {
     return <span className="text-sm font-bold text-muted-foreground">{pos+1}º</span>;
   };
 
-  return (<div className="min-h-screen bg-background"><AppHeader /><main className="container max-w-2xl py-8">
+  return (<div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
     <h1 className="mb-6 font-display text-2xl font-bold flex items-center gap-2"><Trophy className="h-6 w-6 text-coin" />Ranking Global</h1>
     {loading ? <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> :
     ranking.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum estudante ainda.</p> :
@@ -30,5 +31,5 @@ export default function Ranking() {
         <span className="text-sm font-bold text-primary">{r.xp} XP</span>
       </CardContent></Card>
     ))}</div>}
-  </main></div>);
+  </main><AppFooter /></div>);
 }

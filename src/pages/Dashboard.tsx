@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
+import AppFooter from "@/components/AppFooter";
 import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -105,9 +106,9 @@ export default function Dashboard() {
 
   if (!modo) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background">
         <AppHeader />
-        <main className="container py-16">
+        <main className="container flex-1 py-16">
           <div className="mb-8 text-center">
             <h1 className="font-display text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
             <p className="mt-2 text-muted-foreground">Escolha seu objetivo de estudo:</p>
@@ -131,14 +132,15 @@ export default function Dashboard() {
             </Card>
           </div>
         </main>
+        <AppFooter />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
-      <main className="container py-8">
+      <main className="container flex-1 py-8">
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold">Olá, {profile?.nome || "Estudante"}!</h1>
           <p className="text-muted-foreground">
@@ -291,6 +293,7 @@ export default function Dashboard() {
 
         {recentSimulados.length > 0 && (<><h2 className="mb-4 font-display text-xl font-semibold">Histórico Recente</h2><div className="space-y-3">{recentSimulados.map((s: any) => (<Card key={s.id} className="transition-shadow hover:shadow-md"><CardHeader className="flex-row items-center justify-between py-3"><div><CardTitle className="text-sm">{s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões</CardTitle><CardDescription>{new Date(s.created_at).toLocaleDateString("pt-BR")} • {s.status === "finalizado" ? `Nota: ${s.pontuacao}%` : "Em andamento"}</CardDescription></div><History className="h-4 w-4 text-muted-foreground" /></CardHeader></Card>))}</div></>)}
       </main>
+      <AppFooter />
     </div>
   );
 }
