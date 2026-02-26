@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 interface FilterValues {
   areaId: string;
   materiaId: string;
+  topicId: string;
   stateId: string;
   esferaId: string;
   bancaId: string;
@@ -30,7 +31,7 @@ const fadeIn = {
 
 export default function CascadingFilters({ modo, onFiltersChange }: CascadingFiltersProps) {
   const [filters, setFilters] = useState<FilterValues>({
-    areaId: "", materiaId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "",
+    areaId: "", materiaId: "", topicId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "",
   });
 
   const [areas, setAreas] = useState<any[]>([]);
@@ -39,6 +40,7 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
   const [esferas, setEsferas] = useState<any[]>([]);
   const [bancas, setBancas] = useState<any[]>([]);
   const [carreiras, setCarreiras] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load areas on mount
@@ -57,6 +59,13 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
         if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean).sort((a: any, b: any) => a.nome.localeCompare(b.nome)));
       });
   }, [filters.areaId]);
+
+  // Load topics when materia selected (universidade mode)
+  useEffect(() => {
+    if (!filters.materiaId) { setTopics([]); return; }
+    supabase.from("topics").select("*").eq("materia_id", filters.materiaId).order("nome")
+      .then(({ data }) => { if (data) setTopics(data); });
+  }, [filters.materiaId]);
 
   // Load states, esferas, bancas, carreiras when needed (concurso only)
   useEffect(() => {
@@ -85,7 +94,7 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
       // Reset downstream filters
       const order: (keyof FilterValues)[] = modo === "concurso"
         ? ["areaId", "materiaId", "stateId", "esferaId", "carreiraId", "bancaId", "ano"]
-        : ["areaId", "materiaId"];
+        : ["areaId", "materiaId", "topicId"];
       const idx = order.indexOf(key);
       for (let i = idx + 1; i < order.length; i++) next[order[i]] = "";
       return next;
@@ -93,7 +102,7 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
   };
 
   const resetFilters = () => {
-    setFilters({ areaId: "", materiaId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "" });
+    setFilters({ areaId: "", materiaId: "", topicId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "" });
   };
 
   if (loading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
@@ -137,6 +146,23 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Universidade: topic filter */}
+      {isUniversidade && (
+        <AnimatePresence>
+          {filters.materiaId && topics.length > 0 && (
+            <motion.div key="topic" {...fadeIn}>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tópico (opcional)</Label>
+                <Select value={filters.topicId} onValueChange={v => updateFilter("topicId", v)}>
+                  <SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger>
+                  <SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Concurso-specific cascading steps (not shown for universidade) */}
       {isConcurso && !isUniversidade && (
