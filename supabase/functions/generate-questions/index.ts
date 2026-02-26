@@ -34,7 +34,7 @@ serve(async (req) => {
     const body = await req.json();
     const allowedQuantidades = [5, 10, 20, 60];
     const allowedNiveis = ["facil", "media", "dificil"];
-    const allowedModos = ["concurso", "enem"];
+    const allowedModos = ["concurso", "enem", "universidade"];
 
     const quantidade = allowedQuantidades.includes(body.quantidade) ? body.quantidade : 10;
     const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "media";
@@ -90,6 +90,8 @@ serve(async (req) => {
     let systemPrompt: string;
     if (modo === "enem") {
       systemPrompt = `Você é um professor especialista em questões do ENEM. Gere ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.${filterContext}${ano ? ` Baseadas no estilo do ENEM ${ano}.` : ""} As questões devem seguir o padrão do ENEM com textos motivadores, gráficos descritos textualmente quando aplicável, e alternativas plausíveis. Cada questão deve ter explicação detalhada da resposta correta.`;
+    } else if (modo === "universidade") {
+      systemPrompt = `Você é um professor universitário especialista. Gere ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel} para provas universitárias.${filterContext} As questões devem ter nível acadêmico universitário, com profundidade teórica e prática adequada ao ensino superior. Inclua questões que exijam raciocínio analítico, aplicação de conceitos e resolução de problemas típicos de provas de graduação e pós-graduação. Cada questão deve ter explicação detalhada da resposta correta com fundamentação teórica.`;
     } else {
       systemPrompt = `Você é um professor especialista em questões de concursos públicos brasileiros. Gere ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.${filterContext}${ano ? ` Ano de referência: ${ano}.` : ""} As questões devem ser realistas, no padrão de bancas federais, com alternativas plausíveis e pegadinhas típicas. Cada questão deve ter explicação detalhada.`;
     }
