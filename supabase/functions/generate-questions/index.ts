@@ -97,6 +97,7 @@ serve(async (req) => {
     const state = typeof body.state === "string" ? body.state.slice(0, 100) : undefined;
     const esfera = typeof body.esfera === "string" ? body.esfera.slice(0, 100) : undefined;
     const topic = typeof body.topic === "string" ? body.topic.slice(0, 100) : undefined;
+    const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
 
     // --- Rate Limiting ---
     const { data: allowed, error: rlError } = await supabase.rpc("check_rate_limit", {
@@ -134,6 +135,7 @@ serve(async (req) => {
       resolveFilter("states", state, "Estado"),
       resolveFilter("esferas", esfera, "Esfera"),
       resolveFilter("topics", topic, "Tópico"),
+      resolveFilter("cursos", curso, "Curso"),
     ]);
 
     // --- Build prompt universal ---
