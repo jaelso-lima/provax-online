@@ -67,12 +67,15 @@ export default function Simulado() {
 
   // Load reference data for concurso mode
   useEffect(() => {
-    if (modo !== "concurso") return;
-    supabase.from("carreiras").select("*").order("nome").then(({ data }) => { if (data) setCarreiras(data); });
-    supabase.from("bancas").select("*").order("nome").then(({ data }) => { if (data) setBancas(data); });
-    supabase.from("states").select("*").order("nome").then(({ data }) => { if (data) setStates(data); });
-    supabase.from("esferas").select("*").order("nome").then(({ data }) => { if (data) setEsferas(data); });
-    supabase.from("areas").select("*").eq("modo", "concurso").order("nome").then(({ data }) => { if (data) setAreas(data); });
+    if (modo === "concurso") {
+      supabase.from("carreiras").select("*").order("nome").then(({ data }) => { if (data) setCarreiras(data); });
+      supabase.from("bancas").select("*").order("nome").then(({ data }) => { if (data) setBancas(data); });
+      supabase.from("states").select("*").order("nome").then(({ data }) => { if (data) setStates(data); });
+      supabase.from("esferas").select("*").order("nome").then(({ data }) => { if (data) setEsferas(data); });
+      supabase.from("areas").select("*").eq("modo", "concurso").order("nome").then(({ data }) => { if (data) setAreas(data); });
+    } else if (modo === "universidade") {
+      supabase.from("areas").select("*").eq("modo", "universidade").order("nome").then(({ data }) => { if (data) setAreas(data); });
+    }
   }, [modo]);
 
   // Cascading: área → matérias (via area_materias)
@@ -90,6 +93,9 @@ export default function Simulado() {
     if (modo === "concurso") {
       if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
       if (!materiaId) { toast({ title: "Selecione a matéria", variant: "destructive" }); return false; }
+    } else if (modo === "universidade") {
+      if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
+      if (!materiaId) { toast({ title: "Selecione a disciplina", variant: "destructive" }); return false; }
     } else {
       if (!areaEnem) { toast({ title: "Selecione a área do ENEM", variant: "destructive" }); return false; }
     }
@@ -124,6 +130,12 @@ export default function Simulado() {
           state: stateId || undefined,
           esfera: esferaId || undefined,
           ano: anoConcurso ? parseInt(anoConcurso) : undefined,
+        };
+      } else if (modo === "universidade") {
+        bodyPayload = {
+          ...bodyPayload,
+          materia: materiaId || undefined,
+          area: areaId || undefined,
         };
       } else {
         bodyPayload = { ...bodyPayload, area: ENEM_AREAS.find(a => a.id === areaEnem)?.nome, ano: anoEnem || undefined };
@@ -209,8 +221,8 @@ export default function Simulado() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg flex-1 py-8">
-      <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : "🎯 Gerar Simulado"}</h1>
-      <p className="mb-4 text-sm text-muted-foreground">Selecione os filtros abaixo para gerar um simulado personalizado no padrão da sua banca.</p>
+      <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : modo === "universidade" ? "🏛️ Simulado Universidade" : "🎯 Gerar Simulado"}</h1>
+      <p className="mb-4 text-sm text-muted-foreground">{modo === "universidade" ? "Selecione a área e disciplina para gerar questões universitárias." : "Selecione os filtros abaixo para gerar um simulado personalizado no padrão da sua banca."}</p>
       <Card><CardContent className="space-y-4 pt-6">
         {modo === "concurso" ? (<>
           <div className="space-y-2"><Label>Estado</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
@@ -220,6 +232,9 @@ export default function Simulado() {
           <div className="space-y-2"><Label>Carreira</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>Banca</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoConcurso} onValueChange={setAnoConcurso}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
+        </>) : modo === "universidade" ? (<>
+          <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-2"><Label>Disciplina *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione a disciplina" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
         </>) : (<>
           <div className="space-y-2"><Label>Área do ENEM *</Label><Select value={areaEnem} onValueChange={setAreaEnem}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{ENEM_AREAS.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoEnem} onValueChange={setAnoEnem}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
