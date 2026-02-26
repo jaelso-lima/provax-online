@@ -17,7 +17,7 @@ interface FilterValues {
 }
 
 interface CascadingFiltersProps {
-  modo: "concurso" | "enem";
+  modo: "concurso" | "enem" | "universidade";
   onFiltersChange: (filters: FilterValues) => void;
 }
 
@@ -44,7 +44,8 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
   // Load areas on mount
   useEffect(() => {
     setLoading(true);
-    supabase.from("areas").select("*").eq("modo", modo).order("nome")
+    const modoFilter = modo === "universidade" ? "universidade" : modo;
+    supabase.from("areas").select("*").eq("modo", modoFilter).order("nome")
       .then(({ data }) => { if (data) setAreas(data); setLoading(false); });
   }, [modo]);
 
@@ -98,6 +99,7 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
   if (loading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
 
   const isConcurso = modo === "concurso";
+  const isUniversidade = modo === "universidade";
   const anos = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
 
   return (
@@ -136,8 +138,8 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
         )}
       </AnimatePresence>
 
-      {/* Concurso-specific cascading steps */}
-      {isConcurso && (
+      {/* Concurso-specific cascading steps (not shown for universidade) */}
+      {isConcurso && !isUniversidade && (
         <AnimatePresence>
           {filters.materiaId && (
             <motion.div key="state" {...fadeIn}>
