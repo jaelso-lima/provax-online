@@ -374,6 +374,7 @@ export type Database = {
           materia_id: string | null
           modo: string
           resposta_correta: string
+          source: string | null
           state_id: string | null
           status_questao: string
           topic_id: string | null
@@ -393,6 +394,7 @@ export type Database = {
           materia_id?: string | null
           modo?: string
           resposta_correta: string
+          source?: string | null
           state_id?: string | null
           status_questao?: string
           topic_id?: string | null
@@ -412,6 +414,7 @@ export type Database = {
           materia_id?: string | null
           modo?: string
           resposta_correta?: string
+          source?: string | null
           state_id?: string | null
           status_questao?: string
           topic_id?: string | null
@@ -687,6 +690,7 @@ export type Database = {
           status: string
           tempo_gasto: number | null
           tipo: string
+          topic_id: string | null
           total_questoes: number | null
           user_id: string
         }
@@ -707,6 +711,7 @@ export type Database = {
           status?: string
           tempo_gasto?: number | null
           tipo?: string
+          topic_id?: string | null
           total_questoes?: number | null
           user_id: string
         }
@@ -727,6 +732,7 @@ export type Database = {
           status?: string
           tempo_gasto?: number | null
           tipo?: string
+          topic_id?: string | null
           total_questoes?: number | null
           user_id?: string
         }
@@ -771,6 +777,13 @@ export type Database = {
             columns: ["state_id"]
             isOneToOne: false
             referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulados_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
             referencedColumns: ["id"]
           },
         ]

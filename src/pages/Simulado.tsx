@@ -170,6 +170,7 @@ export default function Simulado() {
         user_id: user!.id, tipo: qtd === 60 ? "prova_completa" : "normal", quantidade: generatedQuestoes.length, total_questoes: generatedQuestoes.length,
         carreira_id: carreiraId || null, materia_id: materiaId || null, banca_id: bancaId || null,
         state_id: stateId || null, esfera_id: esferaId || null, area_id: areaId || null, modo,
+        topic_id: topicId || null,
       }).select().single();
       if (sErr) throw sErr;
 
