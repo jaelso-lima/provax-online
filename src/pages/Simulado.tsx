@@ -56,6 +56,8 @@ export default function Simulado() {
   const [anoConcurso, setAnoConcurso] = useState("");
   const [areaEnem, setAreaEnem] = useState("");
   const [anoEnem, setAnoEnem] = useState("");
+  const [topicId, setTopicId] = useState("");
+  const [topics, setTopics] = useState<any[]>([]);
 
   const [simuladoId, setSimuladoId] = useState<string | null>(null);
   const [questoes, setQuestoes] = useState<Questao[]>([]);
@@ -81,10 +83,20 @@ export default function Simulado() {
   // Cascading: área → matérias (via area_materias)
   useEffect(() => {
     setMateriaId("");
+    setTopicId("");
+    setTopics([]);
     if (!areaId) { setMaterias([]); return; }
     supabase.from("area_materias").select("materia_id, materias(id, nome)").eq("area_id", areaId)
       .then(({ data }) => { if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean)); });
   }, [areaId]);
+
+  // Load topics when materia selected (universidade)
+  useEffect(() => {
+    setTopicId("");
+    if (!materiaId || modo !== "universidade") { setTopics([]); return; }
+    supabase.from("topics").select("*").eq("materia_id", materiaId).order("nome")
+      .then(({ data }) => { if (data) setTopics(data); });
+  }, [materiaId, modo]);
 
   const custo = quantidade === "60" ? 0 : CUSTOS[quantidade] || 5;
   const isPremiumOnly = quantidade === "60" && profile?.plano !== "premium";
@@ -136,6 +148,7 @@ export default function Simulado() {
           ...bodyPayload,
           materia: materiaId || undefined,
           area: areaId || undefined,
+          topic: topicId || undefined,
         };
       } else {
         bodyPayload = { ...bodyPayload, area: ENEM_AREAS.find(a => a.id === areaEnem)?.nome, ano: anoEnem || undefined };
@@ -235,6 +248,7 @@ export default function Simulado() {
         </>) : modo === "universidade" ? (<>
           <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>Disciplina *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione a disciplina" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
+          {topics.length > 0 && (<div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>)}
         </>) : (<>
           <div className="space-y-2"><Label>Área do ENEM *</Label><Select value={areaEnem} onValueChange={setAreaEnem}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{ENEM_AREAS.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoEnem} onValueChange={setAnoEnem}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
