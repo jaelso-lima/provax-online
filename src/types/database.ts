@@ -80,6 +80,7 @@ export interface Concurso {
 
 export interface Questao {
   id: string;
+  curso_id: string | null;
   enunciado: string;
   alternativas: { letra: string; texto: string }[];
   resposta_correta: string;

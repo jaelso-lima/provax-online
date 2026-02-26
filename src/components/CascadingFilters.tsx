@@ -15,6 +15,7 @@ interface FilterValues {
   bancaId: string;
   carreiraId: string;
   ano: string;
+  cursoId: string;
 }
 
 interface CascadingFiltersProps {
@@ -31,7 +32,7 @@ const fadeIn = {
 
 export default function CascadingFilters({ modo, onFiltersChange }: CascadingFiltersProps) {
   const [filters, setFilters] = useState<FilterValues>({
-    areaId: "", materiaId: "", topicId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "",
+    areaId: "", materiaId: "", topicId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "", cursoId: "",
   });
 
   const [areas, setAreas] = useState<any[]>([]);
@@ -41,24 +42,42 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
   const [bancas, setBancas] = useState<any[]>([]);
   const [carreiras, setCarreiras] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
+  const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isConcurso = modo === "concurso";
+  const isUniversidade = modo === "universidade";
 
-  // Load areas on mount
+  // Load areas (concurso/enem) or cursos (universidade) on mount
   useEffect(() => {
     setLoading(true);
-    const modoFilter = modo === "universidade" ? "universidade" : modo;
-    supabase.from("areas").select("*").eq("modo", modoFilter).order("nome")
-      .then(({ data }) => { if (data) setAreas(data); setLoading(false); });
+    if (isUniversidade) {
+      supabase.from("cursos").select("*").order("nome")
+        .then(({ data }) => { if (data) setCursos(data); setLoading(false); });
+    } else {
+      supabase.from("areas").select("*").eq("modo", modo).order("nome")
+        .then(({ data }) => { if (data) setAreas(data); setLoading(false); });
+    }
   }, [modo]);
 
-  // Cascading: area → materias
+  // Cascading: area → materias (concurso/enem)
   useEffect(() => {
+    if (isUniversidade) return;
     if (!filters.areaId) { setMaterias([]); return; }
     supabase.from("area_materias").select("materia_id, materias(id, nome)").eq("area_id", filters.areaId)
       .then(({ data }) => {
         if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean).sort((a: any, b: any) => a.nome.localeCompare(b.nome)));
       });
   }, [filters.areaId]);
+
+  // Cascading: curso → disciplinas (universidade)
+  useEffect(() => {
+    if (!isUniversidade) return;
+    if (!filters.cursoId) { setMaterias([]); return; }
+    supabase.from("curso_materias").select("materia_id, materias(id, nome)").eq("curso_id", filters.cursoId)
+      .then(({ data }) => {
+        if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean).sort((a: any, b: any) => a.nome.localeCompare(b.nome)));
+      });
+  }, [filters.cursoId]);
 
   // Load topics when materia selected (universidade mode)
   useEffect(() => {
@@ -94,7 +113,7 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
       // Reset downstream filters
       const order: (keyof FilterValues)[] = modo === "concurso"
         ? ["areaId", "materiaId", "stateId", "esferaId", "carreiraId", "bancaId", "ano"]
-        : ["areaId", "materiaId", "topicId"];
+        : ["cursoId", "materiaId", "topicId"];
       const idx = order.indexOf(key);
       for (let i = idx + 1; i < order.length; i++) next[order[i]] = "";
       return next;
@@ -102,42 +121,52 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
   };
 
   const resetFilters = () => {
-    setFilters({ areaId: "", materiaId: "", topicId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "" });
+    setFilters({ areaId: "", materiaId: "", topicId: "", stateId: "", esferaId: "", bancaId: "", carreiraId: "", ano: "", cursoId: "" });
   };
 
   if (loading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
 
-  const isConcurso = modo === "concurso";
-  const isUniversidade = modo === "universidade";
   const anos = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-end">
-        {filters.areaId && (
+        {(filters.areaId || filters.cursoId) && (
           <Button variant="ghost" size="sm" onClick={resetFilters} className="h-7 gap-1 text-xs text-muted-foreground">
             <RotateCcw className="h-3 w-3" /> Limpar filtros
           </Button>
         )}
       </div>
 
-      {/* Step 1: Área */}
+      {/* Step 1: Curso (universidade) ou Área (concurso/enem) */}
       <motion.div {...fadeIn}>
         <div className="space-y-1.5">
-          <Label className="text-xs">Área {isConcurso ? "*" : "*"}</Label>
-          <Select value={filters.areaId} onValueChange={v => updateFilter("areaId", v)}>
-            <SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger>
-            <SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent>
-          </Select>
+          {isUniversidade ? (
+            <>
+              <Label className="text-xs">Curso *</Label>
+              <Select value={filters.cursoId} onValueChange={v => updateFilter("cursoId", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione o curso" /></SelectTrigger>
+                <SelectContent>{cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent>
+              </Select>
+            </>
+          ) : (
+            <>
+              <Label className="text-xs">Área *</Label>
+              <Select value={filters.areaId} onValueChange={v => updateFilter("areaId", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger>
+                <SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent>
+              </Select>
+            </>
+          )}
         </div>
       </motion.div>
 
-      {/* Step 2: Matéria */}
+      {/* Step 2: Disciplina / Matéria */}
       <AnimatePresence>
-        {filters.areaId && materias.length > 0 && (
+        {((isUniversidade ? filters.cursoId : filters.areaId) && materias.length > 0) && (
           <motion.div key="materia" {...fadeIn}>
             <div className="space-y-1.5">
-              <Label className="text-xs">Disciplina / Matéria *</Label>
+              <Label className="text-xs">{isUniversidade ? "Disciplina *" : "Disciplina / Matéria *"}</Label>
               <Select value={filters.materiaId} onValueChange={v => updateFilter("materiaId", v)}>
                 <SelectTrigger><SelectValue placeholder="Selecione a disciplina" /></SelectTrigger>
                 <SelectContent>{materias.map((m: any) => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent>

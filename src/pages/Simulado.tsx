@@ -46,6 +46,8 @@ export default function Simulado() {
   const [states, setStates] = useState<any[]>([]);
   const [esferas, setEsferas] = useState<any[]>([]);
   const [areas, setAreas] = useState<any[]>([]);
+  const [cursos, setCursos] = useState<any[]>([]);
+  const [cursoId, setCursoId] = useState("");
 
   const [carreiraId, setCarreiraId] = useState("");
   const [materiaId, setMateriaId] = useState("");
@@ -76,19 +78,31 @@ export default function Simulado() {
       supabase.from("esferas").select("*").order("nome").then(({ data }) => { if (data) setEsferas(data); });
       supabase.from("areas").select("*").eq("modo", "concurso").order("nome").then(({ data }) => { if (data) setAreas(data); });
     } else if (modo === "universidade") {
-      supabase.from("areas").select("*").eq("modo", "universidade").order("nome").then(({ data }) => { if (data) setAreas(data); });
+      supabase.from("cursos").select("*").order("nome").then(({ data }) => { if (data) setCursos(data); });
     }
   }, [modo]);
 
-  // Cascading: área → matérias (via area_materias)
+  // Cascading: área → matérias (via area_materias) — concurso
   useEffect(() => {
+    if (modo === "universidade") return;
     setMateriaId("");
     setTopicId("");
     setTopics([]);
     if (!areaId) { setMaterias([]); return; }
     supabase.from("area_materias").select("materia_id, materias(id, nome)").eq("area_id", areaId)
       .then(({ data }) => { if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean)); });
-  }, [areaId]);
+  }, [areaId, modo]);
+
+  // Cascading: curso → disciplinas (via curso_materias) — universidade
+  useEffect(() => {
+    if (modo !== "universidade") return;
+    setMateriaId("");
+    setTopicId("");
+    setTopics([]);
+    if (!cursoId) { setMaterias([]); return; }
+    supabase.from("curso_materias").select("materia_id, materias(id, nome)").eq("curso_id", cursoId)
+      .then(({ data }) => { if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean).sort((a: any, b: any) => a.nome.localeCompare(b.nome))); });
+  }, [cursoId, modo]);
 
   // Load topics when materia selected (universidade)
   useEffect(() => {
@@ -106,7 +120,7 @@ export default function Simulado() {
       if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
       if (!materiaId) { toast({ title: "Selecione a matéria", variant: "destructive" }); return false; }
     } else if (modo === "universidade") {
-      if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
+      if (!cursoId) { toast({ title: "Selecione o curso", variant: "destructive" }); return false; }
       if (!materiaId) { toast({ title: "Selecione a disciplina", variant: "destructive" }); return false; }
     } else {
       if (!areaEnem) { toast({ title: "Selecione a área do ENEM", variant: "destructive" }); return false; }
@@ -147,7 +161,7 @@ export default function Simulado() {
         bodyPayload = {
           ...bodyPayload,
           materia: materiaId || undefined,
-          area: areaId || undefined,
+          curso: cursoId || undefined,
           topic: topicId || undefined,
         };
       } else {
@@ -169,8 +183,8 @@ export default function Simulado() {
       const { data: sim, error: sErr } = await supabase.from("simulados").insert({
         user_id: user!.id, tipo: qtd === 60 ? "prova_completa" : "normal", quantidade: generatedQuestoes.length, total_questoes: generatedQuestoes.length,
         carreira_id: carreiraId || null, materia_id: materiaId || null, banca_id: bancaId || null,
-        state_id: stateId || null, esfera_id: esferaId || null, area_id: areaId || null, modo,
-        topic_id: topicId || null,
+        state_id: stateId || null, esfera_id: esferaId || null, area_id: modo !== "universidade" ? (areaId || null) : null, modo,
+        topic_id: topicId || null, curso_id: modo === "universidade" ? (cursoId || null) : null,
       }).select().single();
       if (sErr) throw sErr;
 
@@ -236,7 +250,7 @@ export default function Simulado() {
   return (
     <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg flex-1 py-8">
       <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : modo === "universidade" ? "🏛️ Simulado Universidade" : "🎯 Gerar Simulado"}</h1>
-      <p className="mb-4 text-sm text-muted-foreground">{modo === "universidade" ? "Selecione a área e disciplina para gerar questões universitárias." : "Selecione os filtros abaixo para gerar um simulado personalizado no padrão da sua banca."}</p>
+      <p className="mb-4 text-sm text-muted-foreground">{modo === "universidade" ? "Selecione o curso e disciplina para gerar questões universitárias." : "Selecione os filtros abaixo para gerar um simulado personalizado no padrão da sua banca."}</p>
       <Card><CardContent className="space-y-4 pt-6">
         {modo === "concurso" ? (<>
           <div className="space-y-2"><Label>Estado</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
@@ -247,8 +261,8 @@ export default function Simulado() {
           <div className="space-y-2"><Label>Banca</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoConcurso} onValueChange={setAnoConcurso}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
         </>) : modo === "universidade" ? (<>
-          <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
-          <div className="space-y-2"><Label>Disciplina *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione a disciplina" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-2"><Label>Curso *</Label><Select value={cursoId} onValueChange={setCursoId}><SelectTrigger><SelectValue placeholder="Selecione o curso" /></SelectTrigger><SelectContent>{cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-2"><Label>Disciplina *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!cursoId}><SelectTrigger><SelectValue placeholder={cursoId ? "Selecione a disciplina" : "Selecione o curso primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
           {topics.length > 0 && (<div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>)}
         </>) : (<>
           <div className="space-y-2"><Label>Área do ENEM *</Label><Select value={areaEnem} onValueChange={setAreaEnem}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{ENEM_AREAS.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>

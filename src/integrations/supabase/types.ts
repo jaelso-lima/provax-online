@@ -215,6 +215,60 @@ export type Database = {
           },
         ]
       }
+      curso_materias: {
+        Row: {
+          curso_id: string
+          id: string
+          materia_id: string
+        }
+        Insert: {
+          curso_id: string
+          id?: string
+          materia_id: string
+        }
+        Update: {
+          curso_id?: string
+          id?: string
+          materia_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curso_materias_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curso_materias_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cursos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       esferas: {
         Row: {
           created_at: string
@@ -366,6 +420,7 @@ export type Database = {
           banca_id: string | null
           concurso_id: string | null
           created_at: string
+          curso_id: string | null
           dificuldade: string
           enunciado: string
           esfera_id: string | null
@@ -386,6 +441,7 @@ export type Database = {
           banca_id?: string | null
           concurso_id?: string | null
           created_at?: string
+          curso_id?: string | null
           dificuldade?: string
           enunciado: string
           esfera_id?: string | null
@@ -406,6 +462,7 @@ export type Database = {
           banca_id?: string | null
           concurso_id?: string | null
           created_at?: string
+          curso_id?: string | null
           dificuldade?: string
           enunciado?: string
           esfera_id?: string | null
@@ -439,6 +496,13 @@ export type Database = {
             columns: ["concurso_id"]
             isOneToOne: false
             referencedRelation: "concursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questoes_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
             referencedColumns: ["id"]
           },
           {
@@ -679,6 +743,7 @@ export type Database = {
           banca_id: string | null
           carreira_id: string | null
           created_at: string
+          curso_id: string | null
           esfera_id: string | null
           finished_at: string | null
           id: string
@@ -700,6 +765,7 @@ export type Database = {
           banca_id?: string | null
           carreira_id?: string | null
           created_at?: string
+          curso_id?: string | null
           esfera_id?: string | null
           finished_at?: string | null
           id?: string
@@ -721,6 +787,7 @@ export type Database = {
           banca_id?: string | null
           carreira_id?: string | null
           created_at?: string
+          curso_id?: string | null
           esfera_id?: string | null
           finished_at?: string | null
           id?: string
@@ -756,6 +823,13 @@ export type Database = {
             columns: ["carreira_id"]
             isOneToOne: false
             referencedRelation: "carreiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulados_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
             referencedColumns: ["id"]
           },
           {
