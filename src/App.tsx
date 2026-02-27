@@ -14,6 +14,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Simulado from "./pages/Simulado";
+import SimuladoResultado from "./pages/SimuladoResultado";
 import Redacao from "./pages/Redacao";
 import ComprarMoedas from "./pages/ComprarMoedas";
 import Planos from "./pages/Planos";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/simulado" element={<ProtectedRoute><Simulado /></ProtectedRoute>} />
+            <Route path="/simulado/resultado/:id" element={<ProtectedRoute><SimuladoResultado /></ProtectedRoute>} />
             <Route path="/redacao" element={<ProtectedRoute><Redacao /></ProtectedRoute>} />
             <Route path="/comprar-moedas" element={<ProtectedRoute><ComprarMoedas /></ProtectedRoute>} />
             <Route path="/planos" element={<ProtectedRoute><Planos /></ProtectedRoute>} />

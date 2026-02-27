@@ -299,7 +299,42 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {recentSimulados.length > 0 && (<><h2 className="mb-4 font-display text-xl font-semibold">Histórico Recente</h2><div className="space-y-3">{recentSimulados.map((s: any) => (<Card key={s.id} className="transition-shadow hover:shadow-md"><CardHeader className="flex-row items-center justify-between py-3"><div><CardTitle className="text-sm">{s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões</CardTitle><CardDescription>{new Date(s.created_at).toLocaleDateString("pt-BR")} • {s.status === "finalizado" ? `Nota: ${s.pontuacao}%` : "Em andamento"}</CardDescription></div><History className="h-4 w-4 text-muted-foreground" /></CardHeader></Card>))}</div></>)}
+        {recentSimulados.length > 0 && (
+          <>
+            <h2 className="mb-4 font-display text-xl font-semibold">Histórico Recente</h2>
+            <div className="space-y-3">
+              {recentSimulados.map((s: any) => (
+                <Card
+                  key={s.id}
+                  className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+                  onClick={() => navigate(`/simulado/resultado/${s.id}`)}
+                >
+                  <CardHeader className="flex-row items-center justify-between py-3">
+                    <div>
+                      <CardTitle className="text-sm">
+                        {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
+                      </CardTitle>
+                      <CardDescription>
+                        {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
+                        {s.status === "finalizado" ? (
+                          <span className="font-medium text-primary">Nota: {s.pontuacao}% — Acertos: {s.acertos}/{s.total_questoes}</span>
+                        ) : (
+                          <span className="text-yellow-600 dark:text-yellow-400">Em andamento</span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={s.status === "finalizado" ? "default" : "secondary"}>
+                        {s.status === "finalizado" ? "Ver resultado" : "Em andamento"}
+                      </Badge>
+                      <History className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </main>
       <AppFooter />
     </div>
