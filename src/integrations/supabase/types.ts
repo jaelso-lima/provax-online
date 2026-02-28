@@ -1129,6 +1129,21 @@ export type Database = {
         Args: { _user_id: string; _xp_ganho: number }
         Returns: Json
       }
+      admin_cancel_subscription: {
+        Args: { _target_user_id: string }
+        Returns: boolean
+      }
+      admin_list_users: {
+        Args: { _limit?: number; _offset?: number; _search?: string }
+        Returns: Json
+      }
+      admin_update_role: {
+        Args: {
+          _new_role: Database["public"]["Enums"]["app_role"]
+          _target_user_id: string
+        }
+        Returns: boolean
+      }
       atualizar_plano: {
         Args: { _novo_plano: string; _user_id: string }
         Returns: boolean
@@ -1163,6 +1178,7 @@ export type Database = {
         Args: { _descricao: string; _user_id: string; _valor: number }
         Returns: boolean
       }
+      get_admin_stats: { Args: never; Returns: Json }
       get_ranking: {
         Args: never
         Returns: {
@@ -1183,6 +1199,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_owner: { Args: never; Returns: boolean }
+      reactivate_account: {
+        Args: { _target_user_id: string }
+        Returns: boolean
+      }
       reset_daily_credits: { Args: { _user_id: string }; Returns: Json }
       suspend_account: {
         Args: { _reason: string; _target_user_id: string }
