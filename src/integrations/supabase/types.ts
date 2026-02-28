@@ -1133,6 +1133,10 @@ export type Database = {
         Args: { _target_user_id: string }
         Returns: boolean
       }
+      admin_grant_plan: {
+        Args: { _periodo?: string; _plan_slug: string; _target_user_id: string }
+        Returns: boolean
+      }
       admin_list_users: {
         Args: { _limit?: number; _offset?: number; _search?: string }
         Returns: Json
