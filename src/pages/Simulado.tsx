@@ -22,6 +22,7 @@ const ENEM_AREAS = [
 ];
 
 interface Questao {
+  id?: string;
   enunciado: string;
   alternativas: { letra: string; texto: string }[];
   resposta_correta: string;
@@ -188,7 +189,29 @@ export default function Simulado() {
       }).select().single();
       if (sErr) throw sErr;
 
-      setSimuladoId(sim.id); setQuestoes(generatedQuestoes); setCurrentIdx(0); setRespostas({});
+      // Save questions to DB for future review
+      const questoesInsert = generatedQuestoes.map(q => ({
+        enunciado: q.enunciado,
+        alternativas: q.alternativas as any,
+        resposta_correta: q.resposta_correta,
+        explicacao: q.explicacao || null,
+        modo,
+        materia_id: materiaId || null,
+        area_id: modo !== "universidade" ? (areaId || null) : null,
+        curso_id: modo === "universidade" ? (cursoId || null) : null,
+        topic_id: topicId || null,
+        banca_id: bancaId || null,
+        source: "ai_generated",
+      }));
+      const { data: savedQuestoes, error: qErr } = await supabase.from("questoes").insert(questoesInsert).select("id");
+      if (qErr) console.error("Erro ao salvar questões:", qErr);
+
+      const questoesComId = generatedQuestoes.map((q, i) => ({
+        ...q,
+        id: savedQuestoes?.[i]?.id || undefined,
+      }));
+
+      setSimuladoId(sim.id); setQuestoes(questoesComId); setCurrentIdx(0); setRespostas({});
       await refreshProfile();
       toast({ title: `Simulado gerado! ${generatedQuestoes.length} questões.` });
     } catch (err: any) { toast({ title: "Erro ao gerar simulado", description: err.message, variant: "destructive" }); }
@@ -210,6 +233,19 @@ export default function Simulado() {
       const xpGanho = questoes.length * 2 + acertos * 3;
       await supabase.rpc("adicionar_xp", { _user_id: user!.id, _xp_ganho: xpGanho });
       await supabase.from("simulados").update({ pontuacao: nota, acertos, tempo_gasto: tempoTotal, status: "finalizado", finished_at: new Date().toISOString() }).eq("id", simuladoId!);
+
+      // Save respostas to DB for review
+      const respostasInsert = questoes.map((q, i) => ({
+        simulado_id: simuladoId!,
+        questao_id: q.id!,
+        resposta_usuario: respostas[i] || null,
+        acertou: respostas[i] === q.resposta_correta,
+        tempo_resposta: 0,
+      })).filter(r => r.questao_id);
+      if (respostasInsert.length > 0) {
+        await supabase.from("respostas").insert(respostasInsert);
+      }
+
       await refreshProfile();
 
       setResultado({ nota, acertos, total: questoes.length, bonus, xpGanho, tempoTotal, tempoMedioPorQuestao: Math.round(tempoTotal / questoes.length) });
