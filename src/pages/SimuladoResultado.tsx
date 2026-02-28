@@ -147,19 +147,20 @@ export default function SimuladoResultado() {
               {respostas.map((r: any, i: number) => {
                 const q = r.questoes;
                 if (!q) return null;
-                const acertou = r.acertou;
+                const acertou = r.acertou === true;
+                const naoRespondeu = !r.resposta_usuario;
                 const alternativas = Array.isArray(q.alternativas) ? q.alternativas : [];
 
                 return (
-                  <Card key={r.id} className={`border-l-4 ${acertou ? "border-l-accent" : "border-l-destructive"}`}>
+                  <Card key={r.id} className={`border-l-4 ${naoRespondeu ? "border-l-muted-foreground" : acertou ? "border-l-accent" : "border-l-destructive"}`}>
                     <CardContent className="pt-4 space-y-3">
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium leading-relaxed">
                           <span className="text-muted-foreground mr-2">{i + 1}.</span>
                           {q.enunciado}
                         </p>
-                        <Badge variant={acertou ? "default" : "destructive"} className="shrink-0">
-                          {acertou ? "Acertou" : "Errou"}
+                        <Badge variant={naoRespondeu ? "secondary" : acertou ? "default" : "destructive"} className="shrink-0">
+                          {naoRespondeu ? "Não respondeu" : acertou ? "Acertou" : "Errou"}
                         </Badge>
                       </div>
 
