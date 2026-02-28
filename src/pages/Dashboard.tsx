@@ -20,8 +20,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ totalSimulados: 0, notaMedia: 0, totalRedacoes: 0 });
   const [recentSimulados, setRecentSimulados] = useState<any[]>([]);
+  const [redacoes, setRedacoes] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [xpTransactions, setXpTransactions] = useState<any[]>([]);
+  const [historicoTab, setHistoricoTab] = useState<"concurso" | "universidade" | "enem" | "redacao">("concurso");
   const [modo, setModo] = useState<Modo>(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("provax_modo") as Modo) || null;
@@ -33,8 +35,8 @@ export default function Dashboard() {
     if (!user) return;
     const load = async () => {
       const [{ data: sims }, { data: reds }, { data: refs }, { data: xpTx }] = await Promise.all([
-        supabase.from("simulados").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
-        supabase.from("redacoes").select("id").eq("user_id", user.id),
+        supabase.from("simulados").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
+        supabase.from("redacoes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
         supabase.from("referrals").select("*").eq("referrer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("xp_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
       ]);
@@ -47,6 +49,7 @@ export default function Dashboard() {
           totalRedacoes: reds?.length ?? 0,
         });
       }
+      if (reds) setRedacoes(reds);
       if (refs) setReferrals(refs);
       if (xpTx) setXpTransactions(xpTx);
     };
@@ -299,42 +302,101 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {recentSimulados.length > 0 && (
-          <>
-            <h2 className="mb-4 font-display text-xl font-semibold">Histórico Recente</h2>
-            <div className="space-y-3">
-              {recentSimulados.map((s: any) => (
-                <Card
-                  key={s.id}
-                  className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
-                  onClick={() => navigate(`/simulado/resultado/${s.id}`)}
-                >
-                  <CardHeader className="flex-row items-center justify-between py-3">
-                    <div>
-                      <CardTitle className="text-sm">
-                        {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
-                      </CardTitle>
-                      <CardDescription>
-                        {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
-                        {s.status === "finalizado" ? (
-                          <span className="font-medium text-primary">Nota: {s.pontuacao}% — Acertos: {s.acertos}/{s.total_questoes}</span>
-                        ) : (
-                          <span className="text-yellow-600 dark:text-yellow-400">Em andamento</span>
-                        )}
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={s.status === "finalizado" ? "default" : "secondary"}>
-                        {s.status === "finalizado" ? "Ver resultado" : "Em andamento"}
+        <h2 className="mb-4 font-display text-xl font-semibold">📚 Histórico de Estudos</h2>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {([
+            { key: "concurso" as const, label: "🎯 Concurso", },
+            { key: "universidade" as const, label: "🏛️ Universidade" },
+            { key: "enem" as const, label: "🎓 ENEM" },
+            { key: "redacao" as const, label: "✍️ Redação" },
+          ]).map(tab => (
+            <Button
+              key={tab.key}
+              variant={historicoTab === tab.key ? "default" : "outline"}
+              size="sm"
+              onClick={() => setHistoricoTab(tab.key)}
+            >
+              {tab.label}
+            </Button>
+          ))}
+        </div>
+
+        {historicoTab !== "redacao" ? (
+          (() => {
+            const filtered = recentSimulados.filter((s: any) => s.modo === historicoTab);
+            if (filtered.length === 0) return (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">
+                Nenhum simulado encontrado nesta categoria. Comece agora!
+              </CardContent></Card>
+            );
+            return (
+              <div className="space-y-3">
+                {filtered.map((s: any) => (
+                  <Card
+                    key={s.id}
+                    className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+                    onClick={() => navigate(`/simulado/resultado/${s.id}`)}
+                  >
+                    <CardHeader className="flex-row items-center justify-between py-3">
+                      <div>
+                        <CardTitle className="text-sm">
+                          {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
+                        </CardTitle>
+                        <CardDescription>
+                          {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
+                          {s.status === "finalizado" ? (
+                            <span className="font-medium text-primary">Nota: {s.pontuacao}% — Acertos: {s.acertos}/{s.total_questoes}</span>
+                          ) : (
+                            <span className="text-warning">Em andamento</span>
+                          )}
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={s.status === "finalizado" ? "default" : "secondary"}>
+                          {s.status === "finalizado" ? "Ver correção" : "Em andamento"}
+                        </Badge>
+                        <History className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()
+        ) : (
+          (() => {
+            if (redacoes.length === 0) return (
+              <Card><CardContent className="py-8 text-center text-muted-foreground">
+                Nenhuma redação encontrada. Escreva sua primeira!
+              </CardContent></Card>
+            );
+            return (
+              <div className="space-y-3">
+                {redacoes.map((r: any) => (
+                  <Card key={r.id} className="transition-all hover:shadow-md">
+                    <CardHeader className="flex-row items-center justify-between py-3">
+                      <div>
+                        <CardTitle className="text-sm">{r.tema}</CardTitle>
+                        <CardDescription>
+                          {new Date(r.created_at).toLocaleDateString("pt-BR")} •{" "}
+                          {r.status === "corrigida" && r.nota != null ? (
+                            <span className="font-medium text-primary">Nota: {r.nota}/1000</span>
+                          ) : (
+                            <span className="text-warning">{r.status === "pendente" ? "Aguardando correção" : r.status}</span>
+                          )}
+                        </CardDescription>
+                      </div>
+                      <Badge variant={r.status === "corrigida" ? "default" : "secondary"}>
+                        {r.status === "corrigida" ? "Corrigida" : "Pendente"}
                       </Badge>
-                      <History className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          </>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()
         )}
+
       </main>
       <AppFooter />
     </div>
