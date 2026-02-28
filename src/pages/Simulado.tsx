@@ -230,8 +230,9 @@ export default function Simulado() {
       if (nota >= 90) bonus = 10; else if (nota >= 80) bonus = 5;
       if (bonus > 0) await supabase.rpc("adicionar_moedas", { _user_id: user!.id, _valor: bonus, _descricao: `Bônus nota ${nota}%` });
 
-      const xpGanho = questoes.length * 2 + acertos * 3;
-      await supabase.rpc("adicionar_xp", { _user_id: user!.id, _xp_ganho: xpGanho });
+      // 1 XP por questão acertada
+      const xpGanho = acertos;
+      if (xpGanho > 0) await supabase.rpc("adicionar_xp", { _user_id: user!.id, _xp_ganho: xpGanho });
       await supabase.from("simulados").update({ pontuacao: nota, acertos, tempo_gasto: tempoTotal, status: "finalizado", finished_at: new Date().toISOString() }).eq("id", simuladoId!);
 
       // Save respostas to DB for review
