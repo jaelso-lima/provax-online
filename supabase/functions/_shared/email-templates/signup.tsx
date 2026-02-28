@@ -31,7 +31,7 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>Confirme seu email para começar a usar o ProvaX</Preview>
+    <Preview>Confirme seu cadastro no ProvaX</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
@@ -42,28 +42,28 @@ export const SignupEmail = ({
           </Text>
         </Section>
         <Hr style={divider} />
-        <Heading style={h1}>Confirme seu email</Heading>
+        <Heading style={h1}>Confirme seu cadastro</Heading>
         <Text style={text}>
-          Bem-vindo ao{' '}
+          Olá! Você está a um passo de começar a estudar com o{' '}
           <Link href={siteUrl} style={link}>
             <strong>ProvaX</strong>
           </Link>
-          ! Estamos felizes em ter você conosco.
+          .
         </Text>
         <Text style={text}>
           Para ativar sua conta ({recipient}), clique no botão abaixo:
         </Text>
         <Section style={{ textAlign: 'center' as const, margin: '30px 0' }}>
           <Button style={button} href={confirmationUrl}>
-            Confirmar Email
+            Confirmar meu cadastro
           </Button>
         </Section>
         <Text style={hint}>
-          Você receberá 30 moedas grátis ao confirmar sua conta.
+          Sua conta será ativada com o plano Gratuito (10 questões/dia).
         </Text>
         <Hr style={divider} />
         <Text style={footer}>
-          Se você não criou uma conta no ProvaX, ignore este email.
+          Se você não solicitou este cadastro, ignore este email com segurança.
         </Text>
       </Container>
     </Body>

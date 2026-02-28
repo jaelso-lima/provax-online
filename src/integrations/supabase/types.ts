@@ -269,6 +269,30 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_usage: {
+        Row: {
+          created_at: string
+          id: string
+          questoes_geradas: number
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          questoes_geradas?: number
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          questoes_geradas?: number
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       esferas: {
         Row: {
           created_at: string
@@ -358,6 +382,74 @@ export type Database = {
           tipo?: string
           user_id?: string
           valor?: number
+        }
+        Relationships: []
+      }
+      plan_features: {
+        Row: {
+          enabled: boolean
+          feature: string
+          id: string
+          plan_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          feature: string
+          id?: string
+          plan_id: string
+        }
+        Update: {
+          enabled?: boolean
+          feature?: string
+          id?: string
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_features_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          limite_diario_questoes: number
+          nome: string
+          preco_anual: number | null
+          preco_mensal: number | null
+          preco_semestral: number | null
+          slug: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          limite_diario_questoes?: number
+          nome: string
+          preco_anual?: number | null
+          preco_mensal?: number | null
+          preco_semestral?: number | null
+          slug: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          limite_diario_questoes?: number
+          nome?: string
+          preco_anual?: number | null
+          preco_mensal?: number | null
+          preco_semestral?: number | null
+          slug?: string
         }
         Relationships: []
       }
@@ -886,6 +978,56 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          payment_gateway_id: string | null
+          periodo: string
+          plan_id: string
+          started_at: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          payment_gateway_id?: string | null
+          periodo?: string
+          plan_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          payment_gateway_id?: string | null
+          periodo?: string
+          plan_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       topics: {
         Row: {
           created_at: string
@@ -992,6 +1134,7 @@ export type Database = {
         Args: { _reason: string; _referral_id: string }
         Returns: boolean
       }
+      check_daily_limit: { Args: { _user_id: string }; Returns: Json }
       check_rate_limit: {
         Args: {
           _action: string
@@ -1030,6 +1173,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      incrementar_uso_diario: {
+        Args: { _quantidade: number; _user_id: string }
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
