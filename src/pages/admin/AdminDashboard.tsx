@@ -129,7 +129,7 @@ export default function AdminDashboard() {
           ) : (
             <>
               {/* Partner metrics */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
@@ -152,6 +152,19 @@ export default function AdminDashboard() {
                       <div>
                         <p className="text-2xl font-bold">{pd?.total_users ?? "—"}</p>
                         <p className="text-xs text-muted-foreground">Total Usuários</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{stats?.paying_users ?? 0}</p>
+                        <p className="text-xs text-muted-foreground">Pagantes Ativos</p>
                       </div>
                     </div>
                   </CardContent>
@@ -183,6 +196,31 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Assinantes por plano/período */}
+              {subsPlanData.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-primary" />
+                      Assinantes Ativos por Plano
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {subsPlanData.map((item, i) => (
+                        <div key={item.name} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold">{item.value} {item.value === 1 ? "usuário" : "usuários"}</p>
+                            <p className="text-xs text-muted-foreground truncate">{item.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Download contract */}
               {partnerContract && (
