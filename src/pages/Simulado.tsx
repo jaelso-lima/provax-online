@@ -96,26 +96,26 @@ export default function Simulado() {
           return;
         }
 
-        // Load existing respostas
+        // Load existing respostas with questoes
         const { data: existingRespostas } = await supabase
           .from("respostas")
           .select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao)")
           .eq("simulado_id", continuarId)
           .order("created_at");
 
-        // Load all questoes for this simulado (via respostas)
-        // If we have saved respostas, use them; otherwise load questoes directly
         let allQuestoes: Questao[] = [];
         const savedRespostas: Record<number, string> = {};
 
         if (existingRespostas && existingRespostas.length > 0) {
-          allQuestoes = existingRespostas.map((r: any) => ({
-            id: r.questoes?.id,
-            enunciado: r.questoes?.enunciado || "",
-            alternativas: Array.isArray(r.questoes?.alternativas) ? r.questoes.alternativas : [],
-            resposta_correta: r.questoes?.resposta_correta || "",
-            explicacao: r.questoes?.explicacao,
-          })).filter((q: Questao) => q.id);
+          allQuestoes = existingRespostas
+            .map((r: any) => ({
+              id: r.questoes?.id,
+              enunciado: r.questoes?.enunciado || "",
+              alternativas: Array.isArray(r.questoes?.alternativas) ? r.questoes.alternativas : [],
+              resposta_correta: r.questoes?.resposta_correta || "",
+              explicacao: r.questoes?.explicacao,
+            }))
+            .filter((q: Questao) => q.id && q.enunciado);
 
           existingRespostas.forEach((r: any, i: number) => {
             if (r.resposta_usuario) {
@@ -125,8 +125,19 @@ export default function Simulado() {
         }
 
         if (allQuestoes.length === 0) {
-          toast({ title: "Questões não encontradas para este simulado", variant: "destructive" });
-          navigate("/dashboard");
+          // Legacy simulado without saved questions — can't resume, mark as abandoned
+          toast({ 
+            title: "Simulado sem questões salvas", 
+            description: "Este simulado é antigo e não possui questões vinculadas. Ele será arquivado. Gere um novo simulado.", 
+            variant: "destructive" 
+          });
+          // Mark as finalizado so it doesn't keep showing
+          await supabase.from("simulados").update({ 
+            status: "finalizado", 
+            finished_at: new Date().toISOString(),
+            pontuacao: 0, acertos: 0 
+          }).eq("id", continuarId);
+          navigate(`/simulado?modo=${sim.modo}`);
           return;
         }
 
@@ -138,9 +149,9 @@ export default function Simulado() {
 
         // Go to first unanswered question
         const answeredCount = Object.keys(savedRespostas).length;
-        const resumeIdx = sim.ultima_questao_respondida != null && sim.ultima_questao_respondida > 0
-          ? Math.min(sim.ultima_questao_respondida, allQuestoes.length - 1)
-          : Math.min(answeredCount, allQuestoes.length - 1);
+        const resumeIdx = answeredCount < allQuestoes.length
+          ? answeredCount
+          : allQuestoes.length - 1;
         setCurrentIdx(resumeIdx);
 
         toast({ title: "Simulado retomado! Continue de onde parou." });
@@ -167,15 +178,21 @@ export default function Simulado() {
     return () => clearInterval(interval);
   }, [simuladoId, respostas, resultado, startTime, tempoAcumulado]);
 
-  // Save progress on answer change
+  // Save progress on answer change — persist IMMEDIATELY to DB
   const handleAnswer = async (letra: string) => {
     const newRespostas = { ...respostas, [currentIdx]: letra };
     setRespostas(newRespostas);
 
-    // Update resposta in DB if resuming (questao already saved)
+    // Persist answer to respostas table immediately
     if (simuladoId && questoes[currentIdx]?.id) {
+      const q = questoes[currentIdx];
+      await supabase.from("respostas").update({
+        resposta_usuario: letra,
+        acertou: letra === q.resposta_correta,
+      }).eq("simulado_id", simuladoId).eq("questao_id", q.id);
+
+      // Update progress counter
       const respondidas = Object.keys(newRespostas).length;
-      // Update ultima_questao_respondida
       await supabase.from("simulados").update({
         ultima_questao_respondida: respondidas,
       }).eq("id", simuladoId);
@@ -361,23 +378,11 @@ export default function Simulado() {
 
   const handleSairSalvando = async () => {
     setShowConfirmSair(false);
-    // Save current progress before leaving
+    // Answers are already saved in real-time via handleAnswer
+    // Just update the time
     if (simuladoId) {
       const respondidas = Object.keys(respostas).length;
       const tempoTotal = tempoAcumulado + Math.round((Date.now() - startTime) / 1000);
-
-      // Update respostas in DB
-      for (const [idxStr, letra] of Object.entries(respostas)) {
-        const idx = parseInt(idxStr);
-        const q = questoes[idx];
-        if (q?.id) {
-          await supabase.from("respostas").update({
-            resposta_usuario: letra,
-            acertou: letra === q.resposta_correta,
-          }).eq("simulado_id", simuladoId).eq("questao_id", q.id);
-        }
-      }
-
       await supabase.from("simulados").update({
         ultima_questao_respondida: respondidas,
         tempo_gasto: tempoTotal,
