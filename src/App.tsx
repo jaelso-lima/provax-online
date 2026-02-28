@@ -13,6 +13,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminPlans from "./pages/admin/AdminPlans";
 import AdminBilling from "./pages/admin/AdminBilling";
+import AdminExpenses from "./pages/admin/AdminExpenses";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
             <Route path="/admin/plans" element={<AdminRoute><AdminPlans /></AdminRoute>} />
             <Route path="/admin/billing" element={<AdminRoute><AdminBilling /></AdminRoute>} />
+            <Route path="/admin/expenses" element={<AdminRoute><AdminExpenses /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatProfessor />

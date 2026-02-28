@@ -311,6 +311,42 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          categoria: string
+          created_at: string
+          created_by: string
+          data: string
+          descricao: string
+          id: string
+          observacao: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          created_by: string
+          data?: string
+          descricao: string
+          id?: string
+          observacao?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          created_by?: string
+          data?: string
+          descricao?: string
+          id?: string
+          observacao?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -957,6 +993,33 @@ export type Database = {
           },
         ]
       }
+      site_content: {
+        Row: {
+          chave: string
+          id: string
+          tipo: string
+          updated_at: string
+          updated_by: string | null
+          valor: string
+        }
+        Insert: {
+          chave: string
+          id?: string
+          tipo?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: string
+        }
+        Update: {
+          chave?: string
+          id?: string
+          tipo?: string
+          updated_at?: string
+          updated_by?: string | null
+          valor?: string
+        }
+        Relationships: []
+      }
       states: {
         Row: {
           created_at: string
@@ -1182,7 +1245,9 @@ export type Database = {
         Args: { _descricao: string; _user_id: string; _valor: number }
         Returns: boolean
       }
+      get_admin_financial_stats: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
+      get_partner_stats: { Args: never; Returns: Json }
       get_ranking: {
         Args: never
         Returns: {
@@ -1203,7 +1268,9 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_admin_or_partner: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_partner: { Args: never; Returns: boolean }
       reactivate_account: {
         Args: { _target_user_id: string }
         Returns: boolean
