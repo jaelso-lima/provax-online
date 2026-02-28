@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import { Users, BookOpen, FileText, TrendingUp, Percent, PenTool } from "lucide-react";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
 
 const COLORS = [
@@ -28,7 +28,21 @@ export default function AdminDashboard() {
     enabled: isAdmin || isPartner,
   });
 
-  // Fetch recent signups for growth chart (admin only)
+  // Fetch active subscriptions with plan details (visible to admin & partner via RPC stats)
+  const { data: activeSubs } = useQuery({
+    queryKey: ["admin-active-subs-dashboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("periodo, plans(nome)")
+        .eq("status", "active");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  // Fetch recent signups for growth chart
   const { data: recentProfiles } = useQuery({
     queryKey: ["admin-recent-signups"],
     queryFn: async () => {
@@ -41,6 +55,19 @@ export default function AdminDashboard() {
     },
     enabled: isAdmin,
   });
+
+  const totalPaying = activeSubs?.length ?? 0;
+
+  // Group by plan+period
+  const subsByPlanPeriod = activeSubs?.reduce((acc: Record<string, number>, s) => {
+    const planName = (s.plans as any)?.nome || "Desconhecido";
+    const periodo = s.periodo === "mensal" ? "Mensal" : s.periodo === "semestral" ? "Semestral" : "Anual";
+    const key = `${planName} ${periodo}`;
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {}) ?? {};
+
+  const subsPlanData = Object.entries(subsByPlanPeriod).map(([name, value]) => ({ name, value }));
 
   const usersByPlan = stats?.users_by_plan
     ? Object.entries(stats.users_by_plan).map(([name, value]) => ({ name, value: value as number }))
@@ -84,7 +111,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -93,7 +120,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{isLoading ? "..." : stats?.total_users ?? 0}</p>
-                  <p className="text-xs text-muted-foreground">Total Usuários</p>
+                  <p className="text-xs text-muted-foreground">Cadastrados</p>
                 </div>
               </div>
             </CardContent>
@@ -102,11 +129,11 @@ export default function AdminDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-accent/10">
-                  <TrendingUp className="h-5 w-5 text-accent" />
+                  <CreditCard className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{isLoading ? "..." : stats?.active_users ?? 0}</p>
-                  <p className="text-xs text-muted-foreground">Ativos</p>
+                  <p className="text-2xl font-bold">{isLoading ? "..." : (isAdmin ? totalPaying : (stats?.active_users ?? 0))}</p>
+                  <p className="text-xs text-muted-foreground">Pagantes</p>
                 </div>
               </div>
             </CardContent>
@@ -154,9 +181,59 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Charts Row 1 */}
+        {/* Paying users breakdown */}
+        {isAdmin && subsPlanData.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Crown className="h-4 w-4 text-primary" />
+                Assinantes Ativos por Plano
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {subsPlanData.map((item, i) => (
+                  <div key={item.name} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{item.value} {item.value === 1 ? "usuário" : "usuários"}</p>
+                      <p className="text-xs text-muted-foreground truncate">{item.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* For partner: show plan breakdown from stats */}
+        {isPartner && usersByPlan.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Crown className="h-4 w-4 text-primary" />
+                Assinantes por Plano
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {usersByPlan.map((item, i) => (
+                  <div key={item.name} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <div>
+                      <p className="text-sm font-semibold">{item.value} {item.value === 1 ? "usuário" : "usuários"}</p>
+                      <p className="text-xs text-muted-foreground">{item.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Users by Plan */}
+          {/* Users by Plan Pie */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Distribuição por Plano</CardTitle>
