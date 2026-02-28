@@ -28,21 +28,7 @@ export default function AdminDashboard() {
     enabled: isAdmin || isPartner,
   });
 
-  // Fetch active subscriptions with plan details (visible to admin & partner via RPC stats)
-  const { data: activeSubs } = useQuery({
-    queryKey: ["admin-active-subs-dashboard"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscriptions")
-        .select("periodo, plans(nome)")
-        .eq("status", "active");
-      if (error) throw error;
-      return data;
-    },
-    enabled: isAdmin,
-  });
-
-  // Fetch recent signups for growth chart
+  // Fetch recent signups for growth chart (admin only)
   const { data: recentProfiles } = useQuery({
     queryKey: ["admin-recent-signups"],
     queryFn: async () => {
@@ -56,19 +42,6 @@ export default function AdminDashboard() {
     enabled: isAdmin,
   });
 
-  const totalPaying = activeSubs?.length ?? 0;
-
-  // Group by plan+period
-  const subsByPlanPeriod = activeSubs?.reduce((acc: Record<string, number>, s) => {
-    const planName = (s.plans as any)?.nome || "Desconhecido";
-    const periodo = s.periodo === "mensal" ? "Mensal" : s.periodo === "semestral" ? "Semestral" : "Anual";
-    const key = `${planName} ${periodo}`;
-    acc[key] = (acc[key] || 0) + 1;
-    return acc;
-  }, {}) ?? {};
-
-  const subsPlanData = Object.entries(subsByPlanPeriod).map(([name, value]) => ({ name, value }));
-
   const usersByPlan = stats?.users_by_plan
     ? Object.entries(stats.users_by_plan).map(([name, value]) => ({ name, value: value as number }))
     : [];
@@ -79,6 +52,13 @@ export default function AdminDashboard() {
         total: value as number,
       }))
     : [];
+
+  // Subs by plan+period from RPC
+  const subsByPlanPeriod: { plan_name: string; periodo: string; count: number }[] = stats?.subs_by_plan_period ?? [];
+  const subsPlanData = subsByPlanPeriod.map((s) => ({
+    name: `${s.plan_name} ${s.periodo === "mensal" ? "Mensal" : s.periodo === "semestral" ? "Semestral" : "Anual"}`,
+    value: s.count,
+  }));
 
   // Build monthly signup chart
   const signupChart = (() => {
@@ -132,7 +112,7 @@ export default function AdminDashboard() {
                   <CreditCard className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{isLoading ? "..." : (isAdmin ? totalPaying : (stats?.active_users ?? 0))}</p>
+                  <p className="text-2xl font-bold">{isLoading ? "..." : stats?.paying_users ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Pagantes</p>
                 </div>
               </div>
@@ -182,7 +162,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Paying users breakdown */}
-        {isAdmin && subsPlanData.length > 0 && (
+        {subsPlanData.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -198,31 +178,6 @@ export default function AdminDashboard() {
                     <div className="min-w-0">
                       <p className="text-sm font-semibold">{item.value} {item.value === 1 ? "usuário" : "usuários"}</p>
                       <p className="text-xs text-muted-foreground truncate">{item.name}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* For partner: show plan breakdown from stats */}
-        {isPartner && usersByPlan.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Crown className="h-4 w-4 text-primary" />
-                Assinantes por Plano
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {usersByPlan.map((item, i) => (
-                  <div key={item.name} className="flex items-center gap-3 p-3 rounded-lg border border-border">
-                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <div>
-                      <p className="text-sm font-semibold">{item.value} {item.value === 1 ? "usuário" : "usuários"}</p>
-                      <p className="text-xs text-muted-foreground">{item.name}</p>
                     </div>
                   </div>
                 ))}
