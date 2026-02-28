@@ -1196,6 +1196,7 @@ export type Database = {
         Args: { _target_user_id: string }
         Returns: boolean
       }
+      admin_delete_user: { Args: { _target_user_id: string }; Returns: boolean }
       admin_grant_plan: {
         Args: { _periodo?: string; _plan_slug: string; _target_user_id: string }
         Returns: boolean

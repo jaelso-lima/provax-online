@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Search, Ban, CheckCircle, XCircle, ChevronLeft, ChevronRight, Crown, Pencil } from "lucide-react";
+import { Search, Ban, CheckCircle, XCircle, ChevronLeft, ChevronRight, Crown, Pencil, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,7 +150,6 @@ export default function AdminUsers() {
 
   const editNameMutation = useMutation({
     mutationFn: async ({ userId, nome }: { userId: string; nome: string }) => {
-      // Admin can update profiles via bypass
       const { error } = await supabase.from("profiles").update({ nome }).eq("id", userId);
       if (error) throw error;
     },
@@ -160,6 +159,20 @@ export default function AdminUsers() {
       setEditUser(null);
     },
     onError: () => toast.error("Erro ao atualizar nome"),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.rpc("admin_delete_user", {
+        _target_user_id: userId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Usuário excluído permanentemente");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir usuário"),
   });
 
   const users = data?.users ?? [];
@@ -326,6 +339,33 @@ export default function AdminUsers() {
                           </AlertDialogContent>
                         </AlertDialog>
                       )}
+
+                      {/* Delete user */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-destructive border-destructive/30">
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                            Excluir
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir usuário permanentemente?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Todos os dados de <span className="font-semibold">{u.nome || u.email}</span> serão removidos permanentemente. Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => deleteUserMutation.mutate(u.id)}
+                            >
+                              Excluir Permanentemente
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>
