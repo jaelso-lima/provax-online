@@ -421,6 +421,139 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_contracts: {
+        Row: {
+          arquivo_pdf: string | null
+          created_at: string
+          criado_por: string
+          data_assinatura: string
+          hash_verificacao: string | null
+          id: string
+          ip_assinatura: string | null
+          partner_id: string
+          percentual_acordado: number
+          status: string
+          valor_investido: number
+          versao_contrato: number
+        }
+        Insert: {
+          arquivo_pdf?: string | null
+          created_at?: string
+          criado_por: string
+          data_assinatura?: string
+          hash_verificacao?: string | null
+          id?: string
+          ip_assinatura?: string | null
+          partner_id: string
+          percentual_acordado: number
+          status?: string
+          valor_investido?: number
+          versao_contrato?: number
+        }
+        Update: {
+          arquivo_pdf?: string | null
+          created_at?: string
+          criado_por?: string
+          data_assinatura?: string
+          hash_verificacao?: string | null
+          id?: string
+          ip_assinatura?: string | null
+          partner_id?: string
+          percentual_acordado?: number
+          status?: string
+          valor_investido?: number
+          versao_contrato?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_contracts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_profit_simulation: {
+        Row: {
+          created_at: string
+          criado_por: string
+          id: string
+          lucro_simulado: number
+          mes_referencia: string
+          partner_id: string
+          valor_proporcional: number
+        }
+        Insert: {
+          created_at?: string
+          criado_por: string
+          id?: string
+          lucro_simulado?: number
+          mes_referencia: string
+          partner_id: string
+          valor_proporcional?: number
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string
+          id?: string
+          lucro_simulado?: number
+          mes_referencia?: string
+          partner_id?: string
+          valor_proporcional?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_profit_simulation_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          bloqueado_para_edicao: boolean
+          created_at: string
+          criado_por: string
+          data_entrada: string
+          id: string
+          percentual_participacao: number
+          status: string
+          tipo_participacao: string
+          updated_at: string
+          user_id: string
+          valor_investido: number
+        }
+        Insert: {
+          bloqueado_para_edicao?: boolean
+          created_at?: string
+          criado_por: string
+          data_entrada?: string
+          id?: string
+          percentual_participacao?: number
+          status?: string
+          tipo_participacao?: string
+          updated_at?: string
+          user_id: string
+          valor_investido?: number
+        }
+        Update: {
+          bloqueado_para_edicao?: boolean
+          created_at?: string
+          criado_por?: string
+          data_entrada?: string
+          id?: string
+          percentual_participacao?: number
+          status?: string
+          tipo_participacao?: string
+          updated_at?: string
+          user_id?: string
+          valor_investido?: number
+        }
+        Relationships: []
+      }
       plan_features: {
         Row: {
           enabled: boolean
@@ -1248,6 +1381,7 @@ export type Database = {
       }
       get_admin_financial_stats: { Args: never; Returns: Json }
       get_admin_stats: { Args: never; Returns: Json }
+      get_partner_dashboard: { Args: { _user_id: string }; Returns: Json }
       get_partner_stats: { Args: never; Returns: Json }
       get_ranking: {
         Args: never
