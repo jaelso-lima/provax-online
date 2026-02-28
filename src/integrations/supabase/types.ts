@@ -849,6 +849,7 @@ export type Database = {
           tipo: string
           topic_id: string | null
           total_questoes: number | null
+          ultima_questao_respondida: number | null
           user_id: string
         }
         Insert: {
@@ -871,6 +872,7 @@ export type Database = {
           tipo?: string
           topic_id?: string | null
           total_questoes?: number | null
+          ultima_questao_respondida?: number | null
           user_id: string
         }
         Update: {
@@ -893,6 +895,7 @@ export type Database = {
           tipo?: string
           topic_id?: string | null
           total_questoes?: number | null
+          ultima_questao_respondida?: number | null
           user_id?: string
         }
         Relationships: [
