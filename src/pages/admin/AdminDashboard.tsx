@@ -1,10 +1,13 @@
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import { Users, BookOpen, PenTool, Percent, CreditCard, Crown } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
+import { generateContractPDF } from "@/lib/contractPdf";
 
 const COLORS = [
   "hsl(245, 58%, 51%)",
@@ -16,7 +19,9 @@ const COLORS = [
 
 export default function AdminDashboard() {
   const { isAdmin, isPartner } = useAdminRole();
+  const { user } = useAuth();
 
+  // Admin stats
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-dashboard-stats", isPartner],
     queryFn: async () => {
@@ -28,7 +33,33 @@ export default function AdminDashboard() {
     enabled: isAdmin || isPartner,
   });
 
-  // Fetch recent signups for growth chart (admin only)
+  // Partner-specific: get restricted dashboard data
+  const { data: partnerDash } = useQuery({
+    queryKey: ["partner-dashboard", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_partner_dashboard", { _user_id: user!.id });
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: isPartner && !!user,
+  });
+
+  // Partner's own contract for download
+  const { data: partnerContract } = useQuery({
+    queryKey: ["partner-own-contract", user?.id],
+    queryFn: async () => {
+      const { data: partner } = await supabase
+        .from("partners")
+        .select("*, profiles:user_id(nome, email)")
+        .eq("user_id", user!.id)
+        .eq("status", "ativo")
+        .single();
+      return partner;
+    },
+    enabled: isPartner && !!user,
+  });
+
+  // Recent signups for growth chart (admin only)
   const { data: recentProfiles } = useQuery({
     queryKey: ["admin-recent-signups"],
     queryFn: async () => {
@@ -53,14 +84,12 @@ export default function AdminDashboard() {
       }))
     : [];
 
-  // Subs by plan+period from RPC
   const subsByPlanPeriod: { plan_name: string; periodo: string; count: number }[] = stats?.subs_by_plan_period ?? [];
   const subsPlanData = subsByPlanPeriod.map((s) => ({
     name: `${s.plan_name} ${s.periodo === "mensal" ? "Mensal" : s.periodo === "semestral" ? "Semestral" : "Anual"}`,
     value: s.count,
   }));
 
-  // Build monthly signup chart
   const signupChart = (() => {
     if (!recentProfiles) return [];
     const months: Record<string, number> = {};
@@ -78,20 +107,175 @@ export default function AdminDashboard() {
     return Object.entries(months).map(([month, count]) => ({ month, usuarios: count }));
   })();
 
+  // ===================== PARTNER VIEW =====================
+  if (isPartner) {
+    const pd = partnerDash;
+    const hasError = pd?.error;
+
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold font-['Space_Grotesk']">Painel do Sócio</h1>
+            <p className="text-muted-foreground text-sm">Sua participação na Provax</p>
+          </div>
+
+          {hasError ? (
+            <Card className="border-dashed">
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">{pd.error}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Partner metrics */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Percent className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{pd?.percentual ?? "—"}%</p>
+                        <p className="text-xs text-muted-foreground">Sua Participação</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-accent/10">
+                        <Users className="h-5 w-5 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{pd?.total_users ?? "—"}</p>
+                        <p className="text-xs text-muted-foreground">Total Usuários</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-chart-3/10">
+                        <TrendingUp className="h-5 w-5" style={{ color: "hsl(32, 95%, 55%)" }} />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{pd?.growth_pct ?? 0}%</p>
+                        <p className="text-xs text-muted-foreground">Crescimento Mensal</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{pd?.current_month_users ?? 0}</p>
+                        <p className="text-xs text-muted-foreground">Novos Este Mês</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Download contract */}
+              {partnerContract && (
+                <Card>
+                  <CardContent className="py-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold">Seu Contrato</p>
+                        <p className="text-sm text-muted-foreground">
+                          Entrada: {new Date(partnerContract.data_entrada).toLocaleDateString("pt-BR")} •
+                          Participação: {partnerContract.percentual_participacao}%
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => {
+                          const profile = partnerContract.profiles as any;
+                          generateContractPDF({
+                            partnerName: profile?.nome || "",
+                            partnerEmail: profile?.email || "",
+                            percentual: partnerContract.percentual_participacao,
+                            valorInvestido: partnerContract.valor_investido,
+                            dataEntrada: partnerContract.data_entrada,
+                            tipo: partnerContract.tipo_participacao,
+                          });
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                        Baixar PDF
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Distribuição por plano (sem valores financeiros) */}
+              {usersByPlan.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Distribuição de Usuários por Plano</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-6">
+                      <ResponsiveContainer width="50%" height={200}>
+                        <PieChart>
+                          <Pie data={usersByPlan} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                            {usersByPlan.map((_, i) => (
+                              <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="space-y-2">
+                        {usersByPlan.map((item, i) => (
+                          <div key={item.name} className="flex items-center gap-2 text-sm">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                            <span className="text-muted-foreground">{item.name}:</span>
+                            <span className="font-semibold">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="border-dashed">
+                <CardContent className="py-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    🔒 Conforme contrato, dados financeiros detalhados, receita, despesas e dados de outros sócios não são exibidos.
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // ===================== ADMIN VIEW =====================
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold font-['Space_Grotesk']">
-            {isPartner ? "Visão Geral" : "Dashboard Administrativo"}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {isPartner ? "Métricas de crescimento da plataforma" : "Visão geral da plataforma"}
-          </p>
+          <h1 className="text-2xl font-bold font-['Space_Grotesk']">Dashboard Administrativo</h1>
+          <p className="text-muted-foreground text-sm">Visão geral da plataforma</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -118,21 +302,6 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          {stats?.growth_pct !== undefined && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-chart-3/10">
-                    <Percent className="h-5 w-5" style={{ color: "hsl(32, 95%, 55%)" }} />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{isLoading ? "..." : `${stats.growth_pct}%`}</p>
-                    <p className="text-xs text-muted-foreground">Crescimento</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -188,7 +357,6 @@ export default function AdminDashboard() {
 
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Users by Plan Pie */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Distribuição por Plano</CardTitle>
@@ -222,7 +390,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          {/* Usage by Mode */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Uso por Categoria</CardTitle>
@@ -245,8 +412,8 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Growth Chart (admin only) */}
-        {isAdmin && signupChart.length > 0 && (
+        {/* Growth Chart */}
+        {signupChart.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Crescimento de Usuários - Últimos 6 Meses</CardTitle>
@@ -269,19 +436,6 @@ export default function AdminDashboard() {
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Partner notice */}
-        {isPartner && (
-          <Card className="border-dashed">
-            <CardContent className="py-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                📊 Você está visualizando o painel de sócio com métricas de crescimento.
-                <br />
-                Dados financeiros e gestão de usuários são restritos ao administrador.
-              </p>
             </CardContent>
           </Card>
         )}
