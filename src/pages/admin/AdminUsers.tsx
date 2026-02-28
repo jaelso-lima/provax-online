@@ -263,7 +263,6 @@ export default function AdminUsers() {
                           <SelectItem value="user">Aluno</SelectItem>
                           <SelectItem value="partner">Sócio</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="owner">Owner</SelectItem>
                         </SelectContent>
                       </Select>
 
