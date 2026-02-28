@@ -305,7 +305,81 @@ export default function Dashboard() {
           </Card>
         </motion.div>
 
-        <div className="mb-8 grid gap-4 md:grid-cols-4">
+        {/* AÇÕES RÁPIDAS — Mobile First (topo) */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 lg:hidden">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold flex items-center gap-2">
+              🚀 Comece Agora
+            </h2>
+            <Badge variant="secondary" className="text-xs animate-pulse">
+              {stats.totalSimulados === 0 ? "Primeira vez? É grátis!" : `${stats.totalSimulados} simulados feitos`}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Card 
+              className="cursor-pointer border-2 border-primary/30 bg-primary/5 transition-all hover:shadow-lg hover:border-primary active:scale-[0.98]" 
+              onClick={() => navigate(`/simulado?modo=${modo}`)}
+            >
+              <CardContent className="flex flex-col items-center gap-2 py-4 px-3 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-sm font-bold">Gerar Simulado</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {stats.totalSimulados === 0 ? "Comece sua jornada agora" : "Continue evoluindo"}
+                </p>
+              </CardContent>
+            </Card>
+            <Card 
+              className="cursor-pointer border-2 border-accent/30 bg-accent/5 transition-all hover:shadow-lg hover:border-accent active:scale-[0.98]" 
+              onClick={() => navigate("/redacao")}
+            >
+              <CardContent className="flex flex-col items-center gap-2 py-4 px-3 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+                  <PenTool className="h-5 w-5 text-accent" />
+                </div>
+                <p className="text-sm font-bold">Redação IA</p>
+                <p className="text-[10px] text-muted-foreground leading-tight">Correção detalhada</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
+              onClick={() => navigate("/comprar-moedas")}
+            >
+              <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
+                <Coins className="h-5 w-5 text-coin" />
+                <p className="text-xs font-medium">Moedas</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
+              onClick={() => navigate("/planos")}
+            >
+              <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
+                <Trophy className="h-5 w-5 text-warning" />
+                <p className="text-xs font-medium">Planos</p>
+              </CardContent>
+            </Card>
+          </div>
+          {recentSimulados.filter(s => s.status === "em_andamento" && s.modo === modo).length > 0 && (
+            <Card className="mt-3 border-warning/40 bg-warning/5">
+              <CardContent className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-warning" />
+                  <p className="text-xs font-medium">Você tem simulado em aberto!</p>
+                </div>
+                <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => {
+                  const pending = recentSimulados.find(s => s.status === "em_andamento" && s.modo === modo);
+                  if (pending) navigate(`/simulado?continuar=${pending.id}`);
+                }}>
+                  <PlayCircle className="h-3 w-3" /> Continuar
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </motion.div>
+
+        <div className="mb-8 grid gap-4 grid-cols-2 md:grid-cols-4">
           <Card><CardHeader className="pb-2"><CardDescription>Saldo de Moedas</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold text-coin">{profile?.saldo_moedas ?? 0}</p></CardContent></Card>
           <Card><CardHeader className="pb-2"><CardDescription>Simulados Feitos</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.totalSimulados}</p></CardContent></Card>
           <Card><CardHeader className="pb-2"><CardDescription>Nota Média</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.notaMedia}%</p></CardContent></Card>
@@ -429,8 +503,9 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <h2 className="mb-4 font-display text-xl font-semibold">Ações</h2>
-        <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Ações — Desktop only (mobile has them at top) */}
+        <h2 className="mb-4 font-display text-xl font-semibold hidden lg:block">Ações</h2>
+        <div className="mb-8 hidden gap-4 lg:grid lg:grid-cols-3">
           {[
             { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : modo === "universidade" ? "Questões universitárias por IA" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary" },
             { icon: PenTool, title: "Redação com IA", desc: "Correção rigorosa (15 moedas)", path: "/redacao", color: "text-accent" },
