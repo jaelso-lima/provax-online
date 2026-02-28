@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift } from "lucide-react";
+import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift, PlayCircle, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Modo = "concurso" | "enem" | "universidade" | null;
 
@@ -105,6 +105,125 @@ export default function Dashboard() {
     setModo(m);
     if (m) localStorage.setItem("provax_modo", m);
     else localStorage.removeItem("provax_modo");
+  };
+
+  // Helper to render simulado history with Em Andamento / Concluídos tabs
+  const renderSimuladoHistory = (modoFilter: string) => {
+    const filtered = recentSimulados.filter((s: any) => s.modo === modoFilter);
+    const emAndamento = filtered.filter((s: any) => s.status === "em_andamento");
+    const concluidos = filtered.filter((s: any) => s.status === "finalizado");
+
+    if (filtered.length === 0) {
+      return (
+        <Card><CardContent className="py-8 text-center text-muted-foreground">
+          Nenhum simulado encontrado nesta categoria. Comece agora!
+        </CardContent></Card>
+      );
+    }
+
+    return (
+      <Tabs defaultValue={emAndamento.length > 0 ? "em_andamento" : "concluidos"} className="w-full">
+        <TabsList className="mb-4 w-full">
+          <TabsTrigger value="em_andamento" className="flex-1 gap-2">
+            📌 Em andamento
+            {emAndamento.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">{emAndamento.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="concluidos" className="flex-1 gap-2">
+            📊 Concluídos
+            {concluidos.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">{concluidos.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="em_andamento">
+          {emAndamento.length === 0 ? (
+            <Card><CardContent className="py-6 text-center text-muted-foreground text-sm">
+              Nenhum simulado em andamento. Bom sinal — você finaliza tudo! 💪
+            </CardContent></Card>
+          ) : (
+            <div className="space-y-3">
+              {emAndamento.map((s: any) => (
+                <Card key={s.id} className="border-l-4 border-l-warning transition-all hover:shadow-md">
+                  <CardHeader className="flex-row items-center justify-between py-3">
+                    <div>
+                      <CardTitle className="text-sm">
+                        {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
+                      </CardTitle>
+                      <CardDescription>
+                        {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
+                        <span className="text-warning font-medium">Em andamento</span>
+                        {s.ultima_questao_respondida != null && s.ultima_questao_respondida > 0 && (
+                          <span className="text-muted-foreground"> • {s.ultima_questao_respondida}/{s.total_questoes} respondidas</span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/simulado?continuar=${s.id}`);
+                      }}
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                      Continuar
+                    </Button>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="concluidos">
+          {concluidos.length === 0 ? (
+            <Card><CardContent className="py-6 text-center text-muted-foreground text-sm">
+              Nenhum simulado concluído ainda. Finalize seu primeiro! 🚀
+            </CardContent></Card>
+          ) : (
+            <div className="space-y-3">
+              {concluidos.map((s: any) => (
+                <Card
+                  key={s.id}
+                  className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
+                  onClick={() => navigate(`/simulado/resultado/${s.id}`)}
+                >
+                  <CardHeader className="flex-row items-center justify-between py-3">
+                    <div>
+                      <CardTitle className="text-sm">
+                        {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
+                      </CardTitle>
+                      <CardDescription>
+                        {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
+                        <span className="font-medium text-primary">Nota: {s.pontuacao}% — Acertos: {s.acertos}/{s.total_questoes}</span>
+                        {s.tempo_gasto != null && (
+                          <span className="text-muted-foreground"> • {Math.floor(s.tempo_gasto / 60)}min</span>
+                        )}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/simulado/resultado/${s.id}`);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                      Revisar
+                    </Button>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    );
   };
 
   if (!modo) {
@@ -310,7 +429,6 @@ export default function Dashboard() {
           </Card>
         )}
 
-
         <h2 className="mb-4 font-display text-xl font-semibold">Ações</h2>
         <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[
@@ -346,47 +464,7 @@ export default function Dashboard() {
         </div>
 
         {historicoTab !== "redacao" ? (
-          (() => {
-            const filtered = recentSimulados.filter((s: any) => s.modo === historicoTab);
-            if (filtered.length === 0) return (
-              <Card><CardContent className="py-8 text-center text-muted-foreground">
-                Nenhum simulado encontrado nesta categoria. Comece agora!
-              </CardContent></Card>
-            );
-            return (
-              <div className="space-y-3">
-                {filtered.map((s: any) => (
-                  <Card
-                    key={s.id}
-                    className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
-                    onClick={() => navigate(`/simulado/resultado/${s.id}`)}
-                  >
-                    <CardHeader className="flex-row items-center justify-between py-3">
-                      <div>
-                        <CardTitle className="text-sm">
-                          {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
-                        </CardTitle>
-                        <CardDescription>
-                          {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
-                          {s.status === "finalizado" ? (
-                            <span className="font-medium text-primary">Nota: {s.pontuacao}% — Acertos: {s.acertos}/{s.total_questoes}</span>
-                          ) : (
-                            <span className="text-warning">Em andamento</span>
-                          )}
-                        </CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={s.status === "finalizado" ? "default" : "secondary"}>
-                          {s.status === "finalizado" ? "Ver correção" : "Em andamento"}
-                        </Badge>
-                        <History className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
-            );
-          })()
+          renderSimuladoHistory(historicoTab)
         ) : (
           (() => {
             if (redacoes.length === 0) return (

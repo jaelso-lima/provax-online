@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const CUSTOS: Record<string, number> = { "5": 5, "10": 10, "20": 15, "60": 0 };
@@ -34,11 +34,14 @@ export default function Simulado() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const modo = searchParams.get("modo") || "concurso";
+  const continuarId = searchParams.get("continuar");
 
   const [nivel, setNivel] = useState("");
   const [quantidade, setQuantidade] = useState("5");
   const [loading, setLoading] = useState(false);
+  const [resumeLoading, setResumeLoading] = useState(!!continuarId);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showConfirmSair, setShowConfirmSair] = useState(false);
   const [showInsuficiente, setShowInsuficiente] = useState(false);
 
   const [carreiras, setCarreiras] = useState<any[]>([]);
@@ -68,10 +71,120 @@ export default function Simulado() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [finalizando, setFinalizando] = useState(false);
   const [resultado, setResultado] = useState<any>(null);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(Date.now());
+  const [tempoAcumulado, setTempoAcumulado] = useState(0);
+  const finalizarRef = useRef<HTMLDivElement>(null);
+
+  // Resume an in-progress simulado
+  useEffect(() => {
+    if (!continuarId || !user) return;
+    const resume = async () => {
+      setResumeLoading(true);
+      try {
+        // Load the simulado
+        const { data: sim } = await supabase
+          .from("simulados")
+          .select("*")
+          .eq("id", continuarId)
+          .eq("user_id", user.id)
+          .eq("status", "em_andamento")
+          .single();
+
+        if (!sim) {
+          toast({ title: "Simulado não encontrado ou já finalizado", variant: "destructive" });
+          navigate("/dashboard");
+          return;
+        }
+
+        // Load existing respostas
+        const { data: existingRespostas } = await supabase
+          .from("respostas")
+          .select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao)")
+          .eq("simulado_id", continuarId)
+          .order("created_at");
+
+        // Load all questoes for this simulado (via respostas)
+        // If we have saved respostas, use them; otherwise load questoes directly
+        let allQuestoes: Questao[] = [];
+        const savedRespostas: Record<number, string> = {};
+
+        if (existingRespostas && existingRespostas.length > 0) {
+          allQuestoes = existingRespostas.map((r: any) => ({
+            id: r.questoes?.id,
+            enunciado: r.questoes?.enunciado || "",
+            alternativas: Array.isArray(r.questoes?.alternativas) ? r.questoes.alternativas : [],
+            resposta_correta: r.questoes?.resposta_correta || "",
+            explicacao: r.questoes?.explicacao,
+          })).filter((q: Questao) => q.id);
+
+          existingRespostas.forEach((r: any, i: number) => {
+            if (r.resposta_usuario) {
+              savedRespostas[i] = r.resposta_usuario;
+            }
+          });
+        }
+
+        if (allQuestoes.length === 0) {
+          toast({ title: "Questões não encontradas para este simulado", variant: "destructive" });
+          navigate("/dashboard");
+          return;
+        }
+
+        setSimuladoId(sim.id);
+        setQuestoes(allQuestoes);
+        setRespostas(savedRespostas);
+        setTempoAcumulado(sim.tempo_gasto || 0);
+        setStartTime(Date.now());
+
+        // Go to first unanswered question
+        const answeredCount = Object.keys(savedRespostas).length;
+        const resumeIdx = sim.ultima_questao_respondida != null && sim.ultima_questao_respondida > 0
+          ? Math.min(sim.ultima_questao_respondida, allQuestoes.length - 1)
+          : Math.min(answeredCount, allQuestoes.length - 1);
+        setCurrentIdx(resumeIdx);
+
+        toast({ title: "Simulado retomado! Continue de onde parou." });
+      } catch (err: any) {
+        toast({ title: "Erro ao retomar simulado", description: err.message, variant: "destructive" });
+        navigate("/dashboard");
+      }
+      setResumeLoading(false);
+    };
+    resume();
+  }, [continuarId, user]);
+
+  // Auto-save progress periodically
+  useEffect(() => {
+    if (!simuladoId || resultado) return;
+    const interval = setInterval(async () => {
+      const respondidas = Object.keys(respostas).length;
+      const tempoTotal = tempoAcumulado + Math.round((Date.now() - startTime) / 1000);
+      await supabase.from("simulados").update({
+        ultima_questao_respondida: respondidas,
+        tempo_gasto: tempoTotal,
+      }).eq("id", simuladoId);
+    }, 30000); // Save every 30 seconds
+    return () => clearInterval(interval);
+  }, [simuladoId, respostas, resultado, startTime, tempoAcumulado]);
+
+  // Save progress on answer change
+  const handleAnswer = async (letra: string) => {
+    const newRespostas = { ...respostas, [currentIdx]: letra };
+    setRespostas(newRespostas);
+
+    // Update resposta in DB if resuming (questao already saved)
+    if (simuladoId && questoes[currentIdx]?.id) {
+      const respondidas = Object.keys(newRespostas).length;
+      // Update ultima_questao_respondida
+      await supabase.from("simulados").update({
+        ultima_questao_respondida: respondidas,
+      }).eq("id", simuladoId);
+    }
+  };
 
   // Load reference data for concurso mode
   useEffect(() => {
+    if (continuarId) return; // Skip if resuming
     if (modo === "concurso") {
       supabase.from("carreiras").select("*").order("nome").then(({ data }) => { if (data) setCarreiras(data); });
       supabase.from("bancas").select("*").order("nome").then(({ data }) => { if (data) setBancas(data); });
@@ -81,37 +194,38 @@ export default function Simulado() {
     } else if (modo === "universidade") {
       supabase.from("cursos").select("*").order("nome").then(({ data }) => { if (data) setCursos(data); });
     }
-  }, [modo]);
+  }, [modo, continuarId]);
 
   // Cascading: área → matérias (via area_materias) — concurso
   useEffect(() => {
-    if (modo === "universidade") return;
+    if (modo === "universidade" || continuarId) return;
     setMateriaId("");
     setTopicId("");
     setTopics([]);
     if (!areaId) { setMaterias([]); return; }
     supabase.from("area_materias").select("materia_id, materias(id, nome)").eq("area_id", areaId)
       .then(({ data }) => { if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean)); });
-  }, [areaId, modo]);
+  }, [areaId, modo, continuarId]);
 
   // Cascading: curso → disciplinas (via curso_materias) — universidade
   useEffect(() => {
-    if (modo !== "universidade") return;
+    if (modo !== "universidade" || continuarId) return;
     setMateriaId("");
     setTopicId("");
     setTopics([]);
     if (!cursoId) { setMaterias([]); return; }
     supabase.from("curso_materias").select("materia_id, materias(id, nome)").eq("curso_id", cursoId)
       .then(({ data }) => { if (data) setMaterias(data.map((d: any) => d.materias).filter(Boolean).sort((a: any, b: any) => a.nome.localeCompare(b.nome))); });
-  }, [cursoId, modo]);
+  }, [cursoId, modo, continuarId]);
 
   // Load topics when materia selected (universidade)
   useEffect(() => {
+    if (continuarId) return;
     setTopicId("");
     if (!materiaId || modo !== "universidade") { setTopics([]); return; }
     supabase.from("topics").select("*").eq("materia_id", materiaId).order("nome")
       .then(({ data }) => { if (data) setTopics(data); });
-  }, [materiaId, modo]);
+  }, [materiaId, modo, continuarId]);
 
   const custo = quantidade === "60" ? 0 : CUSTOS[quantidade] || 5;
   const isPremiumOnly = quantidade === "60" && profile?.plano !== "premium";
@@ -211,18 +325,72 @@ export default function Simulado() {
         id: savedQuestoes?.[i]?.id || undefined,
       }));
 
-      setSimuladoId(sim.id); setQuestoes(questoesComId); setCurrentIdx(0); setRespostas({});
+      // Pre-create empty respostas for resume support
+      const respostasInsert = questoesComId
+        .filter(q => q.id)
+        .map(q => ({
+          simulado_id: sim.id,
+          questao_id: q.id!,
+          resposta_usuario: null,
+          acertou: null,
+          tempo_resposta: 0,
+        }));
+      if (respostasInsert.length > 0) {
+        await supabase.from("respostas").insert(respostasInsert);
+      }
+
+      setSimuladoId(sim.id);
+      setQuestoes(questoesComId);
+      setCurrentIdx(0);
+      setRespostas({});
+      setStartTime(Date.now());
+      setTempoAcumulado(0);
       await refreshProfile();
       toast({ title: `Simulado gerado! ${generatedQuestoes.length} questões.` });
     } catch (err: any) { toast({ title: "Erro ao gerar simulado", description: err.message, variant: "destructive" }); }
     setLoading(false);
   };
 
+  const handleVoltar = () => {
+    if (simuladoId && questoes.length > 0 && !resultado) {
+      setShowConfirmSair(true);
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
+  const handleSairSalvando = async () => {
+    setShowConfirmSair(false);
+    // Save current progress before leaving
+    if (simuladoId) {
+      const respondidas = Object.keys(respostas).length;
+      const tempoTotal = tempoAcumulado + Math.round((Date.now() - startTime) / 1000);
+
+      // Update respostas in DB
+      for (const [idxStr, letra] of Object.entries(respostas)) {
+        const idx = parseInt(idxStr);
+        const q = questoes[idx];
+        if (q?.id) {
+          await supabase.from("respostas").update({
+            resposta_usuario: letra,
+            acertou: letra === q.resposta_correta,
+          }).eq("simulado_id", simuladoId).eq("questao_id", q.id);
+        }
+      }
+
+      await supabase.from("simulados").update({
+        ultima_questao_respondida: respondidas,
+        tempo_gasto: tempoTotal,
+      }).eq("id", simuladoId);
+    }
+    navigate("/dashboard");
+  };
+
   const handleFinalizar = async () => {
     setFinalizando(true);
     try {
       let acertos = 0;
-      const tempoTotal = Math.round((Date.now() - startTime) / 1000);
+      const tempoTotal = tempoAcumulado + Math.round((Date.now() - startTime) / 1000);
       for (let i = 0; i < questoes.length; i++) { if (respostas[i] === questoes[i].resposta_correta) acertos++; }
       const nota = Math.round((acertos / questoes.length) * 100);
 
@@ -233,18 +401,17 @@ export default function Simulado() {
       // 1 XP por questão acertada
       const xpGanho = acertos;
       if (xpGanho > 0) await supabase.rpc("adicionar_xp", { _user_id: user!.id, _xp_ganho: xpGanho });
-      await supabase.from("simulados").update({ pontuacao: nota, acertos, tempo_gasto: tempoTotal, status: "finalizado", finished_at: new Date().toISOString() }).eq("id", simuladoId!);
+      await supabase.from("simulados").update({ pontuacao: nota, acertos, tempo_gasto: tempoTotal, status: "finalizado", finished_at: new Date().toISOString(), ultima_questao_respondida: questoes.length }).eq("id", simuladoId!);
 
-      // Save respostas to DB for review
-      const respostasInsert = questoes.map((q, i) => ({
-        simulado_id: simuladoId!,
-        questao_id: q.id!,
-        resposta_usuario: respostas[i] || null,
-        acertou: respostas[i] === q.resposta_correta,
-        tempo_resposta: 0,
-      })).filter(r => r.questao_id);
-      if (respostasInsert.length > 0) {
-        await supabase.from("respostas").insert(respostasInsert);
+      // Update respostas in DB with final answers
+      for (let i = 0; i < questoes.length; i++) {
+        const q = questoes[i];
+        if (q?.id) {
+          await supabase.from("respostas").update({
+            resposta_usuario: respostas[i] || null,
+            acertou: respostas[i] === q.resposta_correta,
+          }).eq("simulado_id", simuladoId!).eq("questao_id", q.id);
+        }
       }
 
       await refreshProfile();
@@ -255,9 +422,29 @@ export default function Simulado() {
     setFinalizando(false);
   };
 
+  // Loading state for resume
+  if (resumeLoading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <AppHeader />
+        <main className="container flex flex-1 items-center justify-center">
+          <div className="text-center space-y-3">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Carregando seu simulado...</p>
+          </div>
+        </main>
+        <AppFooter />
+      </div>
+    );
+  }
+
   if (resultado) {
     return (
-      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-3xl flex-1 py-8"><Card><CardHeader className="text-center"><CardTitle className="font-display text-3xl">📊 Relatório do Simulado</CardTitle></CardHeader><CardContent className="space-y-6">
+      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-3xl flex-1 py-8">
+        <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}>
+          <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
+        </Button>
+        <Card><CardHeader className="text-center"><CardTitle className="font-display text-3xl">📊 Relatório do Simulado</CardTitle></CardHeader><CardContent className="space-y-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded-lg bg-primary/10 p-4 text-center"><p className="text-sm text-muted-foreground">Nota</p><p className="text-3xl font-bold text-primary">{resultado.nota}%</p></div>
           <div className="rounded-lg bg-accent/10 p-4 text-center"><p className="text-sm text-muted-foreground">Acertos</p><p className="text-3xl font-bold text-accent">{resultado.acertos}/{resultado.total}</p></div>
@@ -275,17 +462,39 @@ export default function Simulado() {
     const q = questoes[currentIdx]; const respondidas = Object.keys(respostas).length; const progresso = Math.round((respondidas / questoes.length) * 100);
     return (
       <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
+        {/* Back button */}
+        <Button variant="ghost" className="mb-4 gap-2" onClick={handleVoltar}>
+          <ArrowLeft className="h-4 w-4" /> Voltar
+        </Button>
+
         <div className="mb-4 space-y-2"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Questão {currentIdx+1} de {questoes.length}</span><span className="text-xs text-muted-foreground">{respondidas}/{questoes.length} respondidas</span></div><Progress value={progresso} className="h-2" /></div>
-        <div className="mb-4 flex justify-end"><Button variant="destructive" size="sm" onClick={handleFinalizar} disabled={finalizando}>{finalizando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Finalizar</Button></div>
-        <Card><CardContent className="pt-6"><p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => setRespostas(prev => ({ ...prev, [currentIdx]: o.letra }))}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
+        
+        <Card><CardContent className="pt-6"><p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => handleAnswer(o.letra)}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
         <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>
         <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => (<button key={i} onClick={() => setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{i+1}</button>))}</div>
+        
+        {/* Finalizar button at bottom, more visible */}
+        <div ref={finalizarRef} className="mt-8 flex justify-center">
+          <Button 
+            variant="destructive" 
+            size="lg" 
+            className="w-full max-w-sm text-base font-semibold"
+            onClick={handleFinalizar} 
+            disabled={finalizando}
+          >
+            {finalizando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            🏁 Finalizar Simulado ({respondidas}/{questoes.length} respondidas)
+          </Button>
+        </div>
       </main><AppFooter /></div>
     );
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg flex-1 py-8">
+      <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}>
+        <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
+      </Button>
       <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : modo === "universidade" ? "🏛️ Simulado Universidade" : "🎯 Gerar Simulado"}</h1>
       <p className="mb-4 text-sm text-muted-foreground">{modo === "universidade" ? "Selecione o curso e disciplina para gerar questões universitárias." : "Selecione os filtros abaixo para gerar um simulado personalizado no padrão da sua banca."}</p>
       <Card><CardContent className="space-y-4 pt-6">
@@ -312,6 +521,8 @@ export default function Simulado() {
     </main>
     <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>Serão descontadas {custo} moedas ({profile?.saldo_moedas ?? 0} disponíveis).</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
     <Dialog open={showInsuficiente} onOpenChange={setShowInsuficiente}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" />Saldo Insuficiente</DialogTitle><DialogDescription>Precisa de {custo} moedas. Saldo: {profile?.saldo_moedas ?? 0}.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowInsuficiente(false)}>Fechar</Button><Button onClick={() => { setShowInsuficiente(false); navigate("/comprar-moedas"); }}>Comprar Moedas</Button></DialogFooter></DialogContent></Dialog>
+    {/* Dialog confirmar saída durante simulado */}
+    <Dialog open={showConfirmSair} onOpenChange={setShowConfirmSair}><DialogContent><DialogHeader><DialogTitle>Sair do Simulado?</DialogTitle><DialogDescription>Seu progresso será salvo automaticamente. Você poderá continuar de onde parou no Dashboard.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirmSair(false)}>Continuar respondendo</Button><Button onClick={handleSairSalvando}>Salvar e sair</Button></DialogFooter></DialogContent></Dialog>
     <AppFooter />
     </div>
   );
