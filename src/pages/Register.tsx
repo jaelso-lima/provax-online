@@ -41,10 +41,15 @@ export default function Register() {
     }
   };
 
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasMinLength = password.length >= 6;
+  const passwordValid = hasLetter && hasNumber && hasMinLength;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome || !email || !password) { toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" }); return; }
-    if (password.length < 6) { toast({ title: "A senha deve ter no mínimo 6 caracteres.", variant: "destructive" }); return; }
+    if (!passwordValid) { toast({ title: "A senha deve ter no mínimo 6 caracteres, incluindo pelo menos 1 letra e 1 número.", variant: "destructive" }); return; }
     if (!aceitouTermos) { toast({ title: "É necessário aceitar os Termos de Uso para prosseguir.", variant: "destructive" }); return; }
     setLoading(true);
 
@@ -88,11 +93,25 @@ export default function Register() {
   };
 
   return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><Card className="w-full max-w-md">
-    <CardHeader className="text-center"><Link to="/" className="mb-2 inline-block font-display text-2xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span> <span className="text-foreground">ProvaX</span></Link><CardTitle className="font-display text-2xl">Criar Conta</CardTitle><CardDescription>Crie sua conta e ganhe 30 moedas grátis</CardDescription></CardHeader>
+    <CardHeader className="text-center"><Link to="/" className="mb-2 inline-block font-display text-2xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span> <span className="text-foreground">ProvaX</span></Link><CardTitle className="font-display text-2xl">Criar Conta</CardTitle><CardDescription>Comece a estudar com simulados inteligentes</CardDescription></CardHeader>
     <form onSubmit={handleSubmit}><CardContent className="space-y-4">
       <div className="space-y-2"><Label htmlFor="nome">Nome</Label><Input id="nome" placeholder="Seu nome completo" value={nome} onChange={e => setNome(e.target.value)} required /></div>
       <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
-      <div className="space-y-2"><Label htmlFor="password">Senha</Label><Input id="password" type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={e => setPassword(e.target.value)} required /></div>
+      <div className="space-y-2"><Label htmlFor="password">Senha</Label><Input id="password" type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={e => setPassword(e.target.value)} required />
+        {password.length > 0 && (
+          <div className="space-y-1 text-xs">
+            <p className={hasMinLength ? "text-accent" : "text-destructive"}>
+              {hasMinLength ? "✓" : "✗"} Mínimo 6 caracteres
+            </p>
+            <p className={hasLetter ? "text-accent" : "text-destructive"}>
+              {hasLetter ? "✓" : "✗"} Pelo menos 1 letra
+            </p>
+            <p className={hasNumber ? "text-accent" : "text-destructive"}>
+              {hasNumber ? "✓" : "✗"} Pelo menos 1 número
+            </p>
+          </div>
+        )}
+      </div>
       <div className="space-y-2"><Label htmlFor="indicacao">Código de Indicação (opcional)</Label><Input id="indicacao" placeholder="Ex: A1B2C3D4" value={codigoIndicacao} onChange={e => setCodigoIndicacao(e.target.value)} /></div>
       <div className="flex items-start space-x-2">
         <Checkbox id="termos" checked={aceitouTermos} onCheckedChange={(checked) => setAceitouTermos(checked === true)} />
