@@ -222,40 +222,108 @@ export default function AdminDashboard() {
                 </Card>
               )}
 
-              {/* Download contract */}
-              {partnerContract && (
-                <Card>
-                  <CardContent className="py-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">Seu Contrato</p>
-                        <p className="text-sm text-muted-foreground">
-                          Entrada: {new Date(partnerContract.data_entrada).toLocaleDateString("pt-BR")} •
-                          Participação: {partnerContract.percentual_participacao}%
-                        </p>
+              {/* Contrato completo */}
+              {partnerContract && (() => {
+                const profile = partnerContract.profiles as any;
+                const clauses = [
+                  { title: "CLÁUSULA 1 – NATUREZA DA PARTICIPAÇÃO", body: "O presente contrato formaliza participação societária exclusivamente econômica, não conferindo ao Sócio Investidor qualquer poder de gestão, voto, deliberação ou interferência administrativa. A participação é estritamente financeira e proporcional ao lucro líquido distribuído." },
+                  { title: "CLÁUSULA 2 – CONTROLE ABSOLUTO", body: "A gestão integral, estratégica, operacional e financeira da empresa permanece sob controle exclusivo do Fundador. Nenhuma decisão poderá ser exigida, contestada ou imposta pelo Sócio Investidor." },
+                  { title: "CLÁUSULA 3 – LIMITAÇÃO DE PODER", body: "O Sócio Investidor: Não possui direito a voto; Não possui direito de veto; Não possui acesso a contas bancárias; Não possui acesso a dados financeiros detalhados; Não pode representar a empresa; Não pode contratar em nome da empresa." },
+                  { title: "CLÁUSULA 4 – DIREITO DE RECOMPRA", body: "O Fundador poderá recomprar a participação do Sócio a qualquer momento: pelo valor originalmente investido OU por valuation interno definido pelo Fundador. Em caso de quebra contratual, recompra poderá ocorrer pelo valor nominal simbólico." },
+                  { title: "CLÁUSULA 5 – NÃO CONCORRÊNCIA", body: "O Sócio compromete-se a não criar, investir, participar ou trabalhar em plataforma concorrente direta ou indireta por prazo mínimo de 5 (cinco) anos." },
+                  { title: "CLÁUSULA 6 – CONFIDENCIALIDADE PERPÉTUA", body: "Qualquer vazamento de código, estratégia, dados, estrutura ou modelo de negócio gera multa equivalente a 10 (dez) vezes o valor investido." },
+                  { title: "CLÁUSULA 7 – DISTRIBUIÇÃO DE LUCROS", body: "A distribuição de lucros: Não é automática; Não é obrigatória mensalmente; Depende de decisão do Fundador; Depende da saúde financeira da empresa. Lucro será distribuído apenas quando houver formalização interna." },
+                  { title: "CLÁUSULA 8 – RESPONSABILIDADE LIMITADA", body: "O Sócio não responde por dívidas da empresa. A empresa não responde por obrigações pessoais do Sócio." },
+                  { title: "CLÁUSULA 9 – PROIBIÇÃO DE CESSÃO", body: "O Sócio não pode vender, transferir ou ceder sua participação sem autorização expressa do Fundador." },
+                  { title: "CLÁUSULA 10 – RESCISÃO POR CONDUTA", body: "O contrato poderá ser rescindido unilateralmente pelo Fundador em caso de: quebra de confidencialidade; danos à imagem; interferência indevida; tentativa de sabotagem; ação judicial abusiva." },
+                  { title: "CLÁUSULA 11 – SUCESSÃO", body: "Em caso de falecimento do Sócio, a participação poderá ser recomprada pelo Fundador antes de qualquer transferência hereditária." },
+                  { title: "CLÁUSULA 12 – FORO", body: "Foro da comarca do Fundador." },
+                  { title: "CLÁUSULA 13 – CARÁTER PRIVADO", body: "Este contrato não constitui sociedade formal registrada, tratando-se de acordo privado de participação econômica." },
+                ];
+
+                return (
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          📄 Contrato de Participação Societária
+                        </CardTitle>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => {
+                            generateContractPDF({
+                              partnerName: profile?.nome || "",
+                              partnerEmail: profile?.email || "",
+                              percentual: partnerContract.percentual_participacao,
+                              valorInvestido: partnerContract.valor_investido,
+                              dataEntrada: partnerContract.data_entrada,
+                              tipo: partnerContract.tipo_participacao,
+                            });
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                          Baixar PDF
+                        </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        className="gap-2"
-                        onClick={() => {
-                          const profile = partnerContract.profiles as any;
-                          generateContractPDF({
-                            partnerName: profile?.nome || "",
-                            partnerEmail: profile?.email || "",
-                            percentual: partnerContract.percentual_participacao,
-                            valorInvestido: partnerContract.valor_investido,
-                            dataEntrada: partnerContract.data_entrada,
-                            tipo: partnerContract.tipo_participacao,
-                          });
-                        }}
-                      >
-                        <Download className="h-4 w-4" />
-                        Baixar PDF
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Cabeçalho do contrato */}
+                      <div className="text-center space-y-1 pb-4 border-b border-border">
+                        <p className="font-bold text-lg">CONTRATO DE PARTICIPAÇÃO SOCIETÁRIA PRIVADA</p>
+                        <p className="text-sm text-muted-foreground">Provax — Plataforma Educacional Digital</p>
+                      </div>
+
+                      {/* Dados do sócio */}
+                      <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-muted/50 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Sócio Investidor:</span>{" "}
+                          <span className="font-semibold">{profile?.nome}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">E-mail:</span>{" "}
+                          <span className="font-semibold">{profile?.email}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Percentual:</span>{" "}
+                          <span className="font-semibold">{partnerContract.percentual_participacao}%</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Valor Investido:</span>{" "}
+                          <span className="font-semibold">R$ {Number(partnerContract.valor_investido).toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Data de Entrada:</span>{" "}
+                          <span className="font-semibold">{new Date(partnerContract.data_entrada).toLocaleDateString("pt-BR")}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Tipo:</span>{" "}
+                          <span className="font-semibold">{partnerContract.tipo_participacao.replace("_", " ")}</span>
+                        </div>
+                      </div>
+
+                      {/* Cláusulas */}
+                      <div className="space-y-3 pt-2">
+                        {clauses.map((c, i) => (
+                          <div key={i}>
+                            <p className="font-semibold text-sm">{c.title}</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{c.body}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Rodapé */}
+                      <div className="pt-4 border-t border-border text-center space-y-2 text-sm text-muted-foreground">
+                        <p>Assinado digitalmente em {new Date(partnerContract.data_entrada).toLocaleDateString("pt-BR")}</p>
+                        {pd?.contract?.hash && (
+                          <p className="text-xs font-mono break-all">Hash: {pd.contract.hash}</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Distribuição por plano (sem valores financeiros) */}
               {usersByPlan.length > 0 && (
