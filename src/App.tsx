@@ -17,6 +17,8 @@ import AdminExpenses from "./pages/admin/AdminExpenses";
 import AdminReport from "./pages/admin/AdminReport";
 import AdminLogs from "./pages/admin/AdminLogs";
 import AdminCMS from "./pages/admin/AdminCMS";
+import AdminPartners from "./pages/admin/AdminPartners";
+import AdminProfitSimulation from "./pages/admin/AdminProfitSimulation";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -64,6 +66,8 @@ const App = () => (
             <Route path="/admin/report" element={<AdminRoute><AdminReport /></AdminRoute>} />
             <Route path="/admin/logs" element={<AdminRoute><AdminLogs /></AdminRoute>} />
             <Route path="/admin/cms" element={<AdminRoute><AdminCMS /></AdminRoute>} />
+            <Route path="/admin/partners" element={<AdminRoute><AdminPartners /></AdminRoute>} />
+            <Route path="/admin/profit-simulation" element={<AdminRoute><AdminProfitSimulation /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatProfessor />

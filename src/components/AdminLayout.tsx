@@ -13,6 +13,8 @@ import {
   FileText,
   ClipboardList,
   ShoppingBag,
+  Handshake,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -23,6 +25,8 @@ const allNavItems = [
   { href: "/admin/plans", label: "Planos", icon: Package, roles: ["admin", "owner"] },
   { href: "/admin/billing", label: "Faturamento", icon: CreditCard, roles: ["admin", "owner"] },
   { href: "/admin/expenses", label: "Despesas", icon: Receipt, roles: ["admin", "owner"] },
+  { href: "/admin/partners", label: "Societário", icon: Handshake, roles: ["admin", "owner"] },
+  { href: "/admin/profit-simulation", label: "Simulador Lucros", icon: Calculator, roles: ["admin", "owner"] },
   { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner"] },
   { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"] },
   { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner"] },
