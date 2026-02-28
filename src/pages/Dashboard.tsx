@@ -153,7 +153,7 @@ export default function Dashboard() {
       <AppHeader />
       <main className="container flex-1 py-8">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold">Olá, {profile?.nome || "Estudante"}!</h1>
+          <h1 className="font-display text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
           <p className="text-muted-foreground">
             Plano: {profile?.plano ?? "free"} • Nível {nivel} •{" "}
             <button onClick={() => selecionarModo(null)} className="text-primary hover:underline">
@@ -161,6 +161,30 @@ export default function Dashboard() {
             </button>
           </p>
         </div>
+
+        {/* Viés de consistência — streak diário */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Cada questão certa = 1 XP 🎯</p>
+                    <p className="text-xs text-muted-foreground">
+                      {xpParaProximo - xp} XP para o nível {nivel + 1} — ganhe 20 moedas ao subir!
+                    </p>
+                  </div>
+                </div>
+                <Button size="sm" variant="default" onClick={() => navigate(`/simulado?modo=${modo}`)}>
+                  Praticar agora
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         <div className="mb-8 grid gap-4 md:grid-cols-4">
           <Card><CardHeader className="pb-2"><CardDescription>Saldo de Moedas</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold text-coin">{profile?.saldo_moedas ?? 0}</p></CardContent></Card>
@@ -197,7 +221,7 @@ export default function Dashboard() {
                 />
               </div>
               <p className="mt-2 text-xs text-muted-foreground text-center">
-                {xpParaProximo - xp} XP para o nível {nivel + 1} — ganhe 20 moedas de recompensa! 🎉
+                Faltam {xpParaProximo - xp} XP para o nível {nivel + 1} — pratique agora e ganhe 20 moedas! 🎉
               </p>
             </CardContent>
           </Card>

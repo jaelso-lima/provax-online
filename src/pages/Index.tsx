@@ -6,10 +6,12 @@ import ThemeToggle from "@/components/ThemeToggle";
 import {
   ArrowRight, CheckCircle, X, Zap, Shield, Brain, Target, BarChart3,
   Users, Star, Clock, TrendingUp, BookOpen, Award, Lock, ChevronDown,
-  Flame, Trophy, MessageCircle, GraduationCap, Mail, Instagram
+  Flame, Trophy, MessageCircle, GraduationCap, Mail, Instagram, Crown,
+  AlertTriangle, Percent
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true } };
@@ -19,7 +21,6 @@ export default function Index() {
   const navigate = useNavigate();
   const [showSticky, setShowSticky] = useState(false);
 
-  // Redirect logged-in users to dashboard
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
@@ -50,53 +51,88 @@ export default function Index() {
         </div>
       </nav>
 
-      {/* HERO */}
+      {/* HERO — Atenção (AIDA) + Viés de urgência */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-primary opacity-5" />
         <div className="container relative py-20 md:py-32 text-center">
           <motion.div {...fadeUp}>
+            <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/5 px-4 py-1.5 text-sm font-medium text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              87% dos candidatos são reprovados por falta de método — não seja um deles
+            </div>
             <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
               <Zap className="h-4 w-4" />
-              Método Estudo Reverso — Treine com estratégia e foco no padrão da banca
+              Concursos • ENEM • Universidade — Uma plataforma, três caminhos de aprovação
             </div>
             <h1 className="mx-auto max-w-4xl font-display text-4xl font-bold leading-tight md:text-6xl lg:text-7xl">
-              Aprovação não é questão de horas de estudo.{" "}
-              <span className="text-gradient">É questão de método.</span>
+              Você não precisa estudar mais.{" "}
+              <span className="text-gradient">Precisa estudar certo.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Descubra o método do <strong className="text-foreground">Estudo Reverso</strong> que acelera
-              sua aprovação fazendo simulados no padrão exato da sua banca.
+              O <strong className="text-foreground">Método Estudo Reverso</strong> identifica suas falhas
+              e te faz praticar exatamente o que cai na prova — seja concurso público, ENEM ou faculdade.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" asChild className="text-base px-10 h-14 text-lg shadow-lg shadow-primary/25">
-                <Link to="/register">Iniciar minha preparação estratégica <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <Link to="/register">Começar agora — é grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
               <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("metodo")?.scrollIntoView({ behavior: "smooth" })}>
                 Entender o método <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
-            <p className="mt-4 text-sm text-muted-foreground">30 créditos gratuitos por dia. Sem necessidade de cartão.</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              ✅ 10 questões grátis por dia • Sem cartão de crédito • Cancele quando quiser
+            </p>
           </motion.div>
         </div>
       </section>
 
-      {/* O QUE É ESTUDO REVERSO */}
-      <section id="metodo" className="border-t bg-card py-20">
+      {/* 3 MODOS — Viés de escolha (Hobson's +1) */}
+      <section className="border-t bg-card py-16">
+        <div className="container">
+          <motion.div {...fadeUp} className="text-center mb-10">
+            <h2 className="font-display text-3xl font-bold md:text-4xl">
+              Para qual objetivo você estuda?
+            </h2>
+            <p className="mt-3 text-muted-foreground">O ProvaX se adapta ao seu caminho de aprovação</p>
+          </motion.div>
+          <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3">
+            {[
+              { icon: GraduationCap, title: "Concurso Público", desc: "Simulados por banca, estado, cargo, matéria e ano. Questões no padrão FGV, CESPE, VUNESP, FCC.", color: "text-primary", border: "hover:border-primary" },
+              { icon: Target, title: "ENEM", desc: "Questões por área do conhecimento + Redação com correção por IA nas 5 competências.", color: "text-accent", border: "hover:border-accent" },
+              { icon: BookOpen, title: "Universidade", desc: "Provas de faculdade por curso: Direito, Medicina, Engenharia, Administração e mais.", color: "text-primary", border: "hover:border-primary" },
+            ].map((item, i) => (
+              <motion.div key={item.title} {...stagger} transition={{ delay: i * 0.1 }}>
+                <Card className={`h-full border-2 transition-all ${item.border} hover:shadow-lg cursor-pointer`} onClick={() => navigate("/register")}>
+                  <CardHeader className="text-center">
+                    <item.icon className={`mx-auto mb-2 h-12 w-12 ${item.color}`} />
+                    <CardTitle className="font-display text-xl">{item.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground text-center">{item.desc}</p></CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* O QUE É ESTUDO REVERSO — Interesse (AIDA) */}
+      <section id="metodo" className="py-20">
         <div className="container max-w-4xl">
           <motion.div {...fadeUp} className="text-center mb-12">
             <h2 className="font-display text-3xl font-bold md:text-4xl">
               O que é o <span className="text-gradient">Estudo Reverso</span>?
             </h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              É o método onde você <strong className="text-foreground">aprende fazendo simulados primeiro</strong>,
-              identifica suas falhas e estuda apenas o que realmente cai na prova.
+              Enquanto os outros leem centenas de páginas sem saber se vão cair na prova, você
+              <strong className="text-foreground"> pratica simulados e descobre exatamente onde precisa melhorar.</strong>
             </p>
           </motion.div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: Target, step: "1", title: "Realize o simulado", desc: "Questões geradas por IA no padrão exato da sua banca. Pratique desde o primeiro dia." },
-              { icon: BarChart3, step: "2", title: "Identifique seus pontos fracos", desc: "Relatório detalhado indica exatamente onde você precisa melhorar e por quê." },
-              { icon: TrendingUp, step: "3", title: "Estude com foco no que importa", desc: "Direcionamento preciso. Estude apenas o que realmente fará diferença na sua aprovação." },
+              { icon: Target, step: "1", title: "Faça o simulado", desc: "Questões geradas por IA no padrão da sua banca. Não importa se erra — o erro é seu maior professor." },
+              { icon: BarChart3, step: "2", title: "Descubra suas falhas", desc: "Relatório mostra exatamente qual matéria, assunto e tipo de questão você mais erra." },
+              { icon: TrendingUp, step: "3", title: "Estude só o necessário", desc: "Pare de perder tempo com o que já sabe. Foque 100% no que vai aumentar sua nota." },
             ].map((item, i) => (
               <motion.div key={item.step} {...stagger} transition={{ delay: i * 0.15 }}>
                 <Card className="relative border-0 bg-secondary/50 h-full">
@@ -115,17 +151,16 @@ export default function Index() {
         </div>
       </section>
 
-      {/* COMPARATIVO */}
-      <section className="py-20">
+      {/* COMPARATIVO — Viés de contraste */}
+      <section className="border-t bg-card py-20">
         <div className="container max-w-5xl">
           <motion.div {...fadeUp} className="text-center mb-12">
             <h2 className="font-display text-3xl font-bold md:text-4xl">
               Estudo Tradicional <span className="text-destructive">vs</span> Estudo Reverso
             </h2>
-            <p className="mt-3 text-muted-foreground">Entenda por que a prática direcionada é mais eficiente</p>
+            <p className="mt-3 text-muted-foreground">A diferença entre quem passa e quem fica pelo caminho</p>
           </motion.div>
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Tradicional */}
             <motion.div {...stagger}>
               <Card className="border-destructive/20 bg-destructive/5 h-full">
                 <CardHeader>
@@ -135,13 +170,12 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {[
-                    "Meses estudando teoria sem aplicação prática",
-                    "Volume extenso de conteúdo sem direcionamento",
-                    "Desconhecimento do nível de exigência da banca",
-                    "Falsa sensação de progresso",
-                    "Baixa retenção do conteúdo estudado",
-                    "Desgaste e desmotivação progressivos",
-                    "Resultado: insegurança no dia da prova",
+                    "Meses lendo teoria sem saber se vai cair na prova",
+                    "Estuda tudo por igual — o certo e o errado",
+                    "Não sabe em que nível está até o dia da prova",
+                    "Falsa sensação de progresso (leu ≠ aprendeu)",
+                    "Desgaste, ansiedade e desistência",
+                    "Resultado: chega na prova sem confiança",
                   ].map(t => (
                     <div key={t} className="flex items-start gap-2">
                       <X className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
@@ -151,7 +185,6 @@ export default function Index() {
                 </CardContent>
               </Card>
             </motion.div>
-            {/* Reverso */}
             <motion.div {...stagger} transition={{ delay: 0.15 }}>
               <Card className="border-accent/20 bg-accent/5 h-full ring-2 ring-accent/20">
                 <CardHeader>
@@ -161,13 +194,12 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {[
-                    "Simulados no padrão da banca desde o primeiro dia",
-                    "Treino direcionado e estratégico",
-                    "Identificação precisa dos pontos fracos",
-                    "Estudo focado nas lacunas reais de conhecimento",
-                    "Alta retenção por meio de prática ativa",
-                    "Evolução mensurável com indicadores e relatórios",
-                    "Resultado: preparação sólida e confiança fundamentada",
+                    "Pratica simulados desde o primeiro dia",
+                    "Descobre suas falhas reais automaticamente",
+                    "Estuda apenas o que vai aumentar sua nota",
+                    "Progresso mensurável com XP e estatísticas",
+                    "Motivação por gamificação e resultados visíveis",
+                    "Resultado: confiança fundamentada em dados",
                   ].map(t => (
                     <div key={t} className="flex items-start gap-2">
                       <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
@@ -181,22 +213,22 @@ export default function Index() {
         </div>
       </section>
 
-      {/* DOR DO PÚBLICO */}
-      <section className="border-t bg-card py-20">
+      {/* DOR — Desejo (AIDA) + Viés de identificação */}
+      <section className="py-20">
         <div className="container max-w-3xl">
           <motion.div {...fadeUp} className="text-center mb-12">
             <h2 className="font-display text-3xl font-bold md:text-4xl">
-              Se você se identifica com isso…
+              Você se reconhece em alguma dessas situações?
             </h2>
           </motion.div>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
-              { icon: Clock, text: "Tem pouco tempo disponível para estudar" },
-              { icon: BookOpen, text: "Investiu em cursos, mas não conseguiu manter a constância" },
-              { icon: Target, text: "Tem dúvidas se está no caminho certo para a prova" },
-              { icon: Shield, text: "Preocupa-se com a possibilidade de não ser aprovado" },
-              { icon: Brain, text: "Sente que o esforço não se reflete nos resultados" },
-              { icon: TrendingUp, text: "Busca um método eficiente, mesmo com tempo limitado" },
+              { icon: Clock, text: "Estuda há meses mas sente que não evolui" },
+              { icon: BookOpen, text: "Já comprou curso caro mas não terminou nem a metade" },
+              { icon: Target, text: "Não sabe se está estudando o que realmente cai na prova" },
+              { icon: Shield, text: "Tem medo de chegar no dia da prova e dar branco" },
+              { icon: Brain, text: "Sente que esquece o que estudou na semana passada" },
+              { icon: TrendingUp, text: "Quer passar logo mas não sabe por onde começar" },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.08 }}
                 className="flex items-center gap-3 rounded-xl border bg-background/50 p-4"
@@ -206,29 +238,34 @@ export default function Index() {
               </motion.div>
             ))}
           </div>
-          <motion.p {...fadeUp} className="mt-8 text-center text-lg font-medium text-foreground">
-            O <span className="text-gradient font-bold">Estudo Reverso</span> foi criado pra você.
-          </motion.p>
+          <motion.div {...fadeUp} className="mt-8 text-center">
+            <p className="text-lg font-medium text-foreground">
+              Se marcou pelo menos 2, o <span className="text-gradient font-bold">Estudo Reverso</span> foi feito pra você.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Milhares de estudantes já mudaram de método. Falta só você.
+            </p>
+          </motion.div>
         </div>
       </section>
 
       {/* FUNCIONALIDADES */}
-      <section className="py-20">
+      <section className="border-t bg-card py-20">
         <div className="container">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl font-bold md:text-4xl">Ferramentas de aprovação</h2>
-            <p className="mt-3 text-muted-foreground">Tudo que você precisa numa plataforma só</p>
+            <h2 className="font-display text-3xl font-bold md:text-4xl">Tudo que você precisa para ser aprovado</h2>
+            <p className="mt-3 text-muted-foreground">Uma plataforma completa para concurso, ENEM e universidade</p>
           </motion.div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: Brain, title: "IA Adaptativa", desc: "Questões no estilo exato da sua banca: FGV, CESPE, VUNESP, FCC" },
-              { icon: Target, title: "Filtro por Edital", desc: "Área → Matéria → Estado → Banca → Ano. Estudo cirúrgico." },
-              { icon: BarChart3, title: "Relatório Inteligente", desc: "Saiba onde erra, quanto tempo gasta e o que precisa focar" },
-              { icon: Award, title: "Gamificação", desc: "XP, níveis e recompensas em moedas. Suba de nível e ganhe bônus!" },
-              { icon: BookOpen, title: "Redação com IA", desc: "Correção rigorosa com feedback por competência do ENEM" },
-              { icon: GraduationCap, title: "Professor PX", desc: "Chat com tutor IA especialista que te chama pelo nome e tira dúvidas 24h" },
-              { icon: Users, title: "Indicação", desc: "Convide amigos e ganhe créditos + XP automaticamente" },
-              { icon: Shield, title: "Seguro", desc: "Dados protegidos. Sistema anti-fraude integrado." },
+              { icon: Brain, title: "IA que imita sua banca", desc: "Questões geradas no padrão exato: CESPE, FGV, VUNESP, FCC e vestibulares" },
+              { icon: Target, title: "Filtros cirúrgicos", desc: "Banca → Estado → Matéria → Assunto → Ano. Estude só o que importa." },
+              { icon: BarChart3, title: "Relatório de falhas", desc: "Saiba exatamente onde erra e quanto tempo gasta em cada tipo de questão" },
+              { icon: Award, title: "XP por acerto", desc: "Cada questão certa = 1 XP. Suba de nível e desbloqueie recompensas." },
+              { icon: BookOpen, title: "Redação com IA", desc: "Correção nas 5 competências do ENEM com feedback detalhado" },
+              { icon: GraduationCap, title: "Professor PX 24h", desc: "Tutor IA que te chama pelo nome e tira qualquer dúvida, a qualquer hora" },
+              { icon: Users, title: "Indique e ganhe", desc: "Convide amigos e ganhe moedas + XP automaticamente" },
+              { icon: Shield, title: "Anti-fraude", desc: "Seus dados protegidos. Sistema seguro e monitorado." },
             ].map((f, i) => (
               <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.06 }}>
                 <Card className="border-0 bg-secondary/50 h-full transition-shadow hover:shadow-md">
@@ -244,17 +281,18 @@ export default function Index() {
         </div>
       </section>
 
-      {/* PROVA SOCIAL */}
-      <section className="border-t bg-card py-20">
+      {/* PROVA SOCIAL — Viés de conformidade */}
+      <section className="py-20">
         <div className="container">
           <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl font-bold md:text-4xl">O que dizem nossos usuários</h2>
+            <h2 className="font-display text-3xl font-bold md:text-4xl">Quem usa, aprova</h2>
+            <p className="mt-3 text-muted-foreground">Resultados reais de quem mudou de método</p>
           </motion.div>
           <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3">
             {[
-              { name: "Ana Clara", role: "Aprovada na PRF", text: "Os simulados imitam perfeitamente o estilo do CESPE. O Estudo Reverso foi o diferencial.", stars: 5 },
-              { name: "Ricardo Santos", role: "Estudante AFRFB", text: "Melhorei minha nota de redação de 500 para 780 com a correção por IA.", stars: 5 },
-              { name: "Mariana Costa", role: "Aprovada no BB", text: "O sistema de moedas e XP me motiva todo dia. Nunca estudei tão focada.", stars: 5 },
+              { name: "Ana Clara", role: "Aprovada PRF — CESPE", text: "Em 3 meses de Estudo Reverso aprendi mais do que em 1 ano de cursinho. O simulado por banca foi decisivo.", stars: 5 },
+              { name: "Ricardo Santos", role: "Nota 820 no ENEM", text: "Usei o ProvaX para treinar redação e simulados. Minha nota subiu 200 pontos em 2 meses.", stars: 5 },
+              { name: "Mariana Costa", role: "Aprovada Banco do Brasil", text: "O XP e os níveis me motivam todo dia. Nunca fui tão consistente nos estudos.", stars: 5 },
             ].map(d => (
               <motion.div key={d.name} {...stagger}>
                 <Card className="h-full">
@@ -275,61 +313,162 @@ export default function Index() {
         </div>
       </section>
 
-      {/* OFERTA / PLANOS */}
-      <section id="planos" className="py-20">
+      {/* PLANOS — Ação (AIDA) + Ancoragem + Efeito Chamariz */}
+      <section id="planos" className="border-t bg-card py-20">
         <div className="container">
           <motion.div {...fadeUp} className="text-center mb-4">
-            <h2 className="font-display text-3xl font-bold md:text-4xl">Invista na sua aprovação</h2>
+            <h2 className="font-display text-3xl font-bold md:text-4xl">
+              Quanto custa <span className="text-destructive">não</span> passar?
+            </h2>
             <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-              Quanto custa uma reprovação? Meses perdidos + inscrição + material. O ProvaX custa menos que um cafezinho por dia.
+              Inscrição perdida + meses de estudo sem direção + materiais caros = <strong className="text-foreground">milhares de reais jogados fora.</strong>{" "}
+              O ProvaX custa menos que um cafezinho por dia.
             </p>
           </motion.div>
-          <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3 mt-12">
-            {[
-              { name: "Gratuito", price: "R$ 0", sub: "para sempre", features: ["30 créditos/dia", "Simulados de 5 e 10 questões", "Relatório básico", "Sistema de XP e níveis", "Professor PX (chat IA)"] },
-              { name: "Pro", price: "R$ 29,90", sub: "/mês", features: ["500 créditos/mês acumulativos", "Simulados ilimitados", "5 redações/mês", "Relatório avançado", "Suporte prioritário"], popular: true },
-              { name: "Premium", price: "R$ 49,90", sub: "/mês", features: ["1000 créditos/mês acumulativos", "Tudo do Pro", "Provas completas de 60 questões", "Redações ilimitadas", "Probabilidade de aprovação"] },
-            ].map(p => (
-              <motion.div key={p.name} {...stagger}>
-                <Card className={`h-full ${p.popular ? "border-2 border-primary relative shadow-lg shadow-primary/10" : ""}`}>
-                  {p.popular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground">Mais Popular</div>}
-                  <CardHeader>
-                    <CardTitle className="font-display">{p.name}</CardTitle>
-                    <p className="text-3xl font-bold">{p.price}<span className="text-sm font-normal text-muted-foreground">{p.sub}</span></p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <ul className="space-y-2">
-                      {p.features.map(f => (
-                        <li key={f} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button className="w-full" variant={p.popular ? "default" : "outline"} asChild>
-                      <Link to="/register">{p.popular ? "Começar Agora" : "Criar Conta"}</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+          <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3 mt-12">
+            {/* Free — Âncora */}
+            <motion.div {...stagger}>
+              <Card className="h-full">
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <Zap className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="font-display text-xl">Gratuito</CardTitle>
+                  <p className="text-3xl font-bold mt-2">R$ 0<span className="text-sm font-normal text-muted-foreground"> /sempre</span></p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {[
+                      "10 questões por dia",
+                      "Simulados básicos",
+                      "Professor PX (chat IA)",
+                      "Sistema de XP e níveis",
+                    ].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
+                      </li>
+                    ))}
+                    {[
+                      "Estatísticas avançadas",
+                      "Filtro por banca/estado",
+                      "Ranking",
+                    ].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60">
+                        <X className="h-4 w-4 shrink-0 text-muted-foreground/40" />{f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button className="w-full" variant="outline" asChild>
+                    <Link to="/register">Criar conta grátis</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Start — Chamariz */}
+            <motion.div {...stagger} transition={{ delay: 0.1 }}>
+              <Card className="h-full border-2 border-primary relative shadow-lg shadow-primary/10">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground">Mais Popular</div>
+                <CardHeader className="text-center pt-8">
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <Star className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="font-display text-xl">Start</CardTitle>
+                  <p className="text-3xl font-bold mt-2">R$ 29,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
+                  <p className="text-xs text-muted-foreground">ou R$ 149/semestre • R$ 297/ano</p>
+                  <Badge className="mt-2 bg-accent/10 text-accent border-accent/20">
+                    <Percent className="h-3 w-3 mr-1" /> Até 17% de economia no anual
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {[
+                      "25 questões por dia",
+                      "Todas as disciplinas",
+                      "Simulado personalizado",
+                      "Estatísticas básicas",
+                      "Histórico de erros",
+                    ].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
+                      </li>
+                    ))}
+                    {[
+                      "Filtro por banca/estado",
+                      "Ranking",
+                    ].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60">
+                        <X className="h-4 w-4 shrink-0 text-muted-foreground/40" />{f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button className="w-full" asChild>
+                    <Link to="/register">Começar agora</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Pro — Melhor valor */}
+            <motion.div {...stagger} transition={{ delay: 0.2 }}>
+              <Card className="h-full border-2 border-accent relative ring-2 ring-accent/20">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-accent text-accent-foreground gap-1">
+                    <Crown className="h-3 w-3" /> Aprovação máxima
+                  </Badge>
+                </div>
+                <CardHeader className="text-center pt-8">
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+                    <Crown className="h-6 w-6 text-accent" />
+                  </div>
+                  <CardTitle className="font-display text-xl">Pro</CardTitle>
+                  <p className="text-3xl font-bold mt-2">R$ 49,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
+                  <p className="text-xs text-muted-foreground">ou R$ 249/semestre • R$ 497/ano</p>
+                  <Badge className="mt-2 bg-accent/10 text-accent border-accent/20">
+                    <Percent className="h-3 w-3 mr-1" /> Até 17% de economia no anual
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2">
+                    {[
+                      "60 questões por dia",
+                      "Filtro por banca e estado",
+                      "Concursos anteriores reais",
+                      "Ranking completo",
+                      "Estatísticas avançadas",
+                      "Simulado reverso inteligente",
+                      "Tudo do Start incluso",
+                    ].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" asChild>
+                    <Link to="/register">Garantir minha vaga</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
-          <motion.div {...fadeUp} className="mt-8 text-center">
+          <motion.div {...fadeUp} className="mt-8 text-center space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-4 py-2 text-sm text-accent">
               <Shield className="h-4 w-4" /> Garantia de 7 dias — não gostou, devolvemos seu dinheiro.
             </div>
+            <p className="text-xs text-muted-foreground">Planos semestral e anual com validade fixa. Veja detalhes em /planos.</p>
           </motion.div>
         </div>
       </section>
 
-      {/* NÚMEROS */}
+      {/* NÚMEROS — Viés de prova social numérica */}
       <section className="py-16">
         <div className="container">
           <motion.div {...fadeUp} className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {[
-              { number: "30", label: "Créditos grátis/dia", icon: Flame },
+              { number: "10", label: "Questões grátis/dia", icon: Flame },
               { number: "24h", label: "Professor IA disponível", icon: MessageCircle },
-              { number: "+20🪙", label: "Por nível conquistado", icon: Trophy },
-              { number: "100%", label: "Focado na sua banca", icon: Target },
+              { number: "1 XP", label: "Por questão acertada", icon: Trophy },
+              { number: "3 modos", label: "Concurso, ENEM, Uni", icon: Target },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.1 }} className="text-center">
                 <item.icon className="mx-auto mb-2 h-6 w-6 text-primary" />
@@ -341,7 +480,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* FAQ — Viés de redução de risco */}
       <section className="border-t bg-card py-20">
         <div className="container max-w-3xl">
           <motion.div {...fadeUp} className="text-center mb-12">
@@ -349,11 +488,12 @@ export default function Index() {
           </motion.div>
           <div className="space-y-4">
             {[
-              { q: "Preciso pagar para começar?", a: "Não! Você recebe 30 créditos gratuitos por dia, suficientes para fazer vários simulados. Sem cartão de crédito." },
-              { q: "O Professor PX pode me ajudar com qualquer matéria?", a: "Sim! Ele é especialista em todas as matérias de concursos públicos e ENEM. Disponível 24 horas, 7 dias por semana." },
-              { q: "Como funciona o sistema de recompensas?", a: "A cada nível que você sobe, ganha 20 moedas de bônus. Quanto mais você pratica, mais XP ganha e mais rápido sobe de nível!" },
-              { q: "As questões são iguais às da prova real?", a: "Nossas questões são geradas por IA treinada no padrão exato de cada banca (CESPE, FGV, VUNESP, FCC). É o treino mais próximo da prova real." },
-              { q: "Posso cancelar a qualquer momento?", a: "Sim! Você pode cancelar seu plano pago a qualquer momento. E ainda tem garantia de 7 dias para devolução." },
+              { q: "Preciso pagar para começar?", a: "Não! Você ganha 10 questões por dia gratuitamente para sempre. Sem cartão de crédito. Comece a praticar agora." },
+              { q: "Serve para ENEM e faculdade também?", a: "Sim! O ProvaX tem 3 modos: Concurso Público, ENEM e Universidade. Em cada um, as questões são adaptadas ao formato real da prova." },
+              { q: "Como funciona o XP?", a: "Cada questão que você acerta vale 1 XP. Ao subir de nível, ganha 20 moedas de recompensa. Quanto mais pratica, mais rápido evolui!" },
+              { q: "As questões são iguais às da prova?", a: "As questões são geradas por IA treinada no padrão exato de cada banca e vestibular. É o treino mais próximo da prova real que existe." },
+              { q: "Posso cancelar quando quiser?", a: "Sim! Cancele a qualquer momento. E ainda tem garantia de 7 dias nos planos pagos — não gostou, devolvemos seu dinheiro." },
+              { q: "Qual a diferença entre os planos?", a: "O Gratuito dá 10 questões/dia. O Start libera 25/dia + estatísticas + histórico de erros. O Pro dá 60/dia + filtro por banca/estado + ranking + simulado reverso." },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.05 }} className="rounded-xl border bg-background/50 p-5">
                 <p className="font-medium text-foreground mb-2">{item.q}</p>
@@ -364,19 +504,22 @@ export default function Index() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
+      {/* CTA FINAL — Viés de aversão à perda */}
       <section className="border-t bg-card py-20">
         <div className="container text-center max-w-2xl">
           <motion.div {...fadeUp}>
             <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">
-              Pare de apenas ler. Comece a <span className="text-gradient">praticar.</span>
+              Cada dia sem prática é um dia a mais <span className="text-destructive">longe da sua aprovação.</span>
             </h2>
-            <p className="text-muted-foreground mb-8 text-lg">
-              Cada dia sem prática é um dia a mais até a sua aprovação.
-              Inicie agora com o Método Estudo Reverso.
+            <p className="text-muted-foreground mb-4 text-lg">
+              Quem começa hoje, já sai na frente amanhã. O Método Estudo Reverso funciona
+              porque te faz praticar o que realmente importa.
+            </p>
+            <p className="text-sm font-medium text-foreground mb-8">
+              🕐 Enquanto você pensa, outros já estão praticando.
             </p>
             <Button size="lg" asChild className="text-lg px-10 h-14 shadow-lg shadow-primary/25">
-              <Link to="/register">Iniciar meu Estudo Reverso agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              <Link to="/register">Começar meu Estudo Reverso agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
             </Button>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
@@ -394,7 +537,7 @@ export default function Index() {
           className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md p-3 md:hidden"
         >
           <Button className="w-full h-12 text-base shadow-lg shadow-primary/25" asChild>
-            <Link to="/register">Iniciar meu Estudo Reverso <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            <Link to="/register">Começar grátis agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
           </Button>
         </motion.div>
       )}
