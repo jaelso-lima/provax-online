@@ -9,18 +9,26 @@ import {
   Package,
   ArrowLeft,
   Shield,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
-const navItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "Usuários", icon: Users },
-  { href: "/admin/plans", label: "Planos", icon: Package },
-  { href: "/admin/billing", label: "Faturamento", icon: CreditCard },
+const allNavItems = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "owner", "partner"] },
+  { href: "/admin/users", label: "Usuários", icon: Users, roles: ["admin", "owner"] },
+  { href: "/admin/plans", label: "Planos", icon: Package, roles: ["admin", "owner"] },
+  { href: "/admin/billing", label: "Faturamento", icon: CreditCard, roles: ["admin", "owner"] },
+  { href: "/admin/expenses", label: "Despesas", icon: Receipt, roles: ["admin", "owner"] },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const { role, isPartner } = useAdminRole();
+
+  const navItems = allNavItems.filter((item) =>
+    item.roles.includes(role || "")
+  );
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -29,7 +37,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-2">
             <Shield className="h-6 w-6 text-primary" />
-            <span className="font-bold text-lg font-['Space_Grotesk']">Admin Panel</span>
+            <span className="font-bold text-lg font-['Space_Grotesk']">
+              {isPartner ? "Painel Sócio" : "Admin Panel"}
+            </span>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1">
@@ -65,7 +75,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         <header className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            <span className="font-bold font-['Space_Grotesk']">Admin</span>
+            <span className="font-bold font-['Space_Grotesk']">
+              {isPartner ? "Sócio" : "Admin"}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />

@@ -2,23 +2,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Coins, LogOut, User, Shield } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AppHeader() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
-
-  const { data: isAdmin } = useQuery({
-    queryKey: ["user-role-header", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase.rpc("is_admin");
-      return data as boolean;
-    },
-    enabled: !!user,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { hasAdminAccess } = useAdminRole();
 
   const handleLogout = async () => {
     await signOut();
@@ -37,7 +27,7 @@ export default function AppHeader() {
             <span className="text-foreground">{profile?.saldo_moedas ?? 0}</span>
           </div>
           <ThemeToggle />
-          {isAdmin && (
+          {hasAdminAccess && (
             <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} title="Painel Admin">
               <Shield className="h-4 w-4 text-primary" />
             </Button>

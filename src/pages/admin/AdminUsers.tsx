@@ -247,10 +247,10 @@ export default function AdminUsers() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="user">user</SelectItem>
-                          <SelectItem value="moderator">moderator</SelectItem>
-                          <SelectItem value="admin">admin</SelectItem>
-                          <SelectItem value="owner">owner</SelectItem>
+                          <SelectItem value="user">Aluno</SelectItem>
+                          <SelectItem value="partner">Sócio</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="owner">Owner</SelectItem>
                         </SelectContent>
                       </Select>
 

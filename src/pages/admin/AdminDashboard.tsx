@@ -2,7 +2,8 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, BookOpen, FileText, TrendingUp } from "lucide-react";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import { Users, BookOpen, FileText, TrendingUp, Percent } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 const COLORS = [
@@ -14,13 +15,18 @@ const COLORS = [
 ];
 
 export default function AdminDashboard() {
+  const { isAdmin, isPartner } = useAdminRole();
+
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["admin-stats"],
+    queryKey: ["admin-dashboard-stats", isPartner],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_stats");
+      // Partners use the limited stats function
+      const rpcName = isPartner ? "get_partner_stats" : "get_admin_stats";
+      const { data, error } = await supabase.rpc(rpcName);
       if (error) throw error;
       return data as any;
     },
+    enabled: isAdmin || isPartner,
   });
 
   const usersByPlan = stats?.users_by_plan
@@ -38,8 +44,12 @@ export default function AdminDashboard() {
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold font-['Space_Grotesk']">Dashboard Administrativo</h1>
-          <p className="text-muted-foreground text-sm">Visão geral da plataforma</p>
+          <h1 className="text-2xl font-bold font-['Space_Grotesk']">
+            {isPartner ? "Visão Geral" : "Dashboard Administrativo"}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {isPartner ? "Métricas de crescimento da plataforma" : "Visão geral da plataforma"}
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -70,28 +80,30 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+          {stats?.growth_pct !== undefined && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-chart-3/10">
+                    <Percent className="h-5 w-5" style={{ color: "hsl(32, 95%, 55%)" }} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{isLoading ? "..." : `${stats.growth_pct}%`}</p>
+                    <p className="text-xs text-muted-foreground">Crescimento Mensal</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-chart-3/10">
-                  <BookOpen className="h-5 w-5" style={{ color: "hsl(32, 95%, 55%)" }} />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <BookOpen className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{isLoading ? "..." : stats?.total_simulados ?? 0}</p>
                   <p className="text-xs text-muted-foreground">Simulados</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-chart-4/10">
-                  <FileText className="h-5 w-5" style={{ color: "hsl(340, 75%, 55%)" }} />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{isLoading ? "..." : stats?.total_redacoes ?? 0}</p>
-                  <p className="text-xs text-muted-foreground">Redações</p>
                 </div>
               </div>
             </CardContent>
@@ -156,6 +168,19 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Partner notice */}
+        {isPartner && (
+          <Card className="border-dashed">
+            <CardContent className="py-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                📊 Você está visualizando o painel de sócio com métricas de crescimento.
+                <br />
+                Dados financeiros e gestão de usuários são restritos ao administrador.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AdminLayout>
   );
