@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import { Users, BookOpen, FileText, TrendingUp, Percent } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Users, BookOpen, FileText, TrendingUp, Percent, PenTool } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
 
 const COLORS = [
   "hsl(245, 58%, 51%)",
@@ -20,7 +20,6 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-dashboard-stats", isPartner],
     queryFn: async () => {
-      // Partners use the limited stats function
       const rpcName = isPartner ? "get_partner_stats" : "get_admin_stats";
       const { data, error } = await supabase.rpc(rpcName);
       if (error) throw error;
@@ -29,16 +28,48 @@ export default function AdminDashboard() {
     enabled: isAdmin || isPartner,
   });
 
+  // Fetch recent signups for growth chart (admin only)
+  const { data: recentProfiles } = useQuery({
+    queryKey: ["admin-recent-signups"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("created_at")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
   const usersByPlan = stats?.users_by_plan
     ? Object.entries(stats.users_by_plan).map(([name, value]) => ({ name, value: value as number }))
     : [];
 
   const usageByMode = stats?.usage_by_mode
     ? Object.entries(stats.usage_by_mode).map(([name, value]) => ({
-        name: name === "concurso" ? "Concurso" : name === "enem" ? "ENEM" : "Universidade",
+        name: name === "concurso" ? "Concurso" : name === "enem" ? "ENEM" : name === "universidade" ? "Universidade" : name,
         total: value as number,
       }))
     : [];
+
+  // Build monthly signup chart
+  const signupChart = (() => {
+    if (!recentProfiles) return [];
+    const months: Record<string, number> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+      months[key] = 0;
+    }
+    recentProfiles.forEach((p) => {
+      const d = new Date(p.created_at);
+      const key = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+      if (key in months) months[key]++;
+    });
+    return Object.entries(months).map(([month, count]) => ({ month, usuarios: count }));
+  })();
 
   return (
     <AdminLayout>
@@ -53,7 +84,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -89,7 +120,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{isLoading ? "..." : `${stats.growth_pct}%`}</p>
-                    <p className="text-xs text-muted-foreground">Crescimento Mensal</p>
+                    <p className="text-xs text-muted-foreground">Crescimento</p>
                   </div>
                 </div>
               </CardContent>
@@ -108,9 +139,22 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-accent/10">
+                  <PenTool className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{isLoading ? "..." : stats?.total_redacoes ?? 0}</p>
+                  <p className="text-xs text-muted-foreground">Redações</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Charts */}
+        {/* Charts Row 1 */}
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Users by Plan */}
           <Card>
@@ -168,6 +212,34 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Growth Chart (admin only) */}
+        {isAdmin && signupChart.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Crescimento de Usuários - Últimos 6 Meses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={signupChart}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="month" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="usuarios"
+                    name="Novos Usuários"
+                    stroke="hsl(245, 58%, 51%)"
+                    fill="hsl(245, 58%, 51%)"
+                    fillOpacity={0.15}
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Partner notice */}
         {isPartner && (
