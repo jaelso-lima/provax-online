@@ -636,6 +636,7 @@ export type Database = {
           nome: string
           plano: string
           saldo_moedas: number
+          telefone: string | null
           updated_at: string
           xp: number
         }
@@ -652,6 +653,7 @@ export type Database = {
           nome?: string
           plano?: string
           saldo_moedas?: number
+          telefone?: string | null
           updated_at?: string
           xp?: number
         }
@@ -668,6 +670,7 @@ export type Database = {
           nome?: string
           plano?: string
           saldo_moedas?: number
+          telefone?: string | null
           updated_at?: string
           xp?: number
         }

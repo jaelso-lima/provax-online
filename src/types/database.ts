@@ -10,6 +10,7 @@ export interface Profile {
   indicado_por: string | null;
   avatar_url: string | null;
   last_credit_reset: string | null;
+  telefone: string | null;
   account_status: 'active' | 'suspended';
   created_at: string;
   updated_at: string;

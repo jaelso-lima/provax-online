@@ -19,6 +19,7 @@ export default function Register() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [codigoIndicacao, setCodigoIndicacao] = useState(refCode);
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,6 +42,16 @@ export default function Register() {
     }
   };
 
+  // Phone mask and validation
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 2) return digits.length ? `(${digits}` : "";
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
+  const phoneDigits = telefone.replace(/\D/g, "");
+  const phoneValid = phoneDigits.length >= 10 && phoneDigits.length <= 11;
+
   const hasLetter = /[a-zA-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
   const hasMinLength = password.length >= 6;
@@ -48,7 +59,8 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !email || !password) { toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" }); return; }
+    if (!nome || !email || !password || !telefone) { toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" }); return; }
+    if (!phoneValid) { toast({ title: "Informe um número de telefone válido com DDD.", variant: "destructive" }); return; }
     if (!passwordValid) { toast({ title: "A senha deve ter no mínimo 6 caracteres, incluindo pelo menos 1 letra e 1 número.", variant: "destructive" }); return; }
     if (!aceitouTermos) { toast({ title: "É necessário aceitar os Termos de Uso para prosseguir.", variant: "destructive" }); return; }
     setLoading(true);
@@ -69,7 +81,7 @@ export default function Register() {
         return;
       }
 
-      const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined);
+      const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined, phoneDigits);
       if (error) {
         const msg = error.message.toLowerCase();
         if (msg.includes("already registered") || msg.includes("already been registered")) {
@@ -110,6 +122,13 @@ export default function Register() {
               {hasNumber ? "✓" : "✗"} Pelo menos 1 número
             </p>
           </div>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="telefone">Telefone (com DDD)</Label>
+        <Input id="telefone" type="tel" placeholder="(11) 99999-9999" value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} required />
+        {telefone.length > 0 && !phoneValid && (
+          <p className="text-xs text-destructive">Informe um número de telefone válido com DDD.</p>
         )}
       </div>
       <div className="space-y-2"><Label htmlFor="indicacao">Código de Indicação (opcional)</Label><Input id="indicacao" placeholder="Ex: A1B2C3D4" value={codigoIndicacao} onChange={e => setCodigoIndicacao(e.target.value)} /></div>
