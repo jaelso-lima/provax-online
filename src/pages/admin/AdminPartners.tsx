@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History, Clock, XCircle, PenTool } from "lucide-react";
+import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History, Clock, XCircle, PenTool, Eye } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -17,7 +17,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { generateContractPDF } from "@/lib/contractPdf";
+import { generateContractPDF, getContractClauses } from "@/lib/contractPdf";
 import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
 
 export default function AdminPartners() {
@@ -25,6 +25,7 @@ export default function AdminPartners() {
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [showContracts, setShowContracts] = useState<string | null>(null);
+  const [viewContractPartner, setViewContractPartner] = useState<any | null>(null);
   const [newPartner, setNewPartner] = useState({ email: "", percentual: "", valor: "" });
 
   // Fetch partners with profile info
@@ -298,6 +299,7 @@ export default function AdminPartners() {
                   onViewContracts={() => setShowContracts(p.id)}
                   onUpdatePercentual={(val) => updatePercentualMutation.mutate({ partnerId: p.id, newPercentual: val })}
                   onDownloadContract={() => downloadContract(p)}
+                  onViewContractInline={() => setViewContractPartner(p)}
                   onSignAsFounder={(contractId) => signAsFounderMutation.mutate(contractId)}
                   signingPending={signAsFounderMutation.isPending}
                 />
@@ -413,6 +415,21 @@ export default function AdminPartners() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* View Contract Inline Dialog */}
+      <Dialog open={!!viewContractPartner} onOpenChange={(open) => !open && setViewContractPartner(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Contrato de Participação Societária
+            </DialogTitle>
+          </DialogHeader>
+          {viewContractPartner && (
+            <ContractInlineView partner={viewContractPartner} />
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
@@ -428,6 +445,7 @@ function PartnerCard({
   onViewContracts,
   onUpdatePercentual,
   onDownloadContract,
+  onViewContractInline,
   onSignAsFounder,
   signingPending,
 }: {
@@ -440,6 +458,7 @@ function PartnerCard({
   onViewContracts: () => void;
   onUpdatePercentual: (val: number) => void;
   onDownloadContract: () => void;
+  onViewContractInline: () => void;
   onSignAsFounder: (contractId: string) => void;
   signingPending: boolean;
 }) {
@@ -496,10 +515,16 @@ function PartnerCard({
               </Button>
             )}
 
+            {/* View contract inline */}
+            <Button variant="outline" size="sm" onClick={onViewContractInline} className="gap-1">
+              <Eye className="h-3.5 w-3.5" />
+              Visualizar
+            </Button>
+
             {/* Download contract */}
             <Button variant="outline" size="sm" onClick={onDownloadContract} className="gap-1">
               <FileText className="h-3.5 w-3.5" />
-              Contrato PDF
+              PDF
             </Button>
 
             {/* View contracts */}
@@ -625,4 +650,70 @@ function downloadContract(partner: any) {
     dataEntrada: partner.data_entrada,
     tipo: partner.tipo_participacao,
   });
+}
+
+function ContractInlineView({ partner }: { partner: any }) {
+  const profile = partner.profiles;
+  const clauses = getContractClauses(partner.percentual_participacao);
+
+  return (
+    <div className="space-y-6 text-sm">
+      {/* Header */}
+      <div className="text-center space-y-1 border-b border-border pb-4">
+        <h2 className="text-lg font-bold">CONTRATO DE PARTICIPAÇÃO SOCIETÁRIA PRIVADA</h2>
+        <p className="text-muted-foreground">Provax — Plataforma Educacional Digital</p>
+      </div>
+
+      {/* Partner info */}
+      <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-muted/50">
+        <div>
+          <p className="text-xs text-muted-foreground">Sócio Investidor</p>
+          <p className="font-semibold">{profile?.nome || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">E-mail</p>
+          <p>{profile?.email || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Percentual</p>
+          <p className="font-semibold">{partner.percentual_participacao}%</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Valor Investido</p>
+          <p>R$ {Number(partner.valor_investido).toFixed(2)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Data de Entrada</p>
+          <p>{new Date(partner.data_entrada).toLocaleDateString("pt-BR")}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Tipo</p>
+          <p className="capitalize">{partner.tipo_participacao.replace("_", " ")}</p>
+        </div>
+      </div>
+
+      {/* Clauses */}
+      <div className="space-y-4">
+        {clauses.map((clause, i) => (
+          <div key={i} className="space-y-1">
+            <h3 className="font-bold text-sm">{clause.title}</h3>
+            <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{clause.body}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-border pt-4 text-center space-y-4 text-xs text-muted-foreground">
+        <div className="flex justify-around">
+          <div>
+            <p className="border-t border-foreground/30 pt-1 px-8">Fundador — Provax</p>
+          </div>
+          <div>
+            <p className="border-t border-foreground/30 pt-1 px-8">Sócio — {profile?.nome || "—"}</p>
+          </div>
+        </div>
+        <p>Contrato digital gerado em {new Date().toLocaleDateString("pt-BR")}</p>
+      </div>
+    </div>
+  );
 }
