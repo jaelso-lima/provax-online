@@ -469,7 +469,23 @@ function PartnerCard({
 
   return (
     <Card>
-      <CardContent className="py-4">
+      <CardContent className="py-4 space-y-3">
+        {/* Mobile: contract buttons row at top */}
+        <div className="flex items-center gap-2 flex-wrap lg:hidden">
+          <Button variant="outline" size="sm" onClick={onViewContractInline} className="gap-1">
+            <Eye className="h-3.5 w-3.5" />
+            Visualizar
+          </Button>
+          <Button variant="outline" size="sm" onClick={onDownloadContract} className="gap-1">
+            <FileText className="h-3.5 w-3.5" />
+            PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={onViewContracts} className="gap-1">
+            <History className="h-3.5 w-3.5" />
+            Histórico
+          </Button>
+        </div>
+
         <div className="flex flex-col lg:flex-row lg:items-center gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -515,20 +531,20 @@ function PartnerCard({
               </Button>
             )}
 
-            {/* View contract inline */}
-            <Button variant="outline" size="sm" onClick={onViewContractInline} className="gap-1">
+            {/* View contract inline - desktop only */}
+            <Button variant="outline" size="sm" onClick={onViewContractInline} className="gap-1 hidden lg:flex">
               <Eye className="h-3.5 w-3.5" />
               Visualizar
             </Button>
 
-            {/* Download contract */}
-            <Button variant="outline" size="sm" onClick={onDownloadContract} className="gap-1">
+            {/* Download contract - desktop only */}
+            <Button variant="outline" size="sm" onClick={onDownloadContract} className="gap-1 hidden lg:flex">
               <FileText className="h-3.5 w-3.5" />
               PDF
             </Button>
 
-            {/* View contracts */}
-            <Button variant="outline" size="sm" onClick={onViewContracts} className="gap-1">
+            {/* View contracts - desktop only */}
+            <Button variant="outline" size="sm" onClick={onViewContracts} className="gap-1 hidden lg:flex">
               <History className="h-3.5 w-3.5" />
               Histórico
             </Button>
