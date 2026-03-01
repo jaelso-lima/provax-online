@@ -478,17 +478,17 @@ export default function Simulado() {
         <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>
         <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => (<button key={i} onClick={() => setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{i+1}</button>))}</div>
         
-        {/* Finalizar button at bottom, more visible */}
-        <div ref={finalizarRef} className="mt-8 flex justify-center">
+        {/* Finalizar button */}
+        <div ref={finalizarRef} className="mt-6 flex justify-center">
           <Button 
-            variant="destructive" 
-            size="lg" 
-            className="w-full max-w-sm text-base font-semibold"
+            variant="outline" 
+            size="sm" 
+            className="text-destructive border-destructive/40 hover:bg-destructive/10 text-sm"
             onClick={handleFinalizar} 
             disabled={finalizando}
           >
-            {finalizando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            🏁 Finalizar Simulado ({respondidas}/{questoes.length} respondidas)
+            {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+            Finalizar ({respondidas}/{questoes.length})
           </Button>
         </div>
       </main><AppFooter /></div>
