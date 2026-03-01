@@ -552,7 +552,22 @@ export type Database = {
           user_id?: string
           valor_investido?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "partners_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partners_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plan_features: {
         Row: {

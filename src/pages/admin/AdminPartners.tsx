@@ -35,7 +35,7 @@ export default function AdminPartners() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("*, profiles:user_id(nome, email)")
+        .select("*, profiles!partners_user_id_fkey(nome, email)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as any[];
