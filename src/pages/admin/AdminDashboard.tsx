@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,9 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download } from "lucide-react";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
-import { generateContractPDF } from "@/lib/contractPdf";
+import { generateContractPDF, getContractClauses } from "@/lib/contractPdf";
+import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const COLORS = [
   "hsl(245, 58%, 51%)",
@@ -20,6 +28,9 @@ const COLORS = [
 export default function AdminDashboard() {
   const { isAdmin, isPartner } = useAdminRole();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [showContract, setShowContract] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   // Admin stats
   const { data: stats, isLoading } = useQuery({
@@ -57,6 +68,62 @@ export default function AdminDashboard() {
       return partner;
     },
     enabled: isPartner && !!user,
+  });
+
+  // Partner's active contract record
+  const { data: activeContract } = useQuery({
+    queryKey: ["partner-active-contract", user?.id],
+    queryFn: async () => {
+      // Get partner id first
+      const { data: partner } = await supabase
+        .from("partners")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      if (!partner) return null;
+      const { data } = await supabase
+        .from("partner_contracts")
+        .select("*")
+        .eq("partner_id", partner.id)
+        .in("status", ["ativo", "pendente_assinatura", "assinado_socio", "assinado_fundador", "assinado_ambos"])
+        .order("versao_contrato", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    enabled: isPartner && !!user,
+  });
+
+  // Sign contract as partner
+  const signMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeContract) throw new Error("Nenhum contrato encontrado");
+      const sigData = parseSignatureData(activeContract.arquivo_pdf);
+      sigData.socio_assinado_em = new Date().toISOString();
+
+      let newStatus = "assinado_socio";
+      if (activeContract.status === "assinado_fundador" || sigData.fundador_assinado_em) {
+        newStatus = "assinado_ambos";
+      }
+
+      const { error } = await supabase
+        .from("partner_contracts")
+        .update({
+          status: newStatus,
+          ip_assinatura: "browser",
+          arquivo_pdf: JSON.stringify(sigData),
+        })
+        .eq("id", activeContract.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Contrato assinado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["partner-active-contract"] });
+      setShowContract(false);
+      setAcceptTerms(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao assinar"),
   });
 
   // Recent signups for growth chart (admin only)
@@ -111,6 +178,13 @@ export default function AdminDashboard() {
   if (isPartner) {
     const pd = partnerDash;
     const hasError = pd?.error;
+    const profile = partnerContract?.profiles as any;
+    const sigData = activeContract ? parseSignatureData(activeContract.arquivo_pdf) : {};
+    const sigStatus = activeContract ? getSignatureStatus(activeContract.status, sigData) : null;
+    const fullySignedContract = activeContract ? isFullySigned(activeContract.status, sigData) : false;
+    const partnerAlreadySigned = sigData.socio_assinado_em || activeContract?.status === "assinado_socio" || activeContract?.status === "assinado_ambos";
+
+    const clauses = getContractClauses(partnerContract?.percentual_participacao ?? 0);
 
     return (
       <AdminLayout>
@@ -222,32 +296,31 @@ export default function AdminDashboard() {
                 </Card>
               )}
 
-              {/* Contrato completo */}
-              {partnerContract && (() => {
-                const profile = partnerContract.profiles as any;
-                const clauses = [
-                  { title: "CLÁUSULA 1 – NATUREZA DA PARTICIPAÇÃO", body: "O presente contrato formaliza participação societária exclusivamente econômica, não conferindo ao Sócio Investidor qualquer poder de gestão, voto, deliberação ou interferência administrativa. A participação é estritamente financeira e proporcional ao lucro líquido distribuído." },
-                  { title: "CLÁUSULA 2 – CONTROLE ABSOLUTO", body: "A gestão integral, estratégica, operacional e financeira da empresa permanece sob controle exclusivo do Fundador. Nenhuma decisão poderá ser exigida, contestada ou imposta pelo Sócio Investidor." },
-                  { title: "CLÁUSULA 3 – LIMITAÇÃO DE PODER", body: "O Sócio Investidor: Não possui direito a voto; Não possui direito de veto; Não possui acesso a contas bancárias; Não possui acesso a dados financeiros detalhados; Não pode representar a empresa; Não pode contratar em nome da empresa." },
-                  { title: "CLÁUSULA 4 – DIREITO DE RECOMPRA", body: "O Fundador poderá recomprar a participação do Sócio a qualquer momento: pelo valor originalmente investido OU por valuation interno definido pelo Fundador. Em caso de quebra contratual, recompra poderá ocorrer pelo valor nominal simbólico." },
-                  { title: "CLÁUSULA 5 – NÃO CONCORRÊNCIA", body: "O Sócio compromete-se a não criar, investir, participar ou trabalhar em plataforma concorrente direta ou indireta por prazo mínimo de 5 (cinco) anos." },
-                  { title: "CLÁUSULA 6 – CONFIDENCIALIDADE PERPÉTUA", body: "Qualquer vazamento de código, estratégia, dados, estrutura ou modelo de negócio gera multa equivalente a 10 (dez) vezes o valor investido." },
-                  { title: "CLÁUSULA 7 – DISTRIBUIÇÃO DE LUCROS", body: "A distribuição de lucros: Não é automática; Não é obrigatória mensalmente; Depende de decisão do Fundador; Depende da saúde financeira da empresa. Lucro será distribuído apenas quando houver formalização interna." },
-                  { title: "CLÁUSULA 8 – RESPONSABILIDADE LIMITADA", body: "O Sócio não responde por dívidas da empresa. A empresa não responde por obrigações pessoais do Sócio." },
-                  { title: "CLÁUSULA 9 – PROIBIÇÃO DE CESSÃO", body: "O Sócio não pode vender, transferir ou ceder sua participação sem autorização expressa do Fundador." },
-                  { title: "CLÁUSULA 10 – RESCISÃO POR CONDUTA", body: "O contrato poderá ser rescindido unilateralmente pelo Fundador em caso de: quebra de confidencialidade; danos à imagem; interferência indevida; tentativa de sabotagem; ação judicial abusiva." },
-                  { title: "CLÁUSULA 11 – SUCESSÃO", body: "Em caso de falecimento do Sócio, a participação poderá ser recomprada pelo Fundador antes de qualquer transferência hereditária." },
-                  { title: "CLÁUSULA 12 – FORO", body: "Foro da comarca do Fundador." },
-                  { title: "CLÁUSULA 13 – CARÁTER PRIVADO", body: "Este contrato não constitui sociedade formal registrada, tratando-se de acordo privado de participação econômica." },
-                ];
-
-                return (
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          📄 Contrato de Participação Societária
-                        </CardTitle>
+              {/* Contract Section — Button only, not exposed */}
+              {partnerContract && (
+                <Card>
+                  <CardContent className="py-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="text-sm font-semibold">Contrato de Participação Societária</p>
+                          {sigStatus && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {sigStatus.icon === "both" && <CheckCircle className="h-3.5 w-3.5 text-green-500" />}
+                              {sigStatus.icon === "pending_socio" && <Clock className="h-3.5 w-3.5 text-yellow-500" />}
+                              {sigStatus.icon === "pending_fundador" && <Clock className="h-3.5 w-3.5 text-yellow-500" />}
+                              {sigStatus.icon === "none" && <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                              <span className="text-xs text-muted-foreground">{sigStatus.label}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowContract(true)}>
+                          <FileText className="h-4 w-4" />
+                          Visualizar Contrato
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -264,66 +337,133 @@ export default function AdminDashboard() {
                           }}
                         >
                           <Download className="h-4 w-4" />
-                          Baixar PDF
+                          PDF
                         </Button>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Cabeçalho do contrato */}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Contract Modal */}
+              <Dialog open={showContract} onOpenChange={setShowContract}>
+                <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+                  <DialogHeader className="p-6 pb-0">
+                    <DialogTitle className="flex items-center gap-2">
+                      📄 Contrato de Participação Societária
+                    </DialogTitle>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[70vh] px-6 pb-6">
+                    <div className="space-y-4">
+                      {/* Header */}
                       <div className="text-center space-y-1 pb-4 border-b border-border">
                         <p className="font-bold text-lg">CONTRATO DE PARTICIPAÇÃO SOCIETÁRIA PRIVADA</p>
                         <p className="text-sm text-muted-foreground">Provax — Plataforma Educacional Digital</p>
                       </div>
 
-                      {/* Dados do sócio */}
-                      <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-muted/50 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Sócio Investidor:</span>{" "}
-                          <span className="font-semibold">{profile?.nome}</span>
+                      {/* Partner data */}
+                      {profile && (
+                        <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-muted/50 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Sócio Investidor:</span>{" "}
+                            <span className="font-semibold">{profile.nome}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">E-mail:</span>{" "}
+                            <span className="font-semibold">{profile.email}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Percentual:</span>{" "}
+                            <span className="font-semibold">{partnerContract?.percentual_participacao}%</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Valor Investido:</span>{" "}
+                            <span className="font-semibold">R$ {Number(partnerContract?.valor_investido).toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Data de Entrada:</span>{" "}
+                            <span className="font-semibold">{new Date(partnerContract?.data_entrada).toLocaleDateString("pt-BR")}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Tipo:</span>{" "}
+                            <span className="font-semibold">{partnerContract?.tipo_participacao.replace("_", " ")}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">E-mail:</span>{" "}
-                          <span className="font-semibold">{profile?.email}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Percentual:</span>{" "}
-                          <span className="font-semibold">{partnerContract.percentual_participacao}%</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Valor Investido:</span>{" "}
-                          <span className="font-semibold">R$ {Number(partnerContract.valor_investido).toFixed(2)}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Data de Entrada:</span>{" "}
-                          <span className="font-semibold">{new Date(partnerContract.data_entrada).toLocaleDateString("pt-BR")}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Tipo:</span>{" "}
-                          <span className="font-semibold">{partnerContract.tipo_participacao.replace("_", " ")}</span>
-                        </div>
-                      </div>
+                      )}
 
-                      {/* Cláusulas */}
+                      {/* Clauses */}
                       <div className="space-y-3 pt-2">
                         {clauses.map((c, i) => (
                           <div key={i}>
                             <p className="font-semibold text-sm">{c.title}</p>
-                            <p className="text-sm text-muted-foreground leading-relaxed">{c.body}</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{c.body}</p>
                           </div>
                         ))}
                       </div>
 
-                      {/* Rodapé */}
-                      <div className="pt-4 border-t border-border text-center space-y-2 text-sm text-muted-foreground">
-                        <p>Assinado digitalmente em {new Date(partnerContract.data_entrada).toLocaleDateString("pt-BR")}</p>
+                      {/* Signature status */}
+                      <div className="pt-4 border-t border-border space-y-3">
+                        {sigStatus && (
+                          <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-muted/50">
+                            {sigStatus.icon === "both" && <CheckCircle className="h-5 w-5 text-green-500" />}
+                            {sigStatus.icon === "pending_socio" && <Clock className="h-5 w-5 text-yellow-500" />}
+                            {sigStatus.icon === "pending_fundador" && <Clock className="h-5 w-5 text-yellow-500" />}
+                            {sigStatus.icon === "none" && <XCircle className="h-5 w-5 text-destructive" />}
+                            <span className="text-sm font-medium">{sigStatus.description}</span>
+                          </div>
+                        )}
+
+                        {sigData.socio_assinado_em && (
+                          <p className="text-xs text-muted-foreground text-center">
+                            Assinado por você em: {new Date(sigData.socio_assinado_em).toLocaleString("pt-BR")}
+                          </p>
+                        )}
+                        {sigData.fundador_assinado_em && (
+                          <p className="text-xs text-muted-foreground text-center">
+                            Assinado pelo Fundador em: {new Date(sigData.fundador_assinado_em).toLocaleString("pt-BR")}
+                          </p>
+                        )}
+
                         {pd?.contract?.hash && (
-                          <p className="text-xs font-mono break-all">Hash: {pd.contract.hash}</p>
+                          <p className="text-xs font-mono text-muted-foreground text-center break-all">
+                            Hash: {pd.contract.hash}
+                          </p>
+                        )}
+
+                        {/* Acceptance flow — only if partner hasn't signed yet */}
+                        {!partnerAlreadySigned && activeContract && activeContract.status !== "substituido" && (
+                          <div className="space-y-3 pt-2 border-t border-border">
+                            <div className="flex items-start gap-3">
+                              <Checkbox
+                                id="accept-terms"
+                                checked={acceptTerms}
+                                onCheckedChange={(checked) => setAcceptTerms(checked === true)}
+                              />
+                              <label htmlFor="accept-terms" className="text-sm leading-relaxed cursor-pointer">
+                                Declaro que li e aceito os termos do contrato.
+                              </label>
+                            </div>
+                            <Button
+                              className="w-full"
+                              disabled={!acceptTerms || signMutation.isPending}
+                              onClick={() => signMutation.mutate()}
+                            >
+                              {signMutation.isPending ? "Assinando..." : "✍ Aceitar e Assinar"}
+                            </Button>
+                          </div>
+                        )}
+
+                        {partnerAlreadySigned && (
+                          <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-green-500/10 text-green-700 dark:text-green-400">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">Contrato já assinado por você</span>
+                          </div>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
+                    </div>
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
 
               {/* Distribuição por plano (sem valores financeiros) */}
               {usersByPlan.length > 0 && (

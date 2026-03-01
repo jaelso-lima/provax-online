@@ -9,6 +9,97 @@ interface ContractData {
   tipo: string;
 }
 
+export function getContractClauses(percentual: number) {
+  // Determine power level based on percentual
+  let powerDescription: string;
+  if (percentual < 10) {
+    powerDescription =
+      "Participação até 10%:\n" +
+      "• Natureza exclusivamente econômica\n" +
+      "• Sem direito a voto\n" +
+      "• Sem poder de decisão\n" +
+      "• Sem direito de veto\n" +
+      "• Direito apenas a acompanhamento de relatórios consolidados";
+  } else if (percentual < 25) {
+    powerDescription =
+      "Participação entre 10% e 24%:\n" +
+      "• Direito consultivo proporcional\n" +
+      "• Pode opinar estrategicamente\n" +
+      "• Não possui poder de veto\n" +
+      "• Não possui poder executivo\n" +
+      "• Não pode alterar decisões administrativas";
+  } else {
+    powerDescription =
+      "Participação igual ou superior a 25%:\n" +
+      "• Direito consultivo ampliado\n" +
+      "• Pode solicitar reuniões estratégicas\n" +
+      "• Pode sugerir mudanças estruturais\n" +
+      "• Não possui poder de veto automático\n" +
+      "• Não possui poder executivo";
+  }
+
+  return [
+    {
+      title: "CLÁUSULA 1 – NATUREZA DA PARTICIPAÇÃO",
+      body: "O presente contrato formaliza participação societária exclusivamente econômica, não conferindo ao Sócio Investidor qualquer poder de gestão, voto, deliberação ou interferência administrativa. A participação é estritamente financeira e proporcional ao lucro líquido distribuído.",
+    },
+    {
+      title: "CLÁUSULA 2 – CONTROLE ABSOLUTO",
+      body: "A gestão integral, estratégica, operacional e financeira da empresa permanece sob controle exclusivo do Fundador. Nenhuma decisão poderá ser exigida, contestada ou imposta pelo Sócio Investidor.",
+    },
+    {
+      title: "CLÁUSULA 3 – LIMITAÇÃO DE PODER PROPORCIONAL",
+      body:
+        "O poder de influência do Sócio Investidor será proporcional ao seu percentual de participação, conforme critérios abaixo:\n\n" +
+        powerDescription +
+        "\n\nEm qualquer cenário:\n" +
+        "• A gestão executiva permanece sob controle do Fundador.\n" +
+        "• O Fundador mantém maioria decisória e poder final administrativo.\n\n" +
+        "O Sócio Investidor poderá adquirir participação adicional mediante acordo formal com o Fundador, respeitando o limite máximo de 49% de participação total entre todos os sócios.",
+    },
+    {
+      title: "CLÁUSULA 4 – DIREITO DE RECOMPRA",
+      body: "O Fundador poderá recomprar a participação do Sócio a qualquer momento: pelo valor originalmente investido OU por valuation interno definido pelo Fundador. Em caso de quebra contratual, recompra poderá ocorrer pelo valor nominal simbólico.",
+    },
+    {
+      title: "CLÁUSULA 5 – NÃO CONCORRÊNCIA",
+      body: "O Sócio compromete-se a não criar, investir, participar ou trabalhar em plataforma concorrente direta ou indireta por prazo mínimo de 5 (cinco) anos.",
+    },
+    {
+      title: "CLÁUSULA 6 – CONFIDENCIALIDADE PERPÉTUA",
+      body: "Qualquer vazamento de código, estratégia, dados, estrutura ou modelo de negócio gera multa equivalente a 10 (dez) vezes o valor investido.",
+    },
+    {
+      title: "CLÁUSULA 7 – DISTRIBUIÇÃO DE LUCROS",
+      body: "A distribuição de lucros: Não é automática; Não é obrigatória mensalmente; Depende de decisão do Fundador; Depende da saúde financeira da empresa. Lucro será distribuído apenas quando houver formalização interna.",
+    },
+    {
+      title: "CLÁUSULA 8 – RESPONSABILIDADE LIMITADA",
+      body: "O Sócio não responde por dívidas da empresa. A empresa não responde por obrigações pessoais do Sócio.",
+    },
+    {
+      title: "CLÁUSULA 9 – PROIBIÇÃO DE CESSÃO",
+      body: "O Sócio não pode vender, transferir ou ceder sua participação sem autorização expressa do Fundador.",
+    },
+    {
+      title: "CLÁUSULA 10 – RESCISÃO POR CONDUTA",
+      body: "O contrato poderá ser rescindido unilateralmente pelo Fundador em caso de: quebra de confidencialidade; danos à imagem; interferência indevida; tentativa de sabotagem; ação judicial abusiva.",
+    },
+    {
+      title: "CLÁUSULA 11 – SUCESSÃO",
+      body: "Em caso de falecimento do Sócio, a participação poderá ser recomprada pelo Fundador antes de qualquer transferência hereditária.",
+    },
+    {
+      title: "CLÁUSULA 12 – FORO",
+      body: "Foro da comarca do Fundador.",
+    },
+    {
+      title: "CLÁUSULA 13 – CARÁTER PRIVADO",
+      body: "Este contrato não constitui sociedade formal registrada, tratando-se de acordo privado de participação econômica.",
+    },
+  ];
+}
+
 export function generateContractPDF(data: ContractData) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -58,70 +149,8 @@ export function generateContractPDF(data: ContractData) {
   y += 5;
 
   // Clauses
-  addClause(
-    "CLÁUSULA 1 – NATUREZA DA PARTICIPAÇÃO",
-    "O presente contrato formaliza participação societária exclusivamente econômica, não conferindo ao Sócio Investidor qualquer poder de gestão, voto, deliberação ou interferência administrativa. A participação é estritamente financeira e proporcional ao lucro líquido distribuído."
-  );
-
-  addClause(
-    "CLÁUSULA 2 – CONTROLE ABSOLUTO",
-    "A gestão integral, estratégica, operacional e financeira da empresa permanece sob controle exclusivo do Fundador. Nenhuma decisão poderá ser exigida, contestada ou imposta pelo Sócio Investidor."
-  );
-
-  addClause(
-    "CLÁUSULA 3 – LIMITAÇÃO DE PODER",
-    "O Sócio Investidor: Não possui direito a voto; Não possui direito de veto; Não possui acesso a contas bancárias; Não possui acesso a dados financeiros detalhados; Não pode representar a empresa; Não pode contratar em nome da empresa."
-  );
-
-  addClause(
-    "CLÁUSULA 4 – DIREITO DE RECOMPRA",
-    "O Fundador poderá recomprar a participação do Sócio a qualquer momento: pelo valor originalmente investido OU por valuation interno definido pelo Fundador. Em caso de quebra contratual, recompra poderá ocorrer pelo valor nominal simbólico."
-  );
-
-  addClause(
-    "CLÁUSULA 5 – NÃO CONCORRÊNCIA",
-    "O Sócio compromete-se a não criar, investir, participar ou trabalhar em plataforma concorrente direta ou indireta por prazo mínimo de 5 (cinco) anos."
-  );
-
-  addClause(
-    "CLÁUSULA 6 – CONFIDENCIALIDADE PERPÉTUA",
-    "Qualquer vazamento de código, estratégia, dados, estrutura ou modelo de negócio gera multa equivalente a 10 (dez) vezes o valor investido."
-  );
-
-  addClause(
-    "CLÁUSULA 7 – DISTRIBUIÇÃO DE LUCROS",
-    "A distribuição de lucros: Não é automática; Não é obrigatória mensalmente; Depende de decisão do Fundador; Depende da saúde financeira da empresa. Lucro será distribuído apenas quando houver formalização interna."
-  );
-
-  addClause(
-    "CLÁUSULA 8 – RESPONSABILIDADE LIMITADA",
-    "O Sócio não responde por dívidas da empresa. A empresa não responde por obrigações pessoais do Sócio."
-  );
-
-  addClause(
-    "CLÁUSULA 9 – PROIBIÇÃO DE CESSÃO",
-    "O Sócio não pode vender, transferir ou ceder sua participação sem autorização expressa do Fundador."
-  );
-
-  addClause(
-    "CLÁUSULA 10 – RESCISÃO POR CONDUTA",
-    "O contrato poderá ser rescindido unilateralmente pelo Fundador em caso de: quebra de confidencialidade; danos à imagem; interferência indevida; tentativa de sabotagem; ação judicial abusiva."
-  );
-
-  addClause(
-    "CLÁUSULA 11 – SUCESSÃO",
-    "Em caso de falecimento do Sócio, a participação poderá ser recomprada pelo Fundador antes de qualquer transferência hereditária."
-  );
-
-  addClause(
-    "CLÁUSULA 12 – FORO",
-    "Foro da comarca do Fundador."
-  );
-
-  addClause(
-    "CLÁUSULA 13 – CARÁTER PRIVADO",
-    "Este contrato não constitui sociedade formal registrada, tratando-se de acordo privado de participação econômica."
-  );
+  const clauses = getContractClauses(data.percentual);
+  clauses.forEach((c) => addClause(c.title, c.body));
 
   // Signatures
   y += 10;
@@ -137,8 +166,6 @@ export function generateContractPDF(data: ContractData) {
   const now = new Date();
   addText(`Data: ${now.toLocaleDateString("pt-BR")}`, 10, false, "center");
 
-  // Hash
-  const hashInput = `${data.partnerEmail}:${data.percentual}:${now.toISOString()}`;
   addText(`Código hash: SHA-256 do contrato gerado digitalmente`, 9, false, "center");
 
   doc.save(`contrato-${data.partnerName.replace(/\s+/g, "_")}-${now.toISOString().slice(0, 10)}.pdf`);
