@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History } from "lucide-react";
+import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History, Clock, XCircle, PenTool } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -17,10 +17,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { generateContractPDF } from "@/lib/contractPdf";
+import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
 
 export default function AdminPartners() {
   const { user } = useAuth();
@@ -57,10 +55,23 @@ export default function AdminPartners() {
     enabled: !!showContracts,
   });
 
+  // Fetch active contracts for all partners (for signature status)
+  const { data: allActiveContracts } = useQuery({
+    queryKey: ["admin-all-active-contracts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("partner_contracts")
+        .select("*")
+        .in("status", ["ativo", "pendente_assinatura", "assinado_socio", "assinado_fundador", "assinado_ambos"])
+        .order("versao_contrato", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Add partner
   const addMutation = useMutation({
     mutationFn: async () => {
-      // Find user by email
       const { data: profile, error: pErr } = await supabase
         .from("profiles")
         .select("id, nome, email")
@@ -74,7 +85,6 @@ export default function AdminPartners() {
         throw new Error("Percentual deve ser entre 0.01 e 49");
       }
 
-      // Create partner
       const { data: partner, error } = await supabase.from("partners").insert({
         user_id: profile.id,
         percentual_participacao: percentual,
@@ -84,7 +94,6 @@ export default function AdminPartners() {
       }).select().single();
       if (error) throw error;
 
-      // Create initial contract
       const hash = await generateHash(profile.id, percentual, new Date().toISOString());
       const { error: cErr } = await supabase.from("partner_contracts").insert({
         partner_id: partner.id,
@@ -93,10 +102,10 @@ export default function AdminPartners() {
         valor_investido: valor,
         hash_verificacao: hash,
         criado_por: user!.id,
+        status: "pendente_assinatura",
       });
       if (cErr) throw cErr;
 
-      // Set user role to partner
       await supabase.rpc("admin_update_role", {
         _target_user_id: profile.id,
         _new_role: "partner" as any,
@@ -107,10 +116,47 @@ export default function AdminPartners() {
     onSuccess: () => {
       toast.success("Sócio adicionado com sucesso");
       queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
       setShowAdd(false);
       setNewPartner({ email: "", percentual: "", valor: "" });
     },
     onError: (e: any) => toast.error(e.message || "Erro ao adicionar sócio"),
+  });
+
+  // Sign as admin/founder
+  const signAsFounderMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      const { data: contract } = await supabase
+        .from("partner_contracts")
+        .select("*")
+        .eq("id", contractId)
+        .single();
+      if (!contract) throw new Error("Contrato não encontrado");
+
+      const sigData = parseSignatureData(contract.arquivo_pdf);
+      sigData.fundador_assinado_em = new Date().toISOString();
+      sigData.fundador_ip = "admin-panel";
+
+      let newStatus = "assinado_fundador";
+      if (contract.status === "assinado_socio" || sigData.socio_assinado_em) {
+        newStatus = "assinado_ambos";
+      }
+
+      const { error } = await supabase
+        .from("partner_contracts")
+        .update({
+          status: newStatus,
+          arquivo_pdf: JSON.stringify(sigData),
+        })
+        .eq("id", contractId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Contrato assinado como Fundador!");
+      queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-partner-contracts"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao assinar"),
   });
 
   // Change status
@@ -129,10 +175,8 @@ export default function AdminPartners() {
   // Update percentual (creates new contract)
   const updatePercentualMutation = useMutation({
     mutationFn: async ({ partnerId, newPercentual }: { partnerId: string; newPercentual: number }) => {
-      // Mark old contracts as substituido
-      await supabase.from("partner_contracts").update({ status: "substituido" }).eq("partner_id", partnerId).eq("status", "ativo");
+      await supabase.from("partner_contracts").update({ status: "substituido" }).eq("partner_id", partnerId).in("status", ["ativo", "pendente_assinatura", "assinado_socio", "assinado_fundador", "assinado_ambos"]);
 
-      // Get current version
       const { data: existing } = await supabase
         .from("partner_contracts")
         .select("versao_contrato")
@@ -141,18 +185,15 @@ export default function AdminPartners() {
         .limit(1);
       const nextVersion = (existing?.[0]?.versao_contrato ?? 0) + 1;
 
-      // Update partner
       const { error } = await supabase.from("partners").update({
         percentual_participacao: newPercentual,
         updated_at: new Date().toISOString(),
       }).eq("id", partnerId);
       if (error) throw error;
 
-      // Get partner for hash
       const { data: p } = await supabase.from("partners").select("user_id, valor_investido").eq("id", partnerId).single();
       const hash = await generateHash(p!.user_id, newPercentual, new Date().toISOString());
 
-      // New contract
       const { error: cErr } = await supabase.from("partner_contracts").insert({
         partner_id: partnerId,
         versao_contrato: nextVersion,
@@ -160,6 +201,7 @@ export default function AdminPartners() {
         valor_investido: p!.valor_investido,
         hash_verificacao: hash,
         criado_por: user!.id,
+        status: "pendente_assinatura",
       });
       if (cErr) throw cErr;
     },
@@ -167,14 +209,19 @@ export default function AdminPartners() {
       toast.success("Percentual atualizado e novo contrato gerado");
       queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
       queryClient.invalidateQueries({ queryKey: ["admin-partner-contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
     },
     onError: (e: any) => toast.error(e.message || "Erro ao atualizar"),
   });
 
-  // Total participação
   const totalPercentual = partners
     ?.filter((p: any) => p.status === "ativo")
     .reduce((acc: number, p: any) => acc + Number(p.percentual_participacao), 0) ?? 0;
+
+  // Helper to get active contract for a partner
+  const getActiveContract = (partnerId: string) => {
+    return allActiveContracts?.find(c => c.partner_id === partnerId);
+  };
 
   return (
     <AdminLayout>
@@ -232,16 +279,30 @@ export default function AdminPartners() {
               </CardContent>
             </Card>
           ) : (
-            partners?.map((p: any) => (
-              <PartnerCard
-                key={p.id}
-                partner={p}
-                onStatusChange={(status) => statusMutation.mutate({ id: p.id, status })}
-                onViewContracts={() => setShowContracts(p.id)}
-                onUpdatePercentual={(val) => updatePercentualMutation.mutate({ partnerId: p.id, newPercentual: val })}
-                onDownloadContract={() => downloadContract(p)}
-              />
-            ))
+            partners?.map((p: any) => {
+              const activeContract = getActiveContract(p.id);
+              const sigData = activeContract ? parseSignatureData(activeContract.arquivo_pdf) : {};
+              const sigStatus = activeContract ? getSignatureStatus(activeContract.status, sigData) : null;
+              const fullyS = activeContract ? isFullySigned(activeContract.status, sigData) : false;
+              const founderSigned = sigData.fundador_assinado_em || activeContract?.status === "assinado_fundador" || activeContract?.status === "assinado_ambos";
+
+              return (
+                <PartnerCard
+                  key={p.id}
+                  partner={p}
+                  sigStatus={sigStatus}
+                  fullySigned={fullyS}
+                  founderSigned={!!founderSigned}
+                  activeContractId={activeContract?.id}
+                  onStatusChange={(status) => statusMutation.mutate({ id: p.id, status })}
+                  onViewContracts={() => setShowContracts(p.id)}
+                  onUpdatePercentual={(val) => updatePercentualMutation.mutate({ partnerId: p.id, newPercentual: val })}
+                  onDownloadContract={() => downloadContract(p)}
+                  onSignAsFounder={(contractId) => signAsFounderMutation.mutate(contractId)}
+                  signingPending={signAsFounderMutation.isPending}
+                />
+              );
+            })
           )}
         </div>
       </div>
@@ -306,26 +367,46 @@ export default function AdminPartners() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 max-h-96 overflow-auto">
-            {contracts?.map((c) => (
-              <div key={c.id} className="p-3 rounded-lg border border-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">Versão {c.versao_contrato}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(c.data_assinatura).toLocaleDateString("pt-BR")} • {c.percentual_acordado}%
-                    </p>
+            {contracts?.map((c) => {
+              const cSigData = parseSignatureData(c.arquivo_pdf);
+              const cSigStatus = getSignatureStatus(c.status, cSigData);
+              return (
+                <div key={c.id} className="p-3 rounded-lg border border-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Versão {c.versao_contrato}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(c.data_assinatura).toLocaleDateString("pt-BR")} • {c.percentual_acordado}%
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {cSigStatus.icon === "both" && <CheckCircle className="h-3.5 w-3.5 text-green-500" />}
+                      {(cSigStatus.icon === "pending_socio" || cSigStatus.icon === "pending_fundador") && <Clock className="h-3.5 w-3.5 text-yellow-500" />}
+                      {cSigStatus.icon === "none" && c.status !== "substituido" && <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                      <Badge variant={
+                        c.status === "assinado_ambos" ? "default" :
+                        c.status === "substituido" ? "secondary" :
+                        c.status === "ativo" ? "default" :
+                        "outline"
+                      }>
+                        {cSigStatus.label}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge variant={c.status === "ativo" ? "default" : c.status === "substituido" ? "secondary" : "destructive"}>
-                    {c.status === "ativo" ? "Ativo" : c.status === "substituido" ? "Substituído" : "Rescindido"}
-                  </Badge>
+                  {cSigData.socio_assinado_em && (
+                    <p className="text-xs text-muted-foreground">Sócio assinou: {new Date(cSigData.socio_assinado_em).toLocaleString("pt-BR")}</p>
+                  )}
+                  {cSigData.fundador_assinado_em && (
+                    <p className="text-xs text-muted-foreground">Fundador assinou: {new Date(cSigData.fundador_assinado_em).toLocaleString("pt-BR")}</p>
+                  )}
+                  {c.hash_verificacao && (
+                    <p className="text-xs text-muted-foreground font-mono truncate">
+                      Hash: {c.hash_verificacao}
+                    </p>
+                  )}
                 </div>
-                {c.hash_verificacao && (
-                  <p className="text-xs text-muted-foreground mt-1 font-mono truncate">
-                    Hash: {c.hash_verificacao}
-                  </p>
-                )}
-              </div>
-            ))}
+              );
+            })}
             {(!contracts || contracts.length === 0) && (
               <p className="text-sm text-muted-foreground text-center py-4">Nenhum contrato</p>
             )}
@@ -339,16 +420,28 @@ export default function AdminPartners() {
 // Partner Card Component
 function PartnerCard({
   partner,
+  sigStatus,
+  fullySigned,
+  founderSigned,
+  activeContractId,
   onStatusChange,
   onViewContracts,
   onUpdatePercentual,
   onDownloadContract,
+  onSignAsFounder,
+  signingPending,
 }: {
   partner: any;
+  sigStatus: ReturnType<typeof getSignatureStatus> | null;
+  fullySigned: boolean;
+  founderSigned: boolean;
+  activeContractId?: string;
   onStatusChange: (status: string) => void;
   onViewContracts: () => void;
   onUpdatePercentual: (val: number) => void;
   onDownloadContract: () => void;
+  onSignAsFounder: (contractId: string) => void;
+  signingPending: boolean;
 }) {
   const [editPercentual, setEditPercentual] = useState(false);
   const [newPct, setNewPct] = useState(String(partner.percentual_participacao));
@@ -376,9 +469,33 @@ function PartnerCard({
               <span>Entrada: {new Date(partner.data_entrada).toLocaleDateString("pt-BR")}</span>
               <span className="capitalize">{partner.tipo_participacao.replace("_", " ")}</span>
             </div>
+
+            {/* Signature status badge */}
+            {sigStatus && (
+              <div className="flex items-center gap-1.5 mt-2">
+                {sigStatus.icon === "both" && <CheckCircle className="h-3.5 w-3.5 text-green-500" />}
+                {(sigStatus.icon === "pending_socio" || sigStatus.icon === "pending_fundador") && <Clock className="h-3.5 w-3.5 text-yellow-500" />}
+                {sigStatus.icon === "none" && <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                <span className="text-xs font-medium">{sigStatus.label}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Sign as founder */}
+            {activeContractId && !founderSigned && !fullySigned && (
+              <Button
+                variant="default"
+                size="sm"
+                className="gap-1"
+                disabled={signingPending}
+                onClick={() => onSignAsFounder(activeContractId)}
+              >
+                <PenTool className="h-3.5 w-3.5" />
+                {signingPending ? "Assinando..." : "Assinar como Fundador"}
+              </Button>
+            )}
+
             {/* Download contract */}
             <Button variant="outline" size="sm" onClick={onDownloadContract} className="gap-1">
               <FileText className="h-3.5 w-3.5" />
@@ -392,7 +509,7 @@ function PartnerCard({
             </Button>
 
             {/* Edit percentual */}
-            {partner.status === "ativo" && !partner.bloqueado_para_edicao && (
+            {partner.status === "ativo" && !partner.bloqueado_para_edicao && !fullySigned && (
               <Dialog open={editPercentual} onOpenChange={setEditPercentual}>
                 <Button variant="outline" size="sm" onClick={() => setEditPercentual(true)} className="gap-1">
                   <Percent className="h-3.5 w-3.5" />
