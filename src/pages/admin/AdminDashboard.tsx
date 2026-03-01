@@ -50,10 +50,10 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const { data: partner } = await supabase
         .from("partners")
-        .select("*, profiles:user_id(nome, email)")
+        .select("*, profiles!partners_user_id_fkey(nome, email)")
         .eq("user_id", user!.id)
         .eq("status", "ativo")
-        .single();
+        .maybeSingle();
       return partner;
     },
     enabled: isPartner && !!user,

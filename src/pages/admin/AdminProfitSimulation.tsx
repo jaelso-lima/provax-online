@@ -28,7 +28,7 @@ export default function AdminProfitSimulation() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, percentual_participacao, profiles:user_id(nome)")
+        .select("id, percentual_participacao, profiles!partners_user_id_fkey(nome)")
         .eq("status", "ativo");
       if (error) throw error;
       return data as any[];
@@ -40,7 +40,7 @@ export default function AdminProfitSimulation() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("partner_profit_simulation")
-        .select("*, partners(percentual_participacao, profiles:user_id(nome))")
+        .select("*, partners(percentual_participacao, profiles!partners_user_id_fkey(nome))")
         .order("mes_referencia", { ascending: false });
       if (error) throw error;
       return data as any[];
