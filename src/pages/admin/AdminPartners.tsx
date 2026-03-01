@@ -509,7 +509,7 @@ function PartnerCard({
             </Button>
 
             {/* Edit percentual */}
-            {partner.status === "ativo" && !partner.bloqueado_para_edicao && !fullySigned && (
+            {partner.status === "ativo" && !partner.bloqueado_para_edicao && (
               <Dialog open={editPercentual} onOpenChange={setEditPercentual}>
                 <Button variant="outline" size="sm" onClick={() => setEditPercentual(true)} className="gap-1">
                   <Percent className="h-3.5 w-3.5" />
