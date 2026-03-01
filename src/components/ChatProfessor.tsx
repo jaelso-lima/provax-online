@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +103,10 @@ export default function ChatProfessor() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const location = useLocation();
+
+  // Hide on admin routes (partner panel)
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -152,6 +157,8 @@ export default function ChatProfessor() {
       setIsLoading(false);
     }
   };
+
+  if (isAdminRoute) return null;
 
   return (
     <>
