@@ -78,23 +78,27 @@ export function getContractClauses(percentual: number) {
       body: "O Sócio não responde por dívidas da empresa. A empresa não responde por obrigações pessoais do Sócio.",
     },
     {
-      title: "CLÁUSULA 9 – PROIBIÇÃO DE CESSÃO",
-      body: "O Sócio não pode vender, transferir ou ceder sua participação sem autorização expressa do Fundador.",
+      title: "CLÁUSULA 9 – CESSÃO E TRANSFERÊNCIA",
+      body: "O Sócio não pode vender, transferir ou ceder sua participação a terceiros sem autorização expressa e por escrito do Fundador. Caso outro sócio deseje vender sua participação, o Sócio terá direito de preferência para adquiri-la, desde que haja concordância do Fundador e que a soma total de participações não ultrapasse 49%.",
     },
     {
-      title: "CLÁUSULA 10 – RESCISÃO POR CONDUTA",
+      title: "CLÁUSULA 10 – AQUISIÇÃO DE PARTICIPAÇÃO ADICIONAL",
+      body: "O Sócio poderá adquirir participação adicional na empresa mediante negociação direta e acordo formal com o Fundador, respeitando o limite máximo de 49% de participação total entre todos os sócios. O valor e as condições da aquisição adicional serão definidos pelo Fundador com base em critérios internos de valuation. O Sócio também poderá adquirir total ou parcialmente a participação de outro sócio que deseje vendê-la, desde que haja autorização prévia do Fundador e formalização por meio de novo contrato ou aditivo contratual.",
+    },
+    {
+      title: "CLÁUSULA 11 – RESCISÃO POR CONDUTA",
       body: "O contrato poderá ser rescindido unilateralmente pelo Fundador em caso de: quebra de confidencialidade; danos à imagem; interferência indevida; tentativa de sabotagem; ação judicial abusiva.",
     },
     {
-      title: "CLÁUSULA 11 – SUCESSÃO",
+      title: "CLÁUSULA 12 – SUCESSÃO",
       body: "Em caso de falecimento do Sócio, a participação poderá ser recomprada pelo Fundador antes de qualquer transferência hereditária.",
     },
     {
-      title: "CLÁUSULA 12 – FORO",
+      title: "CLÁUSULA 13 – FORO",
       body: "Foro da comarca do Fundador.",
     },
     {
-      title: "CLÁUSULA 13 – CARÁTER PRIVADO",
+      title: "CLÁUSULA 14 – CARÁTER PRIVADO",
       body: "Este contrato não constitui sociedade formal registrada, tratando-se de acordo privado de participação econômica.",
     },
   ];
