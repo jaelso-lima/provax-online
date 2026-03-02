@@ -98,6 +98,8 @@ serve(async (req) => {
     const esfera = typeof body.esfera === "string" ? body.esfera.slice(0, 100) : undefined;
     const topic = typeof body.topic === "string" ? body.topic.slice(0, 100) : undefined;
     const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
+    const provaCompleta = body.provaCompleta === true;
+    const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 2000) : undefined;
 
     // --- Rate Limiting ---
     const { data: allowed, error: rlError } = await supabase.rpc("check_rate_limit", {
@@ -137,6 +139,11 @@ serve(async (req) => {
       resolveFilter("topics", topic, "Tópico"),
       resolveFilter("cursos", curso, "Curso"),
     ]);
+
+    // Add prova completa distribution context if provided
+    if (provaCompleta && distribuicao) {
+      filterParts.push(distribuicao);
+    }
 
     // --- Build prompt universal ---
     const systemPrompt = buildPrompt({

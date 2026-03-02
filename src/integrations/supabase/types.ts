@@ -101,6 +101,68 @@ export type Database = {
         }
         Relationships: []
       }
+      banca_distribuicao: {
+        Row: {
+          area_id: string
+          banca_id: string
+          carreira_id: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          materia_id: string
+          quantidade: number
+        }
+        Insert: {
+          area_id: string
+          banca_id: string
+          carreira_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          materia_id: string
+          quantidade?: number
+        }
+        Update: {
+          area_id?: string
+          banca_id?: string
+          carreira_id?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          materia_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banca_distribuicao_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banca_distribuicao_banca_id_fkey"
+            columns: ["banca_id"]
+            isOneToOne: false
+            referencedRelation: "bancas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banca_distribuicao_carreira_id_fkey"
+            columns: ["carreira_id"]
+            isOneToOne: false
+            referencedRelation: "carreiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "banca_distribuicao_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bancas: {
         Row: {
           created_at: string
@@ -241,6 +303,45 @@ export type Database = {
           },
           {
             foreignKeyName: "curso_materias_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curso_semestres: {
+        Row: {
+          created_at: string
+          curso_id: string
+          id: string
+          materia_id: string
+          semestre: number
+        }
+        Insert: {
+          created_at?: string
+          curso_id: string
+          id?: string
+          materia_id: string
+          semestre: number
+        }
+        Update: {
+          created_at?: string
+          curso_id?: string
+          id?: string
+          materia_id?: string
+          semestre?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curso_semestres_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curso_semestres_materia_id_fkey"
             columns: ["materia_id"]
             isOneToOne: false
             referencedRelation: "materias"
