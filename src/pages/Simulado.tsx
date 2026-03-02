@@ -495,32 +495,38 @@ export default function Simulado() {
             </RadioGroup>
           </div>
 
-          <div className="space-y-2"><Label>Estado</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
-          <div className="space-y-2"><Label>Esfera</Label><Select value={esferaId} onValueChange={setEsferaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{esferas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
-          <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
-          
-          {tipoMode !== "livre" && (
-            <div className="space-y-2"><Label>Matéria {tipoMode === "disciplina" ? "*" : ""}</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
-          )}
+          {/* Prova Completa: filtros simplificados */}
+          {tipoMode === "prova_completa" ? (<>
+            <div className="space-y-2"><Label>Estado (opcional)</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Carreira (opcional)</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Banca *</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Selecione a banca" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
+            
+            {bancaId && areaId && (
+              <div className={`rounded-lg border p-3 text-sm ${provaCompletaAvailable ? "border-accent bg-accent/5 text-accent" : "border-muted bg-muted/5 text-muted-foreground"}`}>
+                {provaCompletaLoading ? (
+                  <span className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Verificando distribuição...</span>
+                ) : provaCompletaAvailable ? (
+                  "✅ Distribuição de prova disponível para esta banca/área"
+                ) : (
+                  "⚠️ Distribuição não cadastrada para esta combinação."
+                )}
+              </div>
+            )}
+          </>) : (<>
+            {/* Livre / Disciplina: filtros completos */}
+            <div className="space-y-2"><Label>Estado</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Esfera</Label><Select value={esferaId} onValueChange={setEsferaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{esferas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
+            
+            {tipoMode === "disciplina" && (
+              <div className="space-y-2"><Label>Matéria *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
+            )}
 
-          <div className="space-y-2"><Label>Carreira</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
-          <div className="space-y-2"><Label>Banca {tipoMode === "prova_completa" ? "*" : ""}</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
-          
-          {tipoMode === "prova_completa" && bancaId && areaId && (
-            <div className={`rounded-lg border p-3 text-sm ${provaCompletaAvailable ? "border-accent bg-accent/5 text-accent" : "border-muted bg-muted/5 text-muted-foreground"}`}>
-              {provaCompletaLoading ? (
-                <span className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Verificando distribuição...</span>
-              ) : provaCompletaAvailable ? (
-                "✅ Distribuição de prova disponível para esta banca/área"
-              ) : (
-                "⚠️ Distribuição não cadastrada. O admin pode cadastrar modelos de prova."
-              )}
-            </div>
-          )}
-
-          {tipoMode !== "prova_completa" && (
+            <div className="space-y-2"><Label>Carreira</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Banca</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoConcurso} onValueChange={setAnoConcurso}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
-          )}
+          </>)}
         </>) : modo === "universidade" ? (<>
           {/* ─── UNIVERSIDADE MODE ────────────────────────────── */}
           <div className="space-y-2"><Label>Curso *</Label><Select value={cursoId} onValueChange={setCursoId}><SelectTrigger><SelectValue placeholder="Selecione o curso" /></SelectTrigger><SelectContent>{cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
