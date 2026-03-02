@@ -230,7 +230,7 @@ export default function Simulado() {
     }
     setProvaCompletaLoading(true);
     hasBancaDistribuicao(bancaId, areaId)
-      .then(setProvaCompletaAvailable)
+      .then((available) => setProvaCompletaAvailable(available))
       .finally(() => setProvaCompletaLoading(false));
   }, [bancaId, areaId, modo]);
 
@@ -245,7 +245,7 @@ export default function Simulado() {
         if (!stateId) { toast({ title: "Selecione o estado", variant: "destructive" }); return false; }
         if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
         if (!bancaId) { toast({ title: "Selecione a banca para prova completa", variant: "destructive" }); return false; }
-        if (!provaCompletaAvailable) { toast({ title: "Distribuição de prova não cadastrada para esta banca/área", variant: "destructive" }); return false; }
+        // No longer blocks if provaCompletaAvailable is false — fallback distribution will be used
       } else {
         if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
         if (tipoMode === "disciplina" && !materiaId) { toast({ title: "Selecione a matéria", variant: "destructive" }); return false; }
@@ -539,13 +539,13 @@ export default function Simulado() {
             <div className="space-y-2"><Label>Banca *</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Selecione a banca" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
             
             {bancaId && areaId && (
-              <div className={`rounded-lg border p-3 text-sm ${provaCompletaAvailable ? "border-accent bg-accent/5 text-accent" : "border-muted bg-muted/5 text-muted-foreground"}`}>
+              <div className={`rounded-lg border p-3 text-sm ${provaCompletaAvailable ? "border-accent bg-accent/5 text-accent" : "border-primary/20 bg-primary/5 text-foreground"}`}>
                 {provaCompletaLoading ? (
                   <span className="flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Verificando distribuição...</span>
                 ) : provaCompletaAvailable ? (
-                  "✅ Distribuição de prova disponível para esta banca/área"
+                  "✅ Distribuição oficial disponível para esta banca/área"
                 ) : (
-                  "⚠️ Distribuição não cadastrada para esta combinação."
+                  "📋 Será gerada uma distribuição balanceada automática para esta combinação"
                 )}
               </div>
             )}
