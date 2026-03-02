@@ -235,11 +235,14 @@ export default function Simulado() {
   }, [bancaId, areaId, modo]);
 
   const custo = tipoMode === "prova_completa" ? 0 : (quantidade === "60" ? 0 : CUSTOS[quantidade] || 5);
-  const isPremiumOnly = tipoMode === "prova_completa" || (quantidade === "60" && profile?.plano !== "premium");
+  const isPremiumOnly = quantidade === "60" && profile?.plano !== "premium";
+  const isFreePlan = !profile?.plano || profile.plano === "free";
+  const [showUpgradeGate, setShowUpgradeGate] = useState(false);
 
   const validarFiltros = () => {
     if (modo === "concurso") {
       if (tipoMode === "prova_completa") {
+        if (!stateId) { toast({ title: "Selecione o estado", variant: "destructive" }); return false; }
         if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
         if (!bancaId) { toast({ title: "Selecione a banca para prova completa", variant: "destructive" }); return false; }
         if (!provaCompletaAvailable) { toast({ title: "Distribuição de prova não cadastrada para esta banca/área", variant: "destructive" }); return false; }
@@ -253,7 +256,7 @@ export default function Simulado() {
     } else {
       if (!areaEnem) { toast({ title: "Selecione a área do ENEM", variant: "destructive" }); return false; }
     }
-    if (isPremiumOnly && profile?.plano !== "premium") { toast({ title: "Exclusivo Premium", variant: "destructive" }); return false; }
+    if (isPremiumOnly) { toast({ title: "Exclusivo Premium", variant: "destructive" }); return false; }
     return true;
   };
 
@@ -441,16 +444,48 @@ export default function Simulado() {
   // ─── Render: Active quiz ──────────────────────────────────────
   if (simuladoId && questoes.length > 0) {
     const q = questoes[currentIdx]; const respondidas = Object.keys(respostas).length; const progresso = Math.round((respondidas / questoes.length) * 100);
+    const isProvaCompleta = tipoMode === "prova_completa";
+    const freeQuestionLimit = 10;
+    const isLockedQuestion = isProvaCompleta && isFreePlan && currentIdx >= freeQuestionLimit;
+
     return (
       <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
         <Button variant="ghost" className="mb-4 gap-2" onClick={handleVoltar}><ArrowLeft className="h-4 w-4" /> Voltar</Button>
         <div className="mb-4 space-y-2"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Questão {currentIdx+1} de {questoes.length}</span><span className="text-xs text-muted-foreground">{respondidas}/{questoes.length} respondidas</span></div><Progress value={progresso} className="h-2" /></div>
-        <Card><CardContent className="pt-6"><p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => handleAnswer(o.letra)}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
-        <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>
-        <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => (<button key={i} onClick={() => setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{i+1}</button>))}</div>
+        
+        {isLockedQuestion ? (
+          <Card className="border-primary/30">
+            <CardContent className="pt-6 text-center space-y-4">
+              <div className="text-4xl">🔒</div>
+              <h3 className="font-display text-xl font-bold">Questão Bloqueada</h3>
+              <p className="text-sm text-muted-foreground">
+                Você respondeu as <strong>{freeQuestionLimit} questões gratuitas</strong> da Prova Completa!
+                Para desbloquear todas as <strong>{questoes.length} questões</strong>, assine o plano Pro.
+              </p>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                💡 Com o plano Pro você tem acesso ilimitado a provas completas de todas as bancas!
+              </div>
+              <div className="flex gap-3 justify-center">
+                <Button variant="outline" onClick={() => setCurrentIdx(freeQuestionLimit - 1)}>Voltar às questões</Button>
+                <Button onClick={() => navigate("/planos")}>Assinar Plano Pro</Button>
+              </div>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={handleFinalizar} disabled={finalizando}>
+                {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar com {Math.min(respondidas, freeQuestionLimit)} questões
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card><CardContent className="pt-6"><p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => handleAnswer(o.letra)}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
+        )}
+
+        <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1 || (isProvaCompleta && isFreePlan && currentIdx >= freeQuestionLimit - 1)} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>
+        <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => {
+          const locked = isProvaCompleta && isFreePlan && i >= freeQuestionLimit;
+          return (<button key={i} onClick={() => !locked && setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${locked ? "bg-muted text-muted-foreground/50 cursor-not-allowed" : i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{locked ? "🔒" : i+1}</button>);
+        })}</div>
         <div ref={finalizarRef} className="mt-6 flex justify-center">
           <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10 text-sm" onClick={handleFinalizar} disabled={finalizando}>
-            {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar ({respondidas}/{questoes.length})
+            {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar ({respondidas}/{isProvaCompleta && isFreePlan ? freeQuestionLimit : questoes.length})
           </Button>
         </div>
       </main><AppFooter /></div>
@@ -489,7 +524,7 @@ export default function Simulado() {
                 <RadioGroupItem value="prova_completa" id="tipo-prova" />
                 <Label htmlFor="tipo-prova" className="cursor-pointer flex-1">
                   <span className="font-medium">🔘 Prova Completa por Banca</span>
-                  <p className="text-xs text-muted-foreground">Distribuição realista baseada em editais (Premium)</p>
+                  <p className="text-xs text-muted-foreground">Distribuição realista baseada em editais (Grátis – 10 questões no Free)</p>
                 </Label>
               </div>
             </RadioGroup>
@@ -497,7 +532,8 @@ export default function Simulado() {
 
           {/* Prova Completa: filtros simplificados */}
           {tipoMode === "prova_completa" ? (<>
-            <div className="space-y-2"><Label>Estado (opcional)</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Estado *</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Esfera</Label><Select value={esferaId} onValueChange={setEsferaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{esferas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Carreira (opcional)</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Banca *</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Selecione a banca" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
@@ -511,6 +547,12 @@ export default function Simulado() {
                 ) : (
                   "⚠️ Distribuição não cadastrada para esta combinação."
                 )}
+              </div>
+            )}
+
+            {isFreePlan && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
+                🎁 Prova Completa gratuita! No plano Free você responde até <strong>10 questões</strong>. Assine o plano Pro para desbloquear todas!
               </div>
             )}
           </>) : (<>
@@ -561,9 +603,9 @@ export default function Simulado() {
           <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões (5 moedas)</SelectItem><SelectItem value="10">10 questões (10 moedas)</SelectItem><SelectItem value="20">20 questões (15 moedas)</SelectItem><SelectItem value="60">60 questões (Premium)</SelectItem></SelectContent></Select></div>
         )}
 
-        <Button className="w-full" onClick={handleGerarClick} disabled={loading || (isPremiumOnly && profile?.plano !== "premium")}>
+        <Button className="w-full" onClick={handleGerarClick} disabled={loading || isPremiumOnly}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {tipoMode === "prova_completa" ? (profile?.plano === "premium" ? "Gerar Prova Completa" : "Exclusivo Premium") : (isPremiumOnly ? "Exclusivo Premium" : `Gerar Simulado (${custo} moedas)`)}
+          {tipoMode === "prova_completa" ? "Gerar Prova Completa (Grátis)" : (isPremiumOnly ? "Exclusivo Premium" : `Gerar Simulado (${custo} moedas)`)}
         </Button>
       </CardContent></Card>
     </main>
