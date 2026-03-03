@@ -181,6 +181,42 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_patterns: {
+        Row: {
+          banca_nome: string
+          confianca: number | null
+          created_at: string
+          exemplos_count: number | null
+          id: string
+          regex_alternativas: string | null
+          regex_enunciado: string | null
+          regex_gabarito: string | null
+          ultima_atualizacao: string | null
+        }
+        Insert: {
+          banca_nome: string
+          confianca?: number | null
+          created_at?: string
+          exemplos_count?: number | null
+          id?: string
+          regex_alternativas?: string | null
+          regex_enunciado?: string | null
+          regex_gabarito?: string | null
+          ultima_atualizacao?: string | null
+        }
+        Update: {
+          banca_nome?: string
+          confianca?: number | null
+          created_at?: string
+          exemplos_count?: number | null
+          id?: string
+          regex_alternativas?: string | null
+          regex_enunciado?: string | null
+          regex_gabarito?: string | null
+          ultima_atualizacao?: string | null
+        }
+        Relationships: []
+      }
       carreira_materias: {
         Row: {
           carreira_id: string
@@ -273,6 +309,88 @@ export type Database = {
             columns: ["carreira_id"]
             isOneToOne: false
             referencedRelation: "carreiras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_curriculum: {
+        Row: {
+          assuntos_principais: string[] | null
+          carga_horaria: number | null
+          created_at: string
+          curso_id: string
+          disciplina: string
+          id: string
+          semestre: number
+          updated_at: string
+        }
+        Insert: {
+          assuntos_principais?: string[] | null
+          carga_horaria?: number | null
+          created_at?: string
+          curso_id: string
+          disciplina: string
+          id?: string
+          semestre: number
+          updated_at?: string
+        }
+        Update: {
+          assuntos_principais?: string[] | null
+          carga_horaria?: number | null
+          created_at?: string
+          curso_id?: string
+          disciplina?: string
+          id?: string
+          semestre?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_curriculum_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_patterns: {
+        Row: {
+          created_at: string
+          curso_id: string
+          exemplos_count: number | null
+          id: string
+          regex_alternativas: string | null
+          regex_enunciado: string | null
+          semestre: number | null
+          ultima_atualizacao: string | null
+        }
+        Insert: {
+          created_at?: string
+          curso_id: string
+          exemplos_count?: number | null
+          id?: string
+          regex_alternativas?: string | null
+          regex_enunciado?: string | null
+          semestre?: number | null
+          ultima_atualizacao?: string | null
+        }
+        Update: {
+          created_at?: string
+          curso_id?: string
+          exemplos_count?: number | null
+          id?: string
+          regex_alternativas?: string | null
+          regex_enunciado?: string | null
+          semestre?: number | null
+          ultima_atualizacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_patterns_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
             referencedColumns: ["id"]
           },
         ]
@@ -409,6 +527,75 @@ export type Database = {
           created_at?: string
           id?: string
           nome?: string
+        }
+        Relationships: []
+      }
+      exam_radar: {
+        Row: {
+          area: string | null
+          banca_nome: string | null
+          created_at: string
+          data_prova: string | null
+          descricao: string | null
+          edital_link: string | null
+          estado: string | null
+          id: string
+          inscricao_ate: string | null
+          inscricao_inicio: string | null
+          link: string | null
+          nivel: string
+          nome: string
+          orgao: string | null
+          origem: string | null
+          salario_ate: number | null
+          salario_de: number | null
+          status: string
+          updated_at: string
+          vagas: number | null
+        }
+        Insert: {
+          area?: string | null
+          banca_nome?: string | null
+          created_at?: string
+          data_prova?: string | null
+          descricao?: string | null
+          edital_link?: string | null
+          estado?: string | null
+          id?: string
+          inscricao_ate?: string | null
+          inscricao_inicio?: string | null
+          link?: string | null
+          nivel?: string
+          nome: string
+          orgao?: string | null
+          origem?: string | null
+          salario_ate?: number | null
+          salario_de?: number | null
+          status?: string
+          updated_at?: string
+          vagas?: number | null
+        }
+        Update: {
+          area?: string | null
+          banca_nome?: string | null
+          created_at?: string
+          data_prova?: string | null
+          descricao?: string | null
+          edital_link?: string | null
+          estado?: string | null
+          id?: string
+          inscricao_ate?: string | null
+          inscricao_inicio?: string | null
+          link?: string | null
+          nivel?: string
+          nome?: string
+          orgao?: string | null
+          origem?: string | null
+          salario_ate?: number | null
+          salario_de?: number | null
+          status?: string
+          updated_at?: string
+          vagas?: number | null
         }
         Relationships: []
       }
@@ -670,6 +857,88 @@ export type Database = {
           },
         ]
       }
+      pdf_imports: {
+        Row: {
+          ano: number | null
+          area_id: string | null
+          banca_id: string | null
+          cargo: string | null
+          created_at: string
+          curso_id: string | null
+          erro_detalhes: string | null
+          hash_arquivo: string
+          id: string
+          nome_arquivo: string
+          semestre: number | null
+          status_processamento: string
+          storage_path: string
+          tipo: string
+          total_questoes_extraidas: number | null
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          ano?: number | null
+          area_id?: string | null
+          banca_id?: string | null
+          cargo?: string | null
+          created_at?: string
+          curso_id?: string | null
+          erro_detalhes?: string | null
+          hash_arquivo: string
+          id?: string
+          nome_arquivo: string
+          semestre?: number | null
+          status_processamento?: string
+          storage_path: string
+          tipo?: string
+          total_questoes_extraidas?: number | null
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          ano?: number | null
+          area_id?: string | null
+          banca_id?: string | null
+          cargo?: string | null
+          created_at?: string
+          curso_id?: string | null
+          erro_detalhes?: string | null
+          hash_arquivo?: string
+          id?: string
+          nome_arquivo?: string
+          semestre?: number | null
+          status_processamento?: string
+          storage_path?: string
+          tipo?: string
+          total_questoes_extraidas?: number | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_imports_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_imports_banca_id_fkey"
+            columns: ["banca_id"]
+            isOneToOne: false
+            referencedRelation: "bancas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_imports_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_features: {
         Row: {
           enabled: boolean
@@ -791,6 +1060,54 @@ export type Database = {
           xp?: number
         }
         Relationships: []
+      }
+      question_embeddings: {
+        Row: {
+          created_at: string
+          duplicate_of: string | null
+          embedding_vector: string | null
+          id: string
+          is_duplicate: boolean | null
+          model_version: string | null
+          question_id: string
+          similarity_score: number | null
+        }
+        Insert: {
+          created_at?: string
+          duplicate_of?: string | null
+          embedding_vector?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          model_version?: string | null
+          question_id: string
+          similarity_score?: number | null
+        }
+        Update: {
+          created_at?: string
+          duplicate_of?: string | null
+          embedding_vector?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          model_version?: string | null
+          question_id?: string
+          similarity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_embeddings_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "questoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_embeddings_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questoes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       questoes: {
         Row: {
