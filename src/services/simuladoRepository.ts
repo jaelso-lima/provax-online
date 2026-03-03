@@ -30,8 +30,10 @@ export async function fetchAreas(modo: string): Promise<FilterOption[]> {
   return data || [];
 }
 
-export async function fetchCursos(): Promise<FilterOption[]> {
-  const { data } = await supabase.from("cursos").select("*").order("nome");
+export async function fetchCursos(onlyLiberados = true): Promise<FilterOption[]> {
+  let query = supabase.from("cursos").select("*");
+  if (onlyLiberados) query = query.eq("liberado", true);
+  const { data } = await query.order("nome");
   return data || [];
 }
 

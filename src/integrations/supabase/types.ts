@@ -472,18 +472,21 @@ export type Database = {
           created_at: string
           descricao: string | null
           id: string
+          liberado: boolean
           nome: string
         }
         Insert: {
           created_at?: string
           descricao?: string | null
           id?: string
+          liberado?: boolean
           nome: string
         }
         Update: {
           created_at?: string
           descricao?: string | null
           id?: string
+          liberado?: boolean
           nome?: string
         }
         Relationships: []

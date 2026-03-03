@@ -1,0 +1,1 @@
+ALTER TABLE public.cursos ADD COLUMN IF NOT EXISTS liberado boolean NOT NULL DEFAULT false;
