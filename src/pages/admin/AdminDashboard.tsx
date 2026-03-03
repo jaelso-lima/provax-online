@@ -203,7 +203,7 @@ export default function AdminDashboard() {
           ) : (
             <>
               {/* Partner metrics */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ export default function AdminDashboard() {
               {partnerContract && (
                 <Card>
                   <CardContent className="py-5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-primary" />
                         <div>
@@ -316,7 +316,7 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowContract(true)}>
                           <FileText className="h-4 w-4" />
                           Visualizar Contrato
@@ -472,8 +472,8 @@ export default function AdminDashboard() {
                     <CardTitle className="text-base">Distribuição de Usuários por Plano</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-6">
-                      <ResponsiveContainer width="50%" height={200}>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                      <ResponsiveContainer width="100%" height={200} className="sm:w-1/2">
                         <PieChart>
                           <Pie data={usersByPlan} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                             {usersByPlan.map((_, i) => (
@@ -609,8 +609,8 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               {usersByPlan.length > 0 ? (
-                <div className="flex items-center gap-6">
-                  <ResponsiveContainer width="50%" height={200}>
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                  <ResponsiveContainer width="100%" height={200} className="sm:w-1/2">
                     <PieChart>
                       <Pie data={usersByPlan} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                         {usersByPlan.map((_, i) => (

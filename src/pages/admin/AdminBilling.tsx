@@ -133,7 +133,7 @@ export default function AdminBilling() {
         </div>
 
         {/* Revenue Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -251,8 +251,8 @@ export default function AdminBilling() {
             </CardHeader>
             <CardContent>
               {expensesPieData.length > 0 ? (
-                <div className="flex items-center gap-6">
-                  <ResponsiveContainer width="50%" height={220}>
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+                  <ResponsiveContainer width="100%" height={220} className="sm:w-1/2">
                     <PieChart>
                       <Pie data={expensesPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                         {expensesPieData.map((_, i) => (
