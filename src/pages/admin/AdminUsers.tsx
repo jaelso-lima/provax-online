@@ -250,7 +250,7 @@ export default function AdminUsers() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                       {/* Role change */}
                       <Select
                         value={u.role || "user"}

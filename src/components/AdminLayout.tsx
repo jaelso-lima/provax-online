@@ -81,7 +81,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Mobile header */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <header className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -100,13 +100,13 @@ export function AdminLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Mobile nav */}
-        <nav className="lg:hidden flex overflow-x-auto border-b border-border bg-card px-2">
+        <nav className="lg:hidden flex overflow-x-auto border-b border-border bg-card px-2 scrollbar-hide">
           {navItems.map((item) => (
             <Link
               key={item.href}
               to={item.href}
               className={cn(
-                "flex items-center gap-2 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors",
+                "flex items-center gap-1.5 px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors shrink-0",
                 location.pathname === item.href
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground"
@@ -118,7 +118,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>
+        <main className="flex-1 p-3 sm:p-4 lg:p-8 overflow-auto">{children}</main>
       </div>
     </div>
   );

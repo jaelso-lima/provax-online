@@ -128,7 +128,7 @@ export default function AdminExpenses() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold font-['Space_Grotesk']">Despesas</h1>
             <p className="text-muted-foreground text-sm">Controle financeiro interno</p>
@@ -179,7 +179,7 @@ export default function AdminExpenses() {
             expenses?.map((e) => (
               <Card key={e.id}>
                 <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-sm">{e.descricao}</p>
