@@ -238,7 +238,14 @@ export default function ConcursosAbertos() {
                       <Button
                         size="sm"
                         className="text-xs"
-                        onClick={() => navigate(`/simulado?banca=${exam.banca_nome || ""}&area=${exam.area || ""}`)}
+                        onClick={() => {
+                          const params = new URLSearchParams({ modo: "concurso", autostart: "true" });
+                          if (exam.banca_nome) params.set("banca_nome", exam.banca_nome);
+                          if (exam.area) params.set("area_nome", exam.area);
+                          if (exam.nivel) params.set("nivel", exam.nivel);
+                          if (exam.estado) params.set("estado", exam.estado);
+                          navigate(`/simulado?${params.toString()}`);
+                        }}
                       >
                         <FileText className="h-3 w-3 mr-1" /> Gerar simulado
                       </Button>
