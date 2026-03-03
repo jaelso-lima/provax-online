@@ -46,6 +46,12 @@ export default function Simulado() {
   const [searchParams] = useSearchParams();
   const modo = searchParams.get("modo") || "concurso";
   const continuarId = searchParams.get("continuar");
+  const autostart = searchParams.get("autostart") === "true";
+  const paramBancaNome = searchParams.get("banca_nome");
+  const paramAreaNome = searchParams.get("area_nome");
+  const paramNivel = searchParams.get("nivel");
+  const paramEstado = searchParams.get("estado");
+  const [autostartTriggered, setAutostartTriggered] = useState(false);
 
   const [nivel, setNivel] = useState("");
   const [quantidade, setQuantidade] = useState("5");
@@ -179,11 +185,42 @@ export default function Simulado() {
     if (continuarId) return;
     if (modo === "concurso") {
       Promise.all([fetchCarreiras(), fetchBancas(), fetchStates(), fetchEsferas(), fetchAreas("concurso")])
-        .then(([c, b, s, e, a]) => { setCarreiras(c); setBancas(b); setStates(s); setEsferas(e); setAreas(a); });
+        .then(([c, b, s, e, a]) => {
+          setCarreiras(c); setBancas(b); setStates(s); setEsferas(e); setAreas(a);
+          // Auto-select filters from Radar de Concursos
+          if (autostart && !autostartTriggered) {
+            if (paramBancaNome) {
+              const matchedBanca = b.find((x: FilterOption) => x.nome.toLowerCase() === paramBancaNome.toLowerCase());
+              if (matchedBanca) setBancaId(matchedBanca.id);
+            }
+            if (paramAreaNome) {
+              const matchedArea = a.find((x: FilterOption) => x.nome.toLowerCase() === paramAreaNome.toLowerCase());
+              if (matchedArea) setAreaId(matchedArea.id);
+            }
+            if (paramEstado) {
+              const matchedState = s.find((x: FilterOption) => x.nome.toLowerCase() === paramEstado.toLowerCase() || (x as any).sigla?.toLowerCase() === paramEstado.toLowerCase());
+              if (matchedState) setStateId(matchedState.id);
+            }
+            if (paramNivel) setNivel(paramNivel);
+            setTipoMode("livre");
+          }
+        });
     } else if (modo === "universidade") {
       fetchCursos().then(setCursos);
     }
   }, [modo, continuarId]);
+
+  // Auto-start: trigger generation once filters are set
+  useEffect(() => {
+    if (!autostart || autostartTriggered || !user || !profile) return;
+    if (modo === "concurso" && areaId && bancas.length > 0 && areas.length > 0) {
+      setAutostartTriggered(true);
+      // Small delay to let state settle
+      setTimeout(() => {
+        setShowConfirm(true);
+      }, 500);
+    }
+  }, [autostart, autostartTriggered, areaId, bancaId, bancas, areas, user, profile]);
 
   // Cascading: área → matérias (concurso)
   useEffect(() => {
