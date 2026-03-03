@@ -51,7 +51,7 @@ export default function CascadingFilters({ modo, onFiltersChange }: CascadingFil
   useEffect(() => {
     setLoading(true);
     if (isUniversidade) {
-      supabase.from("cursos").select("*").order("nome")
+      supabase.from("cursos").select("*").eq("liberado", true).order("nome")
         .then(({ data }) => { if (data) setCursos(data); setLoading(false); });
     } else {
       supabase.from("areas").select("*").eq("modo", modo).order("nome")

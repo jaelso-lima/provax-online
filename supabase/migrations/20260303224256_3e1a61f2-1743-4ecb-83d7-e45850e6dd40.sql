@@ -1,0 +1,1 @@
+CREATE POLICY "Cursos: admin atualiza" ON public.cursos FOR UPDATE TO authenticated USING (is_admin()) WITH CHECK (is_admin());
