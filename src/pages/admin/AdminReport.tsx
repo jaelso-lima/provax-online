@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 export default function AdminReport() {
@@ -19,6 +20,12 @@ export default function AdminReport() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [generating, setGenerating] = useState(false);
+
+  // PDF section checkboxes
+  const [includeFinancial, setIncludeFinancial] = useState(true);
+  const [includeCostBreakdown, setIncludeCostBreakdown] = useState(true);
+  const [includeGatewayFees, setIncludeGatewayFees] = useState(false);
+  const [includePartnerSharing, setIncludePartnerSharing] = useState(true);
 
   const { data: stats } = useQuery({
     queryKey: ["report-stats", isPartner],
@@ -51,9 +58,43 @@ export default function AdminReport() {
     enabled: isAdmin,
   });
 
+  const { data: partners } = useQuery({
+    queryKey: ["report-partners"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("partners").select("*, profiles:user_id(nome, email)").eq("status", "ativo");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  const { data: plans } = useQuery({
+    queryKey: ["report-plans"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("plans").select("*").eq("ativo", true).order("preco_mensal");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
   const getPeriodLabel = () => {
     if (periodo === "custom") return `${customStart} a ${customEnd}`;
     return `Últimos ${periodo} dias`;
+  };
+
+  // Calculate estimated revenue from active subscriptions
+  const calcRevenue = () => {
+    if (!financialStats || !plans) return { bruta: 0, custos: 0, liquida: 0 };
+    const subsByPlan = financialStats.subscriptions_by_plan || {};
+    let bruta = 0;
+    // Estimate monthly revenue from active subs
+    for (const [planName, count] of Object.entries(subsByPlan)) {
+      const plan = plans.find((p: any) => p.nome === planName);
+      if (plan) bruta += (plan.preco_mensal || 0) * (count as number);
+    }
+    const custos = Number(financialStats.monthly_expenses || 0);
+    return { bruta, custos, liquida: bruta - custos };
   };
 
   const generatePDF = async () => {
@@ -68,7 +109,7 @@ export default function AdminReport() {
 
       // Header
       doc.setFontSize(24);
-      doc.setTextColor(99, 79, 198); // primary color
+      doc.setTextColor(99, 79, 198);
       doc.text("ProvaX", 14, y);
       doc.setFontSize(10);
       doc.setTextColor(128, 128, 128);
@@ -79,7 +120,6 @@ export default function AdminReport() {
       doc.text(`Período: ${getPeriodLabel()}`, pageWidth - 14, y, { align: "right" });
       y += 10;
 
-      // Divider
       doc.setDrawColor(200, 200, 200);
       doc.line(14, y, pageWidth - 14, y);
       y += 10;
@@ -92,7 +132,7 @@ export default function AdminReport() {
 
       const statsData = [
         ["Total de Usuários", String(stats?.total_users ?? 0)],
-        ["Usuários Ativos", String(stats?.active_users ?? 0)],
+        ["Usuários Pagantes", String(stats?.paying_users ?? 0)],
         ["Crescimento Mensal", `${stats?.growth_pct ?? 0}%`],
         ["Total de Simulados", String(stats?.total_simulados ?? 0)],
         ["Total de Redações", String(stats?.total_redacoes ?? 0)],
@@ -148,20 +188,43 @@ export default function AdminReport() {
         y = (doc as any).lastAutoTable.finalY + 12;
       }
 
-      // Financial data (admin only)
-      if (isAdmin && financialStats) {
-        if (y > 240) { doc.addPage(); y = 20; }
+      // Financial data (admin only, when checkbox enabled)
+      if (isAdmin && financialStats && includeFinancial) {
+        if (y > 220) { doc.addPage(); y = 20; }
+
+        const revenue = calcRevenue();
 
         doc.setFontSize(14);
         doc.text("💰 Dados Financeiros", 14, y);
         y += 8;
 
-        const finData = [
+        const finData: string[][] = [
           ["Assinaturas Ativas", String(financialStats.active_subscriptions)],
           ["Assinaturas Canceladas", String(financialStats.cancelled_subscriptions)],
-          ["Despesas do Mês", `R$ ${Number(financialStats.monthly_expenses).toFixed(2)}`],
-          ["Despesas Totais", `R$ ${Number(financialStats.total_expenses).toFixed(2)}`],
         ];
+
+        if (includeCostBreakdown) {
+          finData.push(
+            ["Receita Bruta (estimada/mês)", `R$ ${revenue.bruta.toFixed(2)}`],
+            ["Custos Operacionais (mês)", `R$ ${revenue.custos.toFixed(2)}`],
+            ["Lucro Líquido (estimado/mês)", `R$ ${revenue.liquida.toFixed(2)}`],
+            ["Despesas Totais Acumuladas", `R$ ${Number(financialStats.total_expenses).toFixed(2)}`],
+          );
+        } else {
+          finData.push(
+            ["Despesas do Mês", `R$ ${Number(financialStats.monthly_expenses).toFixed(2)}`],
+            ["Despesas Totais", `R$ ${Number(financialStats.total_expenses).toFixed(2)}`],
+          );
+        }
+
+        if (includeGatewayFees) {
+          // Estimated gateway fees (standard 3.99% + R$0.39 per transaction)
+          const estimatedFees = revenue.bruta * 0.0399;
+          finData.push(
+            ["Taxa Gateway (estimada ~3.99%)", `R$ ${estimatedFees.toFixed(2)}`],
+            ["Receita Líquida Pós-Gateway", `R$ ${(revenue.bruta - estimatedFees).toFixed(2)}`],
+          );
+        }
 
         autoTable(doc, {
           startY: y,
@@ -190,8 +253,39 @@ export default function AdminReport() {
           y = (doc as any).lastAutoTable.finalY + 12;
         }
 
+        // Partner profit sharing
+        if (includePartnerSharing && partners && partners.length > 0) {
+          if (y > 200) { doc.addPage(); y = 20; }
+          
+          doc.setFontSize(14);
+          doc.text("🤝 Ganhos por Cota (Sócios)", 14, y);
+          y += 8;
+
+          const partnerData = partners.map((p: any) => {
+            const proporcional = revenue.liquida > 0 ? (revenue.liquida * (p.percentual_participacao / 100)) : 0;
+            return [
+              p.profiles?.nome || "—",
+              `${p.percentual_participacao}%`,
+              p.tipo_participacao.replace("_", " "),
+              `R$ ${Number(p.valor_investido).toFixed(2)}`,
+              `R$ ${proporcional.toFixed(2)}`,
+            ];
+          });
+
+          autoTable(doc, {
+            startY: y,
+            head: [["Sócio", "%", "Tipo", "Investido", "Ganho Proporcional (mês)"]],
+            body: partnerData,
+            theme: "grid",
+            headStyles: { fillColor: [52, 73, 94] },
+            margin: { left: 14, right: 14 },
+            columnStyles: { 4: { fontStyle: "bold" } },
+          });
+          y = (doc as any).lastAutoTable.finalY + 12;
+        }
+
         // Recent expenses
-        if (expenses && expenses.length > 0) {
+        if (includeCostBreakdown && expenses && expenses.length > 0) {
           if (y > 200) { doc.addPage(); y = 20; }
           doc.setFontSize(14);
           doc.text("📋 Despesas Recentes", 14, y);
@@ -245,7 +339,7 @@ export default function AdminReport() {
         <div>
           <h1 className="text-2xl font-bold font-['Space_Grotesk']">Relatório Consolidado</h1>
           <p className="text-muted-foreground text-sm">
-            {isPartner ? "Exportar métricas de crescimento" : "Exportar relatório completo com dados financeiros"}
+            {isPartner ? "Exportar métricas de crescimento" : "Exportar relatório completo com dados financeiros e divisão societária"}
           </p>
         </div>
 
@@ -282,6 +376,29 @@ export default function AdminReport() {
               </div>
             )}
 
+            {/* PDF Section Checkboxes (admin only) */}
+            {isAdmin && (
+              <div className="space-y-3 rounded-lg border p-4">
+                <Label className="font-semibold text-sm">Seções do Relatório</Label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="cb-financial" checked={includeFinancial} onCheckedChange={(v) => setIncludeFinancial(!!v)} />
+                  <label htmlFor="cb-financial" className="text-sm cursor-pointer">Incluir Dados Financeiros</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="cb-cost" checked={includeCostBreakdown} onCheckedChange={(v) => setIncludeCostBreakdown(!!v)} disabled={!includeFinancial} />
+                  <label htmlFor="cb-cost" className="text-sm cursor-pointer">Incluir Custo Bruto / Líquido</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="cb-gateway" checked={includeGatewayFees} onCheckedChange={(v) => setIncludeGatewayFees(!!v)} disabled={!includeFinancial} />
+                  <label htmlFor="cb-gateway" className="text-sm cursor-pointer">Detalhar Taxas de Gateway</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="cb-partners" checked={includePartnerSharing} onCheckedChange={(v) => setIncludePartnerSharing(!!v)} disabled={!includeFinancial} />
+                  <label htmlFor="cb-partners" className="text-sm cursor-pointer">Incluir Ganhos por Cota (Sócios)</label>
+                </div>
+              </div>
+            )}
+
             <div className="pt-2">
               <Button onClick={generatePDF} disabled={generating} className="gap-2">
                 <Download className="h-4 w-4" />
@@ -301,16 +418,33 @@ export default function AdminReport() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2">✅ Total de usuários e ativos</li>
+              <li className="flex items-center gap-2">✅ Total de usuários e pagantes</li>
               <li className="flex items-center gap-2">✅ Crescimento percentual mensal</li>
               <li className="flex items-center gap-2">✅ Distribuição por plano (quantidade)</li>
               <li className="flex items-center gap-2">✅ Uso por categoria (Concurso/ENEM/Universidade)</li>
               <li className="flex items-center gap-2">✅ Total de simulados e redações</li>
               {isAdmin && (
                 <>
-                  <li className="flex items-center gap-2 text-primary font-medium">💰 Assinaturas ativas e canceladas</li>
-                  <li className="flex items-center gap-2 text-primary font-medium">💰 Assinaturas por plano</li>
-                  <li className="flex items-center gap-2 text-primary font-medium">💰 Despesas registradas</li>
+                  {includeFinancial && (
+                    <>
+                      <li className="flex items-center gap-2 text-primary font-medium">💰 Assinaturas ativas e canceladas</li>
+                      <li className="flex items-center gap-2 text-primary font-medium">💰 Assinaturas por plano</li>
+                    </>
+                  )}
+                  {includeFinancial && includeCostBreakdown && (
+                    <>
+                      <li className="flex items-center gap-2 text-primary font-medium">💰 Receita Bruta (estimada)</li>
+                      <li className="flex items-center gap-2 text-primary font-medium">💰 Custos Operacionais</li>
+                      <li className="flex items-center gap-2 text-primary font-medium">💰 Lucro Líquido (estimado)</li>
+                      <li className="flex items-center gap-2 text-primary font-medium">📋 Despesas registradas</li>
+                    </>
+                  )}
+                  {includeFinancial && includeGatewayFees && (
+                    <li className="flex items-center gap-2 text-primary font-medium">💳 Taxas de Gateway (~3.99%)</li>
+                  )}
+                  {includeFinancial && includePartnerSharing && (
+                    <li className="flex items-center gap-2 text-primary font-medium">🤝 Ganhos proporcionais por cota</li>
+                  )}
                 </>
               )}
               {isPartner && (
