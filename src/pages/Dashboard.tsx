@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift, PlayCircle, Eye } from "lucide-react";
+import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift, PlayCircle, Eye, Radar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -353,6 +353,15 @@ export default function Dashboard() {
             </Card>
             <Card 
               className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
+              onClick={() => navigate("/concursos")}
+            >
+              <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
+                <Radar className="h-5 w-5 text-primary" />
+                <p className="text-xs font-medium">Concursos</p>
+              </CardContent>
+            </Card>
+            <Card 
+              className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
               onClick={() => navigate("/planos")}
             >
               <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
@@ -508,6 +517,7 @@ export default function Dashboard() {
         <div className="mb-8 hidden gap-4 lg:grid lg:grid-cols-3">
           {[
             { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : modo === "universidade" ? "Questões universitárias por IA" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary" },
+            { icon: Radar, title: "Concursos Abertos", desc: "Radar de concursos em todo o Brasil", path: "/concursos", color: "text-accent" },
             { icon: PenTool, title: "Redação com IA", desc: "Correção rigorosa (15 moedas)", path: "/redacao", color: "text-accent" },
             { icon: Coins, title: "Comprar Moedas", desc: "Adquira mais créditos", path: "/comprar-moedas", color: "text-coin" },
             { icon: Trophy, title: "Ver Planos", desc: "Upgrade para mais recursos", path: "/planos", color: "text-warning" },

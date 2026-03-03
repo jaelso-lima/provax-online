@@ -19,6 +19,8 @@ import AdminLogs from "./pages/admin/AdminLogs";
 import AdminCMS from "./pages/admin/AdminCMS";
 import AdminPartners from "./pages/admin/AdminPartners";
 import AdminProfitSimulation from "./pages/admin/AdminProfitSimulation";
+import AdminExamRadar from "./pages/admin/AdminExamRadar";
+import AdminPdfImporter from "./pages/admin/AdminPdfImporter";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -33,6 +35,7 @@ import Ranking from "./pages/Ranking";
 import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
 import TermosDeUso from "./pages/TermosDeUso";
+import ConcursosAbertos from "./pages/ConcursosAbertos";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +60,7 @@ const App = () => (
             <Route path="/planos" element={<ProtectedRoute><Planos /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><Ranking /></ProtectedRoute>} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+            <Route path="/concursos" element={<ProtectedRoute><ConcursosAbertos /></ProtectedRoute>} />
             <Route path="/termos" element={<TermosDeUso />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
@@ -68,6 +72,8 @@ const App = () => (
             <Route path="/admin/cms" element={<AdminRoute><AdminCMS /></AdminRoute>} />
             <Route path="/admin/partners" element={<AdminRoute><AdminPartners /></AdminRoute>} />
             <Route path="/admin/profit-simulation" element={<AdminRoute><AdminProfitSimulation /></AdminRoute>} />
+            <Route path="/admin/exam-radar" element={<AdminRoute><AdminExamRadar /></AdminRoute>} />
+            <Route path="/admin/pdf-importer" element={<AdminRoute><AdminPdfImporter /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatProfessor />

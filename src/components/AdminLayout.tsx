@@ -17,6 +17,8 @@ import {
   Calculator,
   Menu,
   X,
+  Radar,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -29,6 +31,8 @@ const allNavItems = [
   { href: "/admin/expenses", label: "Despesas", icon: Receipt, roles: ["admin", "owner"] },
   { href: "/admin/partners", label: "Societário", icon: Handshake, roles: ["admin", "owner"] },
   { href: "/admin/profit-simulation", label: "Simulador Lucros", icon: Calculator, roles: ["admin", "owner"] },
+  { href: "/admin/exam-radar", label: "Radar Concursos", icon: Radar, roles: ["admin", "owner"] },
+  { href: "/admin/pdf-importer", label: "PDF Importer", icon: Upload, roles: ["admin", "owner"] },
   { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner"] },
   { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"] },
   { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner"] },
