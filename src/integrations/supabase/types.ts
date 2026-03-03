@@ -1622,6 +1622,9 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
+          liberado_por_admin_id: string | null
+          motivo_liberacao: string | null
+          origem: string
           payment_gateway_id: string | null
           periodo: string
           plan_id: string
@@ -1635,6 +1638,9 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          liberado_por_admin_id?: string | null
+          motivo_liberacao?: string | null
+          origem?: string
           payment_gateway_id?: string | null
           periodo?: string
           plan_id: string
@@ -1648,6 +1654,9 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          liberado_por_admin_id?: string | null
+          motivo_liberacao?: string | null
+          origem?: string
           payment_gateway_id?: string | null
           periodo?: string
           plan_id?: string
@@ -1769,10 +1778,25 @@ export type Database = {
         Returns: boolean
       }
       admin_delete_user: { Args: { _target_user_id: string }; Returns: boolean }
-      admin_grant_plan: {
-        Args: { _periodo?: string; _plan_slug: string; _target_user_id: string }
-        Returns: boolean
-      }
+      admin_grant_plan:
+        | {
+            Args: {
+              _periodo?: string
+              _plan_slug: string
+              _target_user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _dias?: number
+              _motivo?: string
+              _periodo?: string
+              _plan_slug: string
+              _target_user_id: string
+            }
+            Returns: boolean
+          }
       admin_list_users: {
         Args: { _limit?: number; _offset?: number; _search?: string }
         Returns: Json
