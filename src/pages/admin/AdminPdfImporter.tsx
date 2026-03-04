@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Upload, CheckCircle, XCircle, Clock, File, Play, BookOpen, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 export default function AdminPdfImporter() {
   const { user } = useAuth();
@@ -21,6 +22,8 @@ export default function AdminPdfImporter() {
   const [ano, setAno] = useState<string>("");
   const [cargo, setCargo] = useState<string>("");
   const [gabaritoFile, setGabaritoFile] = useState<File | null>(null);
+  // Per-import gabarito files for processing
+  const [importGabaritos, setImportGabaritos] = useState<Record<string, File | null>>({});
 
   const { data: bancas } = useQuery({
     queryKey: ["bancas"],
@@ -40,29 +43,8 @@ export default function AdminPdfImporter() {
   const uploadMut = useMutation({
     mutationFn: async () => {
       if (!file || !user) throw new Error("Arquivo e autenticação necessários");
-      return pdfImportService.uploadPdf(file, {
-        tipo: tipo as any,
-        banca_id: bancaId || null,
-        curso_id: null,
-        semestre: null,
-        ano: ano ? Number(ano) : null,
-        cargo: cargo || null,
-      }, user.id);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pdf-imports"] });
-      toast({ title: "PDF enviado!", description: "Clique em 'Processar' para extrair questões automaticamente." });
-      setFile(null);
-      setAno("");
-      setCargo("");
-      setBancaId("");
-    },
-    onError: (e: any) => toast({ title: "Erro no upload", description: e.message, variant: "destructive" }),
-  });
 
-  const processMut = useMutation({
-    mutationFn: async (importId: string) => {
-      // If gabarito PDF is provided, upload it to storage first
+      // Upload gabarito alongside prova if provided
       let gabaritoPath: string | null = null;
       if (gabaritoFile) {
         const ext = gabaritoFile.name.split(".").pop() || "pdf";
@@ -73,8 +55,61 @@ export default function AdminPdfImporter() {
         if (uploadError) throw new Error("Erro ao enviar gabarito: " + uploadError.message);
       }
 
+      const result = await pdfImportService.uploadPdf(file, {
+        tipo: tipo as any,
+        banca_id: bancaId || null,
+        curso_id: null,
+        semestre: null,
+        ano: ano ? Number(ano) : null,
+        cargo: cargo || null,
+      }, user.id);
+
+      // Store gabarito path in the import record if provided
+      if (gabaritoPath && result?.id) {
+        await supabase.from("pdf_imports").update({
+          erro_detalhes: `gabarito:${gabaritoPath}`,
+        }).eq("id", result.id);
+      }
+
+      return { ...result, gabaritoPath };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pdf-imports"] });
+      toast({ title: "PDF enviado!", description: gabaritoFile 
+        ? "Prova e gabarito enviados! Clique em 'Processar' para extrair questões." 
+        : "Clique em 'Processar' para extrair questões automaticamente." });
+      setFile(null);
+      setGabaritoFile(null);
+      setAno("");
+      setCargo("");
+      setBancaId("");
+    },
+    onError: (e: any) => toast({ title: "Erro no upload", description: e.message, variant: "destructive" }),
+  });
+
+  const processMut = useMutation({
+    mutationFn: async (imp: { id: string; erro_detalhes?: string | null }) => {
+      // Check if gabarito was uploaded with the import
+      let gabaritoPath: string | null = null;
+      
+      // Check stored gabarito path from upload
+      if (imp.erro_detalhes?.startsWith("gabarito:")) {
+        gabaritoPath = imp.erro_detalhes.replace("gabarito:", "");
+      }
+      
+      // Check if user attached a gabarito specifically for this import
+      const perImportGabarito = importGabaritos[imp.id];
+      if (perImportGabarito) {
+        const ext = perImportGabarito.name.split(".").pop() || "pdf";
+        gabaritoPath = `gabaritos/${Date.now()}_gabarito.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("pdf-imports")
+          .upload(gabaritoPath, perImportGabarito, { upsert: false });
+        if (uploadError) throw new Error("Erro ao enviar gabarito: " + uploadError.message);
+      }
+
       const { data, error } = await supabase.functions.invoke("process-pdf", {
-        body: { import_id: importId, gabarito_storage_path: gabaritoPath },
+        body: { import_id: imp.id, gabarito_storage_path: gabaritoPath },
       });
       if (error) throw new Error(error.message || "Erro ao processar PDF");
       if (data?.error) throw new Error(data.error);
@@ -87,7 +122,7 @@ export default function AdminPdfImporter() {
         title: "PDF processado com sucesso!",
         description: `${data?.questoes_extraidas || 0} questões extraídas.${meta?.banca_organizadora ? ` Banca: ${meta.banca_organizadora}` : ""}${meta?.concurso_nome ? ` | ${meta.concurso_nome}` : ""}`,
       });
-      setGabaritoFile(null);
+      setImportGabaritos({});
     },
     onError: (e: any) => {
       qc.invalidateQueries({ queryKey: ["pdf-imports"] });
@@ -97,9 +132,7 @@ export default function AdminPdfImporter() {
 
   const deleteMut = useMutation({
     mutationFn: async (imp: { id: string; storage_path: string }) => {
-      // Delete from storage
       await supabase.storage.from("pdf-imports").remove([imp.storage_path]);
-      // Delete from database
       const { error } = await supabase.from("pdf_imports").delete().eq("id", imp.id);
       if (error) throw error;
     },
@@ -117,16 +150,25 @@ export default function AdminPdfImporter() {
     return <Clock className="h-4 w-4 text-yellow-500" />;
   };
 
+  const hasGabarito = (imp: any) => imp.erro_detalhes?.startsWith("gabarito:") || !!importGabaritos[imp.id];
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold font-['Space_Grotesk'] flex items-center gap-2">
-            <Upload className="h-6 w-6 text-primary" /> PDF Importer
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Importe provas em PDF — a IA detecta banca, estado e concurso automaticamente
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold font-['Space_Grotesk'] flex items-center gap-2">
+              <Upload className="h-6 w-6 text-primary" /> PDF Importer
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Importe provas em PDF — a IA detecta banca, estado e concurso automaticamente
+            </p>
+          </div>
+          <Link to="/admin/questions-review">
+            <Button variant="outline" size="sm">
+              Revisar Questões
+            </Button>
+          </Link>
         </div>
 
         {/* Upload form */}
@@ -171,7 +213,7 @@ export default function AdminPdfImporter() {
               </div>
               <div className="sm:col-span-2 lg:col-span-3">
                 <Label className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" /> Gabarito em PDF (opcional)
+                  <BookOpen className="h-4 w-4" /> Gabarito em PDF (opcional — enviado junto com a prova)
                 </Label>
                 <Input
                   type="file"
@@ -180,12 +222,16 @@ export default function AdminPdfImporter() {
                   className="cursor-pointer"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Envie o PDF do gabarito — a IA associa automaticamente as respostas às questões
+                  {gabaritoFile
+                    ? `✅ Gabarito selecionado: ${gabaritoFile.name} — será enviado junto com a prova`
+                    : "Envie o PDF do gabarito junto com a prova — a IA associa as respostas corretas às questões"
+                  }
                 </p>
               </div>
             </div>
             <Button onClick={() => uploadMut.mutate()} disabled={!file || uploadMut.isPending}>
-              <Upload className="h-4 w-4 mr-1" /> {uploadMut.isPending ? "Enviando..." : "Enviar PDF"}
+              <Upload className="h-4 w-4 mr-1" /> 
+              {uploadMut.isPending ? "Enviando..." : gabaritoFile ? "Enviar Prova + Gabarito" : "Enviar PDF"}
             </Button>
           </CardContent>
         </Card>
@@ -201,54 +247,80 @@ export default function AdminPdfImporter() {
             <div className="space-y-2">
               {imports.map((imp) => (
                 <Card key={imp.id}>
-                  <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <File className="h-5 w-5 text-muted-foreground shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{imp.nome_arquivo}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {imp.tipo} · {imp.ano || "—"} · {imp.total_questoes_extraidas} questões
-                        </p>
-                        {imp.erro_detalhes && imp.status_processamento === "erro" && (
-                          <p className="text-xs text-destructive mt-1 truncate max-w-[400px]" title={imp.erro_detalhes}>
-                            {imp.erro_detalhes}
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <File className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{imp.nome_arquivo}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {imp.tipo} · {imp.ano || "—"} · {imp.total_questoes_extraidas} questões
+                            {hasGabarito(imp) && " · 📋 Gabarito anexado"}
                           </p>
-                        )}
+                          {imp.erro_detalhes && imp.status_processamento === "erro" && (
+                            <p className="text-xs text-destructive mt-1 truncate max-w-[400px]" title={imp.erro_detalhes}>
+                              {imp.erro_detalhes}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {statusIcon(imp.status_processamento)}
-                      <Badge variant={
-                        imp.status_processamento === "processado" ? "default" :
-                        imp.status_processamento === "erro" ? "destructive" :
-                        "secondary"
-                      }>
-                        {imp.status_processamento}
-                      </Badge>
-                      {(imp.status_processamento === "pendente" || imp.status_processamento === "erro") && (
+                      <div className="flex items-center gap-2">
+                        {statusIcon(imp.status_processamento)}
+                        <Badge variant={
+                          imp.status_processamento === "processado" ? "default" :
+                          imp.status_processamento === "erro" ? "destructive" :
+                          "secondary"
+                        }>
+                          {imp.status_processamento}
+                        </Badge>
+                        {(imp.status_processamento === "pendente" || imp.status_processamento === "erro") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => processMut.mutate({ id: imp.id, erro_detalhes: imp.erro_detalhes })}
+                            disabled={processMut.isPending}
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            {processMut.isPending ? "Processando..." : "Processar"}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => processMut.mutate(imp.id)}
-                          disabled={processMut.isPending}
+                          variant="destructive"
+                          onClick={() => {
+                            if (confirm("Tem certeza que deseja excluir este PDF?")) {
+                              deleteMut.mutate({ id: imp.id, storage_path: imp.storage_path });
+                            }
+                          }}
+                          disabled={deleteMut.isPending}
                         >
-                          <Play className="h-3 w-3 mr-1" />
-                          {processMut.isPending ? "Processando..." : "Processar"}
+                          <Trash2 className="h-3 w-3" />
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          if (confirm("Tem certeza que deseja excluir este PDF?")) {
-                            deleteMut.mutate({ id: imp.id, storage_path: imp.storage_path });
-                          }
-                        }}
-                        disabled={deleteMut.isPending}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      </div>
                     </div>
+                    
+                    {/* Per-import gabarito upload for pending items without gabarito */}
+                    {(imp.status_processamento === "pendente" || imp.status_processamento === "erro") && !hasGabarito(imp) && (
+                      <div className="pl-8 border-l-2 border-muted ml-2">
+                        <Label className="text-xs flex items-center gap-1 text-muted-foreground">
+                          <BookOpen className="h-3 w-3" /> Anexar gabarito PDF para esta prova
+                        </Label>
+                        <Input
+                          type="file"
+                          accept=".pdf"
+                          className="cursor-pointer h-8 text-xs mt-1"
+                          onChange={(e) => {
+                            setImportGabaritos(prev => ({
+                              ...prev,
+                              [imp.id]: e.target.files?.[0] || null,
+                            }));
+                          }}
+                        />
+                        {importGabaritos[imp.id] && (
+                          <p className="text-xs text-green-600 mt-1">✅ {importGabaritos[imp.id]!.name}</p>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
