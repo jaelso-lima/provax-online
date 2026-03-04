@@ -70,7 +70,7 @@ export default function Index() {
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
               O <strong className="text-foreground">Método Estudo Reverso</strong> identifica suas falhas
-              e te faz praticar exatamente o que cai na prova — seja concurso público, ENEM ou faculdade.
+              e te faz praticar exatamente o que cai na prova — seja concurso público ou ENEM.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" asChild className="text-base px-10 h-14 text-lg shadow-lg shadow-primary/25">
@@ -257,14 +257,14 @@ export default function Index() {
           </motion.div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: Brain, title: "IA que imita sua banca", desc: "Questões geradas no padrão exato: CESPE, FGV, VUNESP, FCC e vestibulares" },
-              { icon: Target, title: "Filtros cirúrgicos", desc: "Banca → Estado → Matéria → Assunto → Ano. Estude só o que importa." },
-              { icon: BarChart3, title: "Relatório de falhas", desc: "Saiba exatamente onde erra e quanto tempo gasta em cada tipo de questão" },
-              { icon: Award, title: "XP por acerto", desc: "Cada questão certa = 1 XP. Suba de nível e desbloqueie recompensas." },
-              { icon: BookOpen, title: "Redação com IA", desc: "Correção nas 5 competências do ENEM com feedback detalhado" },
-              { icon: GraduationCap, title: "Professor PX 24h", desc: "Tutor IA que te chama pelo nome e tira qualquer dúvida, a qualquer hora" },
-              { icon: Users, title: "Indique e ganhe", desc: "Convide amigos e ganhe moedas + XP automaticamente" },
-              { icon: Shield, title: "Anti-fraude", desc: "Seus dados protegidos. Sistema seguro e monitorado." },
+              { icon: Brain, title: "IA que aprende com bancas reais", desc: "Questões geradas no padrão exato: CESPE, FGV, VUNESP, FCC. A IA aprende continuamente com provas importadas." },
+              { icon: Target, title: "Prova completa automática", desc: "Gere um simulado inteiro no formato real do edital: 60 questões distribuídas por matéria, como na prova." },
+              { icon: BarChart3, title: "Análise de desempenho", desc: "Estatísticas por matéria e assunto. Saiba exatamente onde erra e onde focar seus estudos." },
+              { icon: Award, title: "Simulado adaptativo", desc: "Quanto mais você pratica, mais inteligente ficam as questões. Foco nos seus pontos fracos." },
+              { icon: BookOpen, title: "Redação corrigida por IA", desc: "Correção estruturada nas 5 competências do ENEM com feedback detalhado e nota estimada." },
+              { icon: GraduationCap, title: "Professor PX 24h", desc: "Tutor IA que te chama pelo nome e tira qualquer dúvida de qualquer matéria, a qualquer hora." },
+              { icon: Users, title: "Preparação por concurso", desc: "Filtre por banca, estado, área e carreira. Estude exatamente o que cai na SUA prova." },
+              { icon: Shield, title: "Gabarito comentado", desc: "Cada questão tem explicação detalhada. Aprenda com seus erros e acertos." },
             ].map((f, i) => (
               <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.06 }}>
                 <Card className="border-0 bg-secondary/50 h-full transition-shadow hover:shadow-md">
