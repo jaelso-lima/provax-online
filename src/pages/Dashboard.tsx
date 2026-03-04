@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type Modo = "concurso" | "enem" | "universidade" | null;
+type Modo = "concurso" | "enem" | null;
 
 export default function Dashboard() {
   const { profile, user } = useAuth();
@@ -23,10 +23,13 @@ export default function Dashboard() {
   const [redacoes, setRedacoes] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [xpTransactions, setXpTransactions] = useState<any[]>([]);
-  const [historicoTab, setHistoricoTab] = useState<"concurso" | "universidade" | "enem" | "redacao">("concurso");
+  const [historicoTab, setHistoricoTab] = useState<"concurso" | "enem" | "redacao">("concurso");
   const [modo, setModo] = useState<Modo>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("provax_modo") as Modo) || null;
+      const saved = localStorage.getItem("provax_modo") as string | null;
+      // Migrate old universidade selection
+      if (saved === "universidade") return null;
+      return (saved as Modo) || null;
     }
     return null;
   });
@@ -107,7 +110,6 @@ export default function Dashboard() {
     else localStorage.removeItem("provax_modo");
   };
 
-  // Helper to render simulado history with Em Andamento / Concluídos tabs
   const renderSimuladoHistory = (modoFilter: string) => {
     const filtered = recentSimulados.filter((s: any) => s.modo === modoFilter);
     const emAndamento = filtered.filter((s: any) => s.status === "em_andamento");
@@ -235,12 +237,12 @@ export default function Dashboard() {
             <h1 className="font-display text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
             <p className="mt-2 text-muted-foreground">Escolha seu objetivo de estudo:</p>
           </div>
-          <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-3">
+          <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
             <Card className="cursor-pointer border-2 transition-all hover:border-primary hover:shadow-lg" onClick={() => selecionarModo("concurso")}>
               <CardHeader className="text-center">
                 <GraduationCap className="mx-auto mb-2 h-12 w-12 text-primary" />
                 <CardTitle className="font-display text-xl">Concurso Público</CardTitle>
-                <CardDescription>Filtros por banca, cargo, matéria, assunto, nível, ano, região e órgão</CardDescription>
+                <CardDescription>Simulados por banca, cargo, matéria, assunto, nível, ano, região e órgão</CardDescription>
               </CardHeader>
               <CardContent className="text-center"><Button className="w-full">Selecionar</Button></CardContent>
             </Card>
@@ -251,14 +253,6 @@ export default function Dashboard() {
                 <CardDescription>Linguagens, Matemática, Ciências Humanas, Ciências da Natureza e Redação</CardDescription>
               </CardHeader>
               <CardContent className="text-center"><Button variant="outline" className="w-full border-accent text-accent hover:bg-accent hover:text-accent-foreground">Selecionar</Button></CardContent>
-            </Card>
-            <Card className="cursor-pointer border-2 transition-all hover:border-secondary hover:shadow-lg" onClick={() => selecionarModo("universidade")}>
-              <CardHeader className="text-center">
-                <BookOpen className="mx-auto mb-2 h-12 w-12 text-secondary-foreground" />
-                <CardTitle className="font-display text-xl">Universidade</CardTitle>
-                <CardDescription>Saúde, Exatas, Tecnologia, Negócios, Humanas, Artes e Agrárias</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center"><Button variant="secondary" className="w-full">Selecionar</Button></CardContent>
             </Card>
           </div>
         </main>
@@ -276,7 +270,7 @@ export default function Dashboard() {
           <p className="text-muted-foreground">
             Plano: {profile?.plano ?? "free"} • Nível {nivel} •{" "}
             <button onClick={() => selecionarModo(null)} className="text-primary hover:underline">
-              {modo === "concurso" ? "🎯 Concurso Público" : modo === "enem" ? "🎓 ENEM" : "🏛️ Universidade"} (trocar)
+              {modo === "concurso" ? "🎯 Concurso Público" : "🎓 ENEM"} (trocar)
             </button>
           </p>
         </div>
@@ -305,7 +299,7 @@ export default function Dashboard() {
           </Card>
         </motion.div>
 
-        {/* AÇÕES RÁPIDAS — Mobile First (topo) */}
+        {/* AÇÕES RÁPIDAS — Mobile First */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 lg:hidden">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold flex items-center gap-2">
@@ -512,11 +506,11 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Ações — Desktop only (mobile has them at top) */}
+        {/* Ações — Desktop only */}
         <h2 className="mb-4 font-display text-xl font-semibold hidden lg:block">Ações</h2>
         <div className="mb-8 hidden gap-4 lg:grid lg:grid-cols-3">
           {[
-            { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : modo === "universidade" ? "Questões universitárias por IA" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary" },
+            { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary" },
             { icon: Radar, title: "Concursos Abertos", desc: "Radar de concursos em todo o Brasil", path: "/concursos", color: "text-accent" },
             { icon: PenTool, title: "Redação com IA", desc: "Correção rigorosa (15 moedas)", path: "/redacao", color: "text-accent" },
             { icon: Coins, title: "Comprar Moedas", desc: "Adquira mais créditos", path: "/comprar-moedas", color: "text-coin" },
@@ -532,8 +526,7 @@ export default function Dashboard() {
         <h2 className="mb-4 font-display text-xl font-semibold">📚 Histórico de Estudos</h2>
         <div className="mb-4 flex flex-wrap gap-2">
           {([
-            { key: "concurso" as const, label: "🎯 Concurso", },
-            { key: "universidade" as const, label: "🏛️ Universidade" },
+            { key: "concurso" as const, label: "🎯 Concurso" },
             { key: "enem" as const, label: "🎓 ENEM" },
             { key: "redacao" as const, label: "✍️ Redação" },
           ]).map(tab => (

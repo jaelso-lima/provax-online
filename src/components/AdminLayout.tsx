@@ -19,7 +19,6 @@ import {
   X,
   Radar,
   Upload,
-  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -34,7 +33,6 @@ const allNavItems = [
   { href: "/admin/profit-simulation", label: "Simulador Lucros", icon: Calculator, roles: ["admin", "owner"] },
   { href: "/admin/exam-radar", label: "Radar Concursos", icon: Radar, roles: ["admin", "owner"] },
   { href: "/admin/pdf-importer", label: "PDF Importer", icon: Upload, roles: ["admin", "owner"] },
-  { href: "/admin/courses", label: "Cursos", icon: GraduationCap, roles: ["admin", "owner"] },
   { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner"] },
   { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"] },
   { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner"] },
@@ -111,7 +109,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Mobile nav overlay */}
         {mobileOpen && (
           <div
             className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden"
