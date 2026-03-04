@@ -258,11 +258,15 @@ export default function AdminReport() {
         if (includePartnerSharing && partners && partners.length > 0) {
           if (y > 200) { doc.addPage(); y = 20; }
           
+          const filteredPartners = selectedPartnerId === "all" 
+            ? partners 
+            : partners.filter((p: any) => p.id === selectedPartnerId);
+
           doc.setFontSize(14);
-          doc.text("🤝 Ganhos por Cota (Sócios)", 14, y);
+          doc.text(selectedPartnerId === "all" ? "🤝 Ganhos por Cota (Sócios)" : "🤝 Relatório Individual do Sócio", 14, y);
           y += 8;
 
-          const partnerData = partners.map((p: any) => {
+          const partnerData = filteredPartners.map((p: any) => {
             const proporcional = revenue.liquida > 0 ? (revenue.liquida * (p.percentual_participacao / 100)) : 0;
             return [
               p.profiles?.nome || "—",
@@ -397,6 +401,26 @@ export default function AdminReport() {
                   <Checkbox id="cb-partners" checked={includePartnerSharing} onCheckedChange={(v) => setIncludePartnerSharing(!!v)} disabled={!includeFinancial} />
                   <label htmlFor="cb-partners" className="text-sm cursor-pointer">Incluir Ganhos por Cota (Sócios)</label>
                 </div>
+
+                {includePartnerSharing && partners && partners.length > 0 && (
+                  <div className="ml-6 space-y-2">
+                    <Label className="text-xs">Filtrar por sócio</Label>
+                    <Select value={selectedPartnerId} onValueChange={setSelectedPartnerId}>
+                      <SelectTrigger className="w-full sm:w-64">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os sócios</SelectItem>
+                        {partners.map((p: any) => (
+                          <SelectItem key={p.id} value={p.id}>{p.profiles?.nome || p.id.slice(0, 8)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedPartnerId !== "all" ? "⚡ PDF será gerado apenas com dados do sócio selecionado" : "PDF incluirá dados de todos os sócios"}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
