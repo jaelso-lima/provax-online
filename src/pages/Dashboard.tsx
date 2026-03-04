@@ -110,7 +110,7 @@ export default function Dashboard() {
     else localStorage.removeItem("provax_modo");
   };
 
-  const renderSimuladoHistory = (modoFilter: string) => {
+   const renderSimuladoHistory = (modoFilter: string) => {
     const filtered = recentSimulados.filter((s: any) => s.modo === modoFilter);
     const emAndamento = filtered.filter((s: any) => s.status === "em_andamento");
     const concluidos = filtered.filter((s: any) => s.status === "finalizado");
@@ -120,6 +120,47 @@ export default function Dashboard() {
         <Card><CardContent className="py-8 text-center text-muted-foreground">
           Nenhum simulado encontrado nesta categoria. Comece agora!
         </CardContent></Card>
+      );
+    }
+
+    // Free users: can see in-progress but concluidos are gated
+    if (isFreePlan) {
+      return (
+        <div className="space-y-4">
+          {emAndamento.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium text-muted-foreground">📌 Em andamento</h3>
+              {emAndamento.map((s: any) => (
+                <Card key={s.id} className="border-l-4 border-l-warning transition-all hover:shadow-md">
+                  <CardHeader className="flex-row items-center justify-between py-3">
+                    <div>
+                      <CardTitle className="text-sm">
+                        {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
+                      </CardTitle>
+                      <CardDescription>
+                        {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
+                        <span className="text-warning font-medium">Em andamento</span>
+                      </CardDescription>
+                    </div>
+                    <Button size="sm" className="gap-2" onClick={(e) => { e.stopPropagation(); navigate(`/simulado?continuar=${s.id}`); }}>
+                      <PlayCircle className="h-4 w-4" /> Continuar
+                    </Button>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          )}
+          <Card className="border-primary/30">
+            <CardContent className="py-8 text-center space-y-3">
+              <div className="text-3xl">🔒</div>
+              <h3 className="font-display text-lg font-semibold">Histórico completo disponível no Plano Pro</h3>
+              <p className="text-sm text-muted-foreground">
+                Assine um plano pago para acessar o histórico de simulados concluídos, revisar questões e acompanhar sua evolução.
+              </p>
+              <Button onClick={() => navigate("/planos")}>Ver Planos</Button>
+            </CardContent>
+          </Card>
+        </div>
       );
     }
 

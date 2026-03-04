@@ -614,11 +614,6 @@ export default function Simulado() {
           <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem></SelectContent></Select></div>
         )}
 
-        {isFreePlan && tipoMode !== "prova_completa" && (
-          <div className="rounded-lg border border-muted bg-muted/30 p-3 text-xs text-muted-foreground">
-            📋 Plano Free: {FREE_DAILY_LIMIT} questões grátis por dia. Após o limite, use moedas (1 moeda = 1 questão).
-          </div>
-        )}
 
         <Button className="w-full" onClick={handleGerarClick} disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
