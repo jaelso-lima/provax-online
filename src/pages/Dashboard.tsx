@@ -18,6 +18,7 @@ type Modo = "concurso" | "enem" | null;
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
+  const isFreePlan = !profile?.plano || profile.plano === "free";
   const [stats, setStats] = useState({ totalSimulados: 0, notaMedia: 0, totalRedacoes: 0 });
   const [recentSimulados, setRecentSimulados] = useState<any[]>([]);
   const [redacoes, setRedacoes] = useState<any[]>([]);
