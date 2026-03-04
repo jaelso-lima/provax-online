@@ -130,23 +130,7 @@ export default function AdminPdfImporter() {
                   </div>
                 </>
               )}
-              {tipo === "universidade" && (
-                <>
-                  <div>
-                    <Label>Curso</Label>
-                    <Select value={cursoId} onValueChange={setCursoId}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {cursos?.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Semestre</Label>
-                    <Input type="number" value={semestre} onChange={(e) => setSemestre(e.target.value)} min="1" max="12" />
-                  </div>
-                </>
-              )}
+            </div>
             </div>
             <Button onClick={() => uploadMut.mutate()} disabled={!file || uploadMut.isPending}>
               <Upload className="h-4 w-4 mr-1" /> {uploadMut.isPending ? "Enviando..." : "Enviar PDF"}
