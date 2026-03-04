@@ -74,7 +74,14 @@ Deno.serve(async (req) => {
 
     // Convert to base64
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const uint8 = new Uint8Array(arrayBuffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8.length; i += chunkSize) {
+      const chunk = uint8.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64 = btoa(binary);
 
     // Use AI to extract metadata and questions
     const extractionPrompt = `Analise este PDF de prova/edital de concurso público brasileiro e extraia as seguintes informações:
