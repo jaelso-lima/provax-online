@@ -285,7 +285,7 @@ export default function Dashboard() {
                     <Sparkles className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Cada questão certa = 1 XP 🎯</p>
+                    <p className="text-sm font-semibold">1 acerto = 1 XP 🎯</p>
                     <p className="text-xs text-muted-foreground">
                       {xpParaProximo - xp} XP para o nível {nivel + 1} — ganhe 20 moedas ao subir!
                     </p>
@@ -417,7 +417,7 @@ export default function Dashboard() {
                 />
               </div>
               <p className="mt-2 text-xs text-muted-foreground text-center">
-                Faltam {xpParaProximo - xp} XP para o nível {nivel + 1} — pratique agora e ganhe 20 moedas! 🎉
+                Faltam {xpParaProximo - xp} XP para o nível {nivel + 1} — cada acerto vale 1 XP! 🎉
               </p>
             </CardContent>
           </Card>
@@ -512,7 +512,7 @@ export default function Dashboard() {
           {[
             { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary" },
             { icon: Radar, title: "Concursos Abertos", desc: "Radar de concursos em todo o Brasil", path: "/concursos", color: "text-accent" },
-            { icon: PenTool, title: "Redação com IA", desc: "Correção rigorosa (15 moedas)", path: "/redacao", color: "text-accent" },
+            { icon: PenTool, title: "Redação com IA", desc: "Escreva e receba feedback", path: "/redacao", color: "text-accent" },
             { icon: Coins, title: "Comprar Moedas", desc: "Adquira mais créditos", path: "/comprar-moedas", color: "text-coin" },
             { icon: Trophy, title: "Ver Planos", desc: "Upgrade para mais recursos", path: "/planos", color: "text-warning" },
             { icon: FileText, title: "Meu Perfil", desc: "Editar dados e ver histórico", path: "/perfil", color: "text-primary" },
