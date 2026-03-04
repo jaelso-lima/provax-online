@@ -7,3 +7,5 @@ project_id = "shloysxkntqvwwjmhggn"
     verify_jwt = false
   [functions.check-registration]
     verify_jwt = false
+  [functions.process-pdf]
+    verify_jwt = false
