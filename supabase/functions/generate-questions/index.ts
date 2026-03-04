@@ -73,6 +73,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    const token = authHeader.replace("Bearer ", "");
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !authUser) {
       return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: corsHeaders });
