@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles DROP CONSTRAINT profiles_plano_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_plano_check CHECK (plano = ANY (ARRAY['free'::text, 'premium'::text, 'start'::text, 'pro'::text]));
