@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -114,6 +115,23 @@ export default function Simulado() {
 
   const isFreePlan = !profile?.plano || profile.plano === "free";
   const isPremiumUser = profile?.plano && profile.plano !== "free";
+
+  // Animated loading messages
+  const loadingMessages = [
+    "🧠 Preparando questões com IA...",
+    "📚 Selecionando conteúdos relevantes...",
+    "✍️ Elaborando enunciados e alternativas...",
+    "🔍 Verificando qualidade das questões...",
+    "⚡ Quase pronto, finalizando...",
+  ];
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+  useEffect(() => {
+    if (!loading) { setLoadingMsgIdx(0); return; }
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) => (prev + 1) % loadingMessages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   // Resume an in-progress simulado
   useEffect(() => {
@@ -652,10 +670,17 @@ export default function Simulado() {
         )}
 
 
-        <Button className="w-full" onClick={handleGerarClick} disabled={loading}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {tipoMode === "prova_completa" ? "Gerar Prova Completa" : "Gerar Simulado"}
-        </Button>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center space-y-4 py-6">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm font-medium text-foreground animate-pulse">{loadingMessages[loadingMsgIdx]}</p>
+            <p className="text-xs text-muted-foreground">Isso pode levar alguns segundos...</p>
+          </div>
+        ) : (
+          <Button className="w-full" onClick={handleGerarClick}>
+            {tipoMode === "prova_completa" ? "Gerar Prova Completa" : "Gerar Simulado"}
+          </Button>
+        )}
       </CardContent></Card>
     </main>
     <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>{tipoMode === "prova_completa" ? "Será gerada uma prova completa com distribuição realista." : `Serão geradas ${quantidade} questões.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
