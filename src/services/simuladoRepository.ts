@@ -1,7 +1,6 @@
 /**
  * Repository layer — data access abstraction for Simulado module.
- * All Supabase queries are isolated here to facilitate future migration
- * to an external API/database.
+ * All Supabase queries are isolated here to facilitate future migration.
  */
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,12 +9,6 @@ export interface FilterOption {
   id: string;
   nome: string;
   [key: string]: any;
-}
-
-export interface SemestreMateria {
-  semestre: number;
-  materia_id: string;
-  materia_nome: string;
 }
 
 export interface BancaDistribuicaoItem {
@@ -27,13 +20,6 @@ export interface BancaDistribuicaoItem {
 // ─── Reference Data ─────────────────────────────────────────────
 export async function fetchAreas(modo: string): Promise<FilterOption[]> {
   const { data } = await supabase.from("areas").select("*").eq("modo", modo).order("nome");
-  return data || [];
-}
-
-export async function fetchCursos(onlyLiberados = true): Promise<FilterOption[]> {
-  let query = supabase.from("cursos").select("*");
-  if (onlyLiberados) query = query.eq("liberado", true);
-  const { data } = await query.order("nome");
   return data || [];
 }
 
@@ -68,41 +54,6 @@ export async function fetchMateriasByArea(areaId: string): Promise<FilterOption[
     .from("area_materias")
     .select("materia_id, materias(id, nome)")
     .eq("area_id", areaId);
-  return (data || [])
-    .map((d: any) => d.materias)
-    .filter(Boolean)
-    .sort((a: any, b: any) => a.nome.localeCompare(b.nome));
-}
-
-export async function fetchMateriasByCurso(cursoId: string): Promise<FilterOption[]> {
-  const { data } = await supabase
-    .from("curso_materias")
-    .select("materia_id, materias(id, nome)")
-    .eq("curso_id", cursoId);
-  return (data || [])
-    .map((d: any) => d.materias)
-    .filter(Boolean)
-    .sort((a: any, b: any) => a.nome.localeCompare(b.nome));
-}
-
-// ─── Semester Curriculum (Superior) ─────────────────────────────
-export async function fetchSemestresByCurso(cursoId: string): Promise<number[]> {
-  const { data } = await supabase
-    .from("curso_semestres")
-    .select("semestre")
-    .eq("curso_id", cursoId)
-    .order("semestre");
-  if (!data) return [];
-  const unique = [...new Set(data.map((d: any) => d.semestre))];
-  return unique.sort((a, b) => a - b);
-}
-
-export async function fetchMateriasBySemestre(cursoId: string, semestre: number): Promise<FilterOption[]> {
-  const { data } = await supabase
-    .from("curso_semestres")
-    .select("materia_id, materias:materia_id(id, nome)")
-    .eq("curso_id", cursoId)
-    .eq("semestre", semestre);
   return (data || [])
     .map((d: any) => d.materias)
     .filter(Boolean)

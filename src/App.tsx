@@ -21,7 +21,7 @@ import AdminPartners from "./pages/admin/AdminPartners";
 import AdminProfitSimulation from "./pages/admin/AdminProfitSimulation";
 import AdminExamRadar from "./pages/admin/AdminExamRadar";
 import AdminPdfImporter from "./pages/admin/AdminPdfImporter";
-import AdminCourses from "./pages/admin/AdminCourses";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -75,7 +75,7 @@ const App = () => (
             <Route path="/admin/profit-simulation" element={<AdminRoute><AdminProfitSimulation /></AdminRoute>} />
             <Route path="/admin/exam-radar" element={<AdminRoute><AdminExamRadar /></AdminRoute>} />
             <Route path="/admin/pdf-importer" element={<AdminRoute><AdminPdfImporter /></AdminRoute>} />
-            <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatProfessor />

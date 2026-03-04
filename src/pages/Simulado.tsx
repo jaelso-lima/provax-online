@@ -14,14 +14,13 @@ import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft } from "lu
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  fetchAreas, fetchCursos, fetchCarreiras, fetchBancas, fetchStates,
-  fetchEsferas, fetchTopics, fetchMateriasByArea, fetchMateriasByCurso,
-  fetchSemestresByCurso, fetchMateriasBySemestre, hasBancaDistribuicao,
+  fetchAreas, fetchCarreiras, fetchBancas, fetchStates,
+  fetchEsferas, fetchTopics, fetchMateriasByArea, hasBancaDistribuicao,
   type FilterOption,
 } from "@/services/simuladoRepository";
 import {
   getProvaCompletaConfig, buildProvaCompletaPromptContext,
-  getSemestreLabel, type SimuladoTipoMode,
+  type SimuladoTipoMode,
 } from "@/services/simuladoService";
 
 const CUSTOS: Record<string, number> = { "5": 5, "10": 10, "20": 15, "60": 0 };
@@ -68,11 +67,9 @@ export default function Simulado() {
   const [states, setStates] = useState<FilterOption[]>([]);
   const [esferas, setEsferas] = useState<FilterOption[]>([]);
   const [areas, setAreas] = useState<FilterOption[]>([]);
-  const [cursos, setCursos] = useState<FilterOption[]>([]);
   const [topics, setTopics] = useState<FilterOption[]>([]);
 
   // Filter selections
-  const [cursoId, setCursoId] = useState("");
   const [carreiraId, setCarreiraId] = useState("");
   const [materiaId, setMateriaId] = useState("");
   const [bancaId, setBancaId] = useState("");
@@ -84,11 +81,7 @@ export default function Simulado() {
   const [anoEnem, setAnoEnem] = useState("");
   const [topicId, setTopicId] = useState("");
 
-  // NEW: Semester filter (universidade)
-  const [semestres, setSemestres] = useState<number[]>([]);
-  const [semestreId, setSemestreId] = useState("");
-
-  // NEW: Simulado type mode (concurso)
+  // Simulado type mode (concurso)
   const [tipoMode, setTipoMode] = useState<SimuladoTipoMode>("disciplina");
   const [provaCompletaAvailable, setProvaCompletaAvailable] = useState(false);
   const [provaCompletaLoading, setProvaCompletaLoading] = useState(false);
@@ -140,7 +133,7 @@ export default function Simulado() {
         }
 
         if (allQuestoes.length === 0) {
-          toast({ title: "Simulado sem questões salvas", description: "Este simulado é antigo e não possui questões vinculadas. Ele será arquivado.", variant: "destructive" });
+          toast({ title: "Simulado sem questões salvas", description: "Este simulado será arquivado.", variant: "destructive" });
           await supabase.from("simulados").update({ status: "finalizado", finished_at: new Date().toISOString(), pontuacao: 0, acertos: 0 }).eq("id", continuarId);
           navigate(`/simulado?modo=${sim.modo}`); return;
         }
@@ -187,7 +180,6 @@ export default function Simulado() {
       Promise.all([fetchCarreiras(), fetchBancas(), fetchStates(), fetchEsferas(), fetchAreas("concurso")])
         .then(([c, b, s, e, a]) => {
           setCarreiras(c); setBancas(b); setStates(s); setEsferas(e); setAreas(a);
-          // Auto-select filters from Radar de Concursos
           if (autostart && !autostartTriggered) {
             if (paramBancaNome) {
               const matchedBanca = b.find((x: FilterOption) => x.nome.toLowerCase() === paramBancaNome.toLowerCase());
@@ -205,9 +197,8 @@ export default function Simulado() {
             setTipoMode("livre");
           }
         });
-    } else if (modo === "universidade") {
-      fetchCursos().then(setCursos);
     }
+    // ENEM mode doesn't need reference data loading
   }, [modo, continuarId]);
 
   // Auto-start: trigger generation once filters are set
@@ -215,50 +206,25 @@ export default function Simulado() {
     if (!autostart || autostartTriggered || !user || !profile) return;
     if (modo === "concurso" && areaId && bancas.length > 0 && areas.length > 0) {
       setAutostartTriggered(true);
-      // Small delay to let state settle
-      setTimeout(() => {
-        setShowConfirm(true);
-      }, 500);
+      setTimeout(() => { setShowConfirm(true); }, 500);
     }
   }, [autostart, autostartTriggered, areaId, bancaId, bancas, areas, user, profile]);
 
   // Cascading: área → matérias (concurso)
   useEffect(() => {
-    if (modo === "universidade" || continuarId) return;
+    if (continuarId) return;
     setMateriaId(""); setTopicId(""); setTopics([]);
     if (!areaId) { setMaterias([]); return; }
     fetchMateriasByArea(areaId).then(setMaterias);
-  }, [areaId, modo, continuarId]);
+  }, [areaId, continuarId]);
 
-  // Cascading: curso → semestres + disciplinas (universidade)
-  useEffect(() => {
-    if (modo !== "universidade" || continuarId) return;
-    setMateriaId(""); setTopicId(""); setTopics([]); setSemestreId(""); setSemestres([]);
-    if (!cursoId) { setMaterias([]); return; }
-    // Load both: all materias and available semesters
-    Promise.all([fetchMateriasByCurso(cursoId), fetchSemestresByCurso(cursoId)])
-      .then(([m, s]) => { setMaterias(m); setSemestres(s); });
-  }, [cursoId, modo, continuarId]);
-
-  // When semester is selected, filter materias by semester
-  useEffect(() => {
-    if (modo !== "universidade" || !cursoId || continuarId) return;
-    setMateriaId(""); setTopicId(""); setTopics([]);
-    if (!semestreId) {
-      // Reload all materias for the curso
-      fetchMateriasByCurso(cursoId).then(setMaterias);
-      return;
-    }
-    fetchMateriasBySemestre(cursoId, parseInt(semestreId)).then(setMaterias);
-  }, [semestreId]);
-
-  // Load topics when materia selected (universidade)
+  // Load topics when materia selected
   useEffect(() => {
     if (continuarId) return;
     setTopicId("");
-    if (!materiaId || modo !== "universidade") { setTopics([]); return; }
+    if (!materiaId) { setTopics([]); return; }
     fetchTopics(materiaId).then(setTopics);
-  }, [materiaId, modo, continuarId]);
+  }, [materiaId, continuarId]);
 
   // Check prova completa availability when banca + area selected (concurso)
   useEffect(() => {
@@ -282,14 +248,10 @@ export default function Simulado() {
         if (!stateId) { toast({ title: "Selecione o estado", variant: "destructive" }); return false; }
         if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
         if (!bancaId) { toast({ title: "Selecione a banca para prova completa", variant: "destructive" }); return false; }
-        // No longer blocks if provaCompletaAvailable is false — fallback distribution will be used
       } else {
         if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
         if (tipoMode === "disciplina" && !materiaId) { toast({ title: "Selecione a matéria", variant: "destructive" }); return false; }
       }
-    } else if (modo === "universidade") {
-      if (!cursoId) { toast({ title: "Selecione o curso", variant: "destructive" }); return false; }
-      if (!materiaId) { toast({ title: "Selecione a disciplina", variant: "destructive" }); return false; }
     } else {
       if (!areaEnem) { toast({ title: "Selecione a área do ENEM", variant: "destructive" }); return false; }
     }
@@ -317,7 +279,6 @@ export default function Simulado() {
       let provaCompletaContext = "";
 
       if (tipoMode === "prova_completa" && modo === "concurso") {
-        // Load prova completa config
         const config = await getProvaCompletaConfig(bancaId, areaId, carreiraId || undefined);
         if (config.totalQuestoes === 0) {
           toast({ title: "Nenhuma distribuição encontrada", variant: "destructive" }); setLoading(false); return;
@@ -345,12 +306,6 @@ export default function Simulado() {
           state: stateId || undefined,
           esfera: esferaId || undefined,
           ano: anoConcurso ? parseInt(anoConcurso) : undefined,
-        };
-      } else if (modo === "universidade") {
-        bodyPayload = {
-          ...bodyPayload,
-          materia: materiaId || undefined,
-          curso: cursoId || undefined,
           topic: topicId || undefined,
         };
       } else {
@@ -372,16 +327,15 @@ export default function Simulado() {
       const { data: sim, error: sErr } = await supabase.from("simulados").insert({
         user_id: user!.id, tipo: simTipo, quantidade: generatedQuestoes.length, total_questoes: generatedQuestoes.length,
         carreira_id: carreiraId || null, materia_id: materiaId || null, banca_id: bancaId || null,
-        state_id: stateId || null, esfera_id: esferaId || null, area_id: modo !== "universidade" ? (areaId || null) : null, modo,
-        topic_id: topicId || null, curso_id: modo === "universidade" ? (cursoId || null) : null,
+        state_id: stateId || null, esfera_id: esferaId || null, area_id: areaId || null, modo,
+        topic_id: topicId || null,
       }).select().single();
       if (sErr) throw sErr;
 
       const questoesInsert = generatedQuestoes.map(q => ({
         enunciado: q.enunciado, alternativas: q.alternativas as any, resposta_correta: q.resposta_correta,
         explicacao: q.explicacao || null, modo, materia_id: materiaId || null,
-        area_id: modo !== "universidade" ? (areaId || null) : null,
-        curso_id: modo === "universidade" ? (cursoId || null) : null,
+        area_id: areaId || null,
         topic_id: topicId || null, banca_id: bancaId || null, source: "ai_generated",
       }));
       const { data: savedQuestoes, error: qErr } = await supabase.from("questoes").insert(questoesInsert).select("id");
@@ -533,8 +487,8 @@ export default function Simulado() {
   return (
     <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg flex-1 py-8">
       <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard</Button>
-      <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : modo === "universidade" ? "🏛️ Simulado Universidade" : "🎯 Gerar Simulado"}</h1>
-      <p className="mb-4 text-sm text-muted-foreground">{modo === "universidade" ? "Selecione o curso e disciplina para gerar questões universitárias." : "Selecione os filtros abaixo para gerar um simulado personalizado no padrão da sua banca."}</p>
+      <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : "🎯 Gerar Simulado"}</h1>
+      <p className="mb-4 text-sm text-muted-foreground">Selecione os filtros abaixo para gerar um simulado personalizado.</p>
       <Card><CardContent className="space-y-4 pt-6">
 
         {/* ─── CONCURSO MODE ─────────────────────────────────── */}
@@ -553,8 +507,8 @@ export default function Simulado() {
               <div className="flex items-center space-x-2 rounded-lg border p-3 cursor-pointer hover:bg-secondary/50" onClick={() => setTipoMode("disciplina")}>
                 <RadioGroupItem value="disciplina" id="tipo-disciplina" />
                 <Label htmlFor="tipo-disciplina" className="cursor-pointer flex-1">
-                  <span className="font-medium">🔘 Simulado por Disciplina</span>
-                  <p className="text-xs text-muted-foreground">Foco em uma matéria específica</p>
+                  <span className="font-medium">🔘 Por Matéria + Assunto</span>
+                  <p className="text-xs text-muted-foreground">Foco em uma matéria e assunto específico</p>
                 </Label>
               </div>
               <div className="flex items-center space-x-2 rounded-lg border p-3 cursor-pointer hover:bg-secondary/50" onClick={() => setTipoMode("prova_completa")}>
@@ -569,7 +523,7 @@ export default function Simulado() {
 
           {/* Prova Completa: filtros simplificados */}
           {tipoMode === "prova_completa" ? (<>
-            <div className="space-y-2"><Label>Estado *</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Estado *</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({(s as any).sigla})</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Esfera</Label><Select value={esferaId} onValueChange={setEsferaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{esferas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Carreira (opcional)</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
@@ -594,43 +548,26 @@ export default function Simulado() {
             )}
           </>) : (<>
             {/* Livre / Disciplina: filtros completos */}
-            <div className="space-y-2"><Label>Estado</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({s.sigla})</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>Esfera</Label><Select value={esferaId} onValueChange={setEsferaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{esferas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
             
             {tipoMode === "disciplina" && (
-              <div className="space-y-2"><Label>Matéria *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
+              <>
+                <div className="space-y-2"><Label>Matéria *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
+                {topics.length > 0 && (
+                  <div className="space-y-2"><Label>Assunto (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os assuntos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
+                )}
+              </>
             )}
 
-            <div className="space-y-2"><Label>Carreira</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Banca</Label><Select value={bancaId} onValueChange={setBancaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{bancas.map(b => <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoConcurso} onValueChange={setAnoConcurso}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Estado</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({(s as any).sigla})</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Carreira</Label><Select value={carreiraId} onValueChange={setCarreiraId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{carreiras.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoConcurso} onValueChange={setAnoConcurso}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2026,2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
           </>)}
-        </>) : modo === "universidade" ? (<>
-          {/* ─── UNIVERSIDADE MODE ────────────────────────────── */}
-          <div className="space-y-2"><Label>Curso *</Label><Select value={cursoId} onValueChange={setCursoId}><SelectTrigger><SelectValue placeholder="Selecione o curso" /></SelectTrigger><SelectContent>{cursos.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div>
-
-          {/* Semester filter (optional) */}
-          {cursoId && semestres.length > 0 && (
-            <div className="space-y-2">
-              <Label>Semestre (opcional)</Label>
-              <Select value={semestreId} onValueChange={setSemestreId}>
-                <SelectTrigger><SelectValue placeholder="Todos os semestres" /></SelectTrigger>
-                <SelectContent>
-                  {semestres.map(s => (
-                    <SelectItem key={s} value={String(s)}>{getSemestreLabel(s)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          <div className="space-y-2"><Label>Disciplina *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!cursoId}><SelectTrigger><SelectValue placeholder={cursoId ? "Selecione a disciplina" : "Selecione o curso primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
-          {topics.length > 0 && (<div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>)}
         </>) : (<>
           {/* ─── ENEM MODE ────────────────────────────────────── */}
           <div className="space-y-2"><Label>Área do ENEM *</Label><Select value={areaEnem} onValueChange={setAreaEnem}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{ENEM_AREAS.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
-          <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoEnem} onValueChange={setAnoEnem}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-2"><Label>Ano (opcional)</Label><Select value={anoEnem} onValueChange={setAnoEnem}><SelectTrigger><SelectValue placeholder="Qualquer" /></SelectTrigger><SelectContent>{[2026,2025,2024,2023,2022,2021,2020].map(a => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent></Select></div>
         </>)}
 
         {/* Common fields */}
