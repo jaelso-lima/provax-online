@@ -131,7 +131,6 @@ export default function AdminPdfImporter() {
                 </>
               )}
             </div>
-            </div>
             <Button onClick={() => uploadMut.mutate()} disabled={!file || uploadMut.isPending}>
               <Upload className="h-4 w-4 mr-1" /> {uploadMut.isPending ? "Enviando..." : "Enviar PDF"}
             </Button>
