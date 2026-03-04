@@ -587,6 +587,20 @@ export default function Dashboard() {
           renderSimuladoHistory(historicoTab)
         ) : (
           (() => {
+            if (isFreePlan) {
+              return (
+                <Card className="border-primary/30">
+                  <CardContent className="py-8 text-center space-y-3">
+                    <div className="text-3xl">🔒</div>
+                    <h3 className="font-display text-lg font-semibold">Histórico de redações disponível no Plano Pro</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Assine um plano pago para acessar o histórico completo de redações e correções detalhadas.
+                    </p>
+                    <Button onClick={() => navigate("/planos")}>Ver Planos</Button>
+                  </CardContent>
+                </Card>
+              );
+            }
             if (redacoes.length === 0) return (
               <Card><CardContent className="py-8 text-center text-muted-foreground">
                 Nenhuma redação encontrada. Escreva sua primeira!
