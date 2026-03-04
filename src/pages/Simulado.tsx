@@ -670,10 +670,17 @@ export default function Simulado() {
         )}
 
 
-        <Button className="w-full" onClick={handleGerarClick} disabled={loading}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {tipoMode === "prova_completa" ? "Gerar Prova Completa" : "Gerar Simulado"}
-        </Button>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center space-y-4 py-6">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm font-medium text-foreground animate-pulse">{loadingMessages[loadingMsgIdx]}</p>
+            <p className="text-xs text-muted-foreground">Isso pode levar alguns segundos...</p>
+          </div>
+        ) : (
+          <Button className="w-full" onClick={handleGerarClick}>
+            {tipoMode === "prova_completa" ? "Gerar Prova Completa" : "Gerar Simulado"}
+          </Button>
+        )}
       </CardContent></Card>
     </main>
     <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>{tipoMode === "prova_completa" ? "Será gerada uma prova completa com distribuição realista." : `Serão geradas ${quantidade} questões.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
