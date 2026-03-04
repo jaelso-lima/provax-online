@@ -6,6 +6,23 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function pdfToBase64(supabase: any, storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from("pdf-imports")
+    .download(storagePath);
+  if (error || !data) throw new Error("Erro ao baixar arquivo: " + (error?.message || "não encontrado"));
+  
+  const arrayBuffer = await data.arrayBuffer();
+  const uint8 = new Uint8Array(arrayBuffer);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < uint8.length; i += chunkSize) {
+    const chunk = uint8.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,7 +47,6 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Check admin
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -41,10 +57,9 @@ Deno.serve(async (req) => {
       throw new Error("Apenas administradores podem processar PDFs");
     }
 
-    const { import_id, gabarito_text } = await req.json();
+    const { import_id, gabarito_storage_path } = await req.json();
     if (!import_id) throw new Error("import_id é obrigatório");
 
-    // Get the import record
     const { data: importRecord, error: importError } = await supabase
       .from("pdf_imports")
       .select("*")
@@ -53,37 +68,42 @@ Deno.serve(async (req) => {
 
     if (importError || !importRecord) throw new Error("Registro de importação não encontrado");
 
-    // Update status to processing
     await supabase
       .from("pdf_imports")
       .update({ status_processamento: "processando" })
       .eq("id", import_id);
 
-    // Download the PDF from storage
-    const { data: fileData, error: fileError } = await supabase.storage
-      .from("pdf-imports")
-      .download(importRecord.storage_path);
-
-    if (fileError || !fileData) {
+    if (!lovableApiKey) {
       await supabase.from("pdf_imports").update({
         status_processamento: "erro",
-        erro_detalhes: "Erro ao baixar arquivo do storage: " + (fileError?.message || "arquivo não encontrado"),
+        erro_detalhes: "LOVABLE_API_KEY não configurada",
       }).eq("id", import_id);
-      throw new Error("Erro ao baixar PDF");
+      throw new Error("API key não configurada");
     }
 
-    // Convert to base64
-    const arrayBuffer = await fileData.arrayBuffer();
-    const uint8 = new Uint8Array(arrayBuffer);
-    let binary = "";
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8.length; i += chunkSize) {
-      const chunk = uint8.subarray(i, i + chunkSize);
-      binary += String.fromCharCode(...chunk);
+    // Download main PDF
+    let provaBase64: string;
+    try {
+      provaBase64 = await pdfToBase64(supabase, importRecord.storage_path);
+    } catch (e) {
+      await supabase.from("pdf_imports").update({
+        status_processamento: "erro",
+        erro_detalhes: "Erro ao baixar PDF da prova: " + (e as Error).message,
+      }).eq("id", import_id);
+      throw e;
     }
-    const base64 = btoa(binary);
 
-    // Use AI to extract metadata and questions
+    // Download gabarito PDF if provided
+    let gabaritoBase64: string | null = null;
+    if (gabarito_storage_path) {
+      try {
+        gabaritoBase64 = await pdfToBase64(supabase, gabarito_storage_path);
+      } catch (e) {
+        console.log("Aviso: não foi possível baixar gabarito PDF:", (e as Error).message);
+      }
+    }
+
+    // Build AI messages
     const extractionPrompt = `Analise este PDF de prova/edital de concurso público brasileiro e extraia as seguintes informações:
 
 1. METADADOS:
@@ -102,11 +122,7 @@ Para cada questão encontrada, extraia:
 - alternativas: array com as alternativas (A, B, C, D, E)
 - materia: matéria/disciplina da questão (ex: Direito Constitucional, Português, etc.)
 
-${gabarito_text ? `
-3. GABARITO FORNECIDO:
-Use este gabarito para associar as respostas corretas:
-${gabarito_text}
-` : ""}
+${gabaritoBase64 ? "3. O SEGUNDO PDF ANEXADO É O GABARITO. Use-o para associar as respostas corretas a cada questão." : ""}
 
 IMPORTANTE: Retorne APENAS um JSON válido no formato:
 {
@@ -139,12 +155,16 @@ IMPORTANTE: Retorne APENAS um JSON válido no formato:
 Se não conseguir extrair questões (ex: é um edital), retorne questoes como array vazio.
 Se não conseguir identificar algum metadado, use null.`;
 
-    if (!lovableApiKey) {
-      await supabase.from("pdf_imports").update({
-        status_processamento: "erro",
-        erro_detalhes: "LOVABLE_API_KEY não configurada",
-      }).eq("id", import_id);
-      throw new Error("API key não configurada");
+    const contentParts: any[] = [
+      { type: "text", text: extractionPrompt },
+      { type: "image_url", image_url: { url: `data:application/pdf;base64,${provaBase64}` } },
+    ];
+
+    if (gabaritoBase64) {
+      contentParts.push({
+        type: "image_url",
+        image_url: { url: `data:application/pdf;base64,${gabaritoBase64}` },
+      });
     }
 
     const aiResponse = await fetch("https://api.lovable.dev/v1/chat/completions", {
@@ -155,18 +175,7 @@ Se não conseguir identificar algum metadado, use null.`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: extractionPrompt },
-              {
-                type: "image_url",
-                image_url: { url: `data:application/pdf;base64,${base64}` },
-              },
-            ],
-          },
-        ],
+        messages: [{ role: "user", content: contentParts }],
         temperature: 0.1,
         max_tokens: 16000,
       }),
@@ -184,7 +193,6 @@ Se não conseguir identificar algum metadado, use null.`;
     const aiResult = await aiResponse.json();
     const content = aiResult.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from AI response
     let parsed;
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -206,34 +214,22 @@ Se não conseguir identificar algum metadado, use null.`;
     if (!bancaId && meta.banca_organizadora) {
       const bancaNome = meta.banca_organizadora.toUpperCase().trim();
       const { data: existingBanca } = await supabase
-        .from("bancas")
-        .select("id")
-        .ilike("nome", bancaNome)
-        .limit(1)
-        .single();
-
+        .from("bancas").select("id").ilike("nome", bancaNome).limit(1).single();
       if (existingBanca) {
         bancaId = existingBanca.id;
       } else {
         const { data: newBanca } = await supabase
-          .from("bancas")
-          .insert({ nome: bancaNome })
-          .select("id")
-          .single();
+          .from("bancas").insert({ nome: bancaNome }).select("id").single();
         if (newBanca) bancaId = newBanca.id;
       }
     }
 
-    // Auto-create or find state
+    // Auto-find state
     let stateId = null;
     if (meta.estado) {
       const sigla = meta.estado.toUpperCase().trim();
       const { data: existingState } = await supabase
-        .from("states")
-        .select("id")
-        .eq("sigla", sigla)
-        .limit(1)
-        .single();
+        .from("states").select("id").eq("sigla", sigla).limit(1).single();
       if (existingState) stateId = existingState.id;
     }
 
@@ -242,47 +238,30 @@ Se não conseguir identificar algum metadado, use null.`;
     if (!areaId && meta.area) {
       const areaNome = meta.area.trim();
       const { data: existingArea } = await supabase
-        .from("areas")
-        .select("id")
-        .ilike("nome", areaNome)
-        .eq("modo", "concurso")
-        .limit(1)
-        .single();
-
+        .from("areas").select("id").ilike("nome", areaNome).eq("modo", "concurso").limit(1).single();
       if (existingArea) {
         areaId = existingArea.id;
       } else {
         const { data: newArea } = await supabase
-          .from("areas")
-          .insert({ nome: areaNome, modo: "concurso" })
-          .select("id")
-          .single();
+          .from("areas").insert({ nome: areaNome, modo: "concurso" }).select("id").single();
         if (newArea) areaId = newArea.id;
       }
     }
 
-    // Auto-create concurso if identified
+    // Auto-create concurso
     let concursoId = null;
     if (meta.concurso_nome) {
       const { data: existingConcurso } = await supabase
-        .from("concursos")
-        .select("id")
-        .ilike("nome", meta.concurso_nome)
-        .limit(1)
-        .single();
-
+        .from("concursos").select("id").ilike("nome", meta.concurso_nome).limit(1).single();
       if (existingConcurso) {
         concursoId = existingConcurso.id;
       } else {
         const { data: newConcurso } = await supabase
-          .from("concursos")
-          .insert({
+          .from("concursos").insert({
             nome: meta.concurso_nome,
             banca_id: bancaId,
-            ano: meta.ano || (importRecord.ano ? importRecord.ano : null),
-          })
-          .select("id")
-          .single();
+            ano: meta.ano || importRecord.ano || null,
+          }).select("id").single();
         if (newConcurso) concursoId = newConcurso.id;
       }
     }
@@ -292,24 +271,15 @@ Se não conseguir identificar algum metadado, use null.`;
     for (const q of questoes) {
       if (!q.enunciado || !q.alternativas?.length) continue;
 
-      // Find or create materia
       let materiaId = null;
       if (q.materia) {
         const { data: existingMateria } = await supabase
-          .from("materias")
-          .select("id")
-          .ilike("nome", q.materia.trim())
-          .limit(1)
-          .single();
-
+          .from("materias").select("id").ilike("nome", q.materia.trim()).limit(1).single();
         if (existingMateria) {
           materiaId = existingMateria.id;
         } else {
           const { data: newMateria } = await supabase
-            .from("materias")
-            .insert({ nome: q.materia.trim() })
-            .select("id")
-            .single();
+            .from("materias").insert({ nome: q.materia.trim() }).select("id").single();
           if (newMateria) materiaId = newMateria.id;
         }
       }
@@ -338,7 +308,7 @@ Se não conseguir identificar algum metadado, use null.`;
       if (!qError) insertedCount++;
     }
 
-    // Update import record with results
+    // Update import record
     await supabase.from("pdf_imports").update({
       status_processamento: "processado",
       total_questoes_extraidas: insertedCount,
@@ -348,6 +318,11 @@ Se não conseguir identificar algum metadado, use null.`;
       cargo: meta.cargo || importRecord.cargo,
       erro_detalhes: null,
     }).eq("id", import_id);
+
+    // Clean up gabarito file from storage
+    if (gabarito_storage_path) {
+      await supabase.storage.from("pdf-imports").remove([gabarito_storage_path]);
+    }
 
     // Audit log
     await supabase.from("audit_logs").insert({
@@ -361,7 +336,7 @@ Se não conseguir identificar algum metadado, use null.`;
         concurso: meta.concurso_nome,
         estado: meta.estado,
         area: meta.area,
-        had_gabarito: !!gabarito_text,
+        had_gabarito: !!gabarito_storage_path,
       },
     });
 

@@ -7,11 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { pdfImportService } from "@/services/pdfImportService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileText, CheckCircle, XCircle, Clock, File, Play, BookOpen } from "lucide-react";
+import { Upload, CheckCircle, XCircle, Clock, File, Play, BookOpen, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminPdfImporter() {
@@ -21,7 +20,7 @@ export default function AdminPdfImporter() {
   const [tipo, setTipo] = useState<string>("concurso");
   const [ano, setAno] = useState<string>("");
   const [cargo, setCargo] = useState<string>("");
-  const [gabarito, setGabarito] = useState<string>("");
+  const [gabaritoFile, setGabaritoFile] = useState<File | null>(null);
 
   const { data: bancas } = useQuery({
     queryKey: ["bancas"],
@@ -63,8 +62,19 @@ export default function AdminPdfImporter() {
 
   const processMut = useMutation({
     mutationFn: async (importId: string) => {
+      // If gabarito PDF is provided, upload it to storage first
+      let gabaritoPath: string | null = null;
+      if (gabaritoFile) {
+        const ext = gabaritoFile.name.split(".").pop() || "pdf";
+        gabaritoPath = `gabaritos/${Date.now()}_gabarito.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("pdf-imports")
+          .upload(gabaritoPath, gabaritoFile, { upsert: false });
+        if (uploadError) throw new Error("Erro ao enviar gabarito: " + uploadError.message);
+      }
+
       const { data, error } = await supabase.functions.invoke("process-pdf", {
-        body: { import_id: importId, gabarito_text: gabarito || null },
+        body: { import_id: importId, gabarito_storage_path: gabaritoPath },
       });
       if (error) throw new Error(error.message || "Erro ao processar PDF");
       if (data?.error) throw new Error(data.error);
@@ -77,12 +87,27 @@ export default function AdminPdfImporter() {
         title: "PDF processado com sucesso!",
         description: `${data?.questoes_extraidas || 0} questões extraídas.${meta?.banca_organizadora ? ` Banca: ${meta.banca_organizadora}` : ""}${meta?.concurso_nome ? ` | ${meta.concurso_nome}` : ""}`,
       });
-      setGabarito("");
+      setGabaritoFile(null);
     },
     onError: (e: any) => {
       qc.invalidateQueries({ queryKey: ["pdf-imports"] });
       toast({ title: "Erro ao processar", description: e.message, variant: "destructive" });
     },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (imp: { id: string; storage_path: string }) => {
+      // Delete from storage
+      await supabase.storage.from("pdf-imports").remove([imp.storage_path]);
+      // Delete from database
+      const { error } = await supabase.from("pdf_imports").delete().eq("id", imp.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pdf-imports"] });
+      toast({ title: "PDF excluído com sucesso" });
+    },
+    onError: (e: any) => toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
   });
 
   const statusIcon = (s: string) => {
@@ -146,14 +171,17 @@ export default function AdminPdfImporter() {
               </div>
               <div className="sm:col-span-2 lg:col-span-3">
                 <Label className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" /> Gabarito (opcional — cole o texto do gabarito)
+                  <BookOpen className="h-4 w-4" /> Gabarito em PDF (opcional)
                 </Label>
-                <Textarea
-                  value={gabarito}
-                  onChange={(e) => setGabarito(e.target.value)}
-                  placeholder={"1-B  2-A  3-C  4-D  5-E  6-A  7-B  8-C  9-D  10-E\nOu cole qualquer formato de gabarito — a IA interpreta automaticamente"}
-                  rows={3}
+                <Input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setGabaritoFile(e.target.files?.[0] || null)}
+                  className="cursor-pointer"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Envie o PDF do gabarito — a IA associa automaticamente as respostas às questões
+                </p>
               </div>
             </div>
             <Button onClick={() => uploadMut.mutate()} disabled={!file || uploadMut.isPending}>
@@ -208,6 +236,18 @@ export default function AdminPdfImporter() {
                           {processMut.isPending ? "Processando..." : "Processar"}
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm("Tem certeza que deseja excluir este PDF?")) {
+                            deleteMut.mutate({ id: imp.id, storage_path: imp.storage_path });
+                          }
+                        }}
+                        disabled={deleteMut.isPending}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
