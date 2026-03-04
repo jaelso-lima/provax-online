@@ -111,6 +111,37 @@ export default function Dashboard() {
     else localStorage.removeItem("provax_modo");
   };
 
+  // Track how many completed histories a Free user has opened this session
+  const [freeHistoryViews, setFreeHistoryViews] = useState<Set<string>>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("provax_free_history_views") || "[]");
+      return new Set(saved);
+    } catch { return new Set(); }
+  });
+
+  const FREE_HISTORY_LIMIT = 2;
+
+  const handleFreeHistoryClick = (simuladoId: string) => {
+    if (!isFreePlan) {
+      navigate(`/simulado/resultado/${simuladoId}`);
+      return;
+    }
+    // Already viewed this one? Allow re-access
+    if (freeHistoryViews.has(simuladoId)) {
+      navigate(`/simulado/resultado/${simuladoId}`);
+      return;
+    }
+    if (freeHistoryViews.size >= FREE_HISTORY_LIMIT) {
+      toast({ title: "Limite atingido", description: "Para visualizar mais históricos completos, assine o Plano Pro." });
+      return;
+    }
+    const updated = new Set(freeHistoryViews);
+    updated.add(simuladoId);
+    setFreeHistoryViews(updated);
+    localStorage.setItem("provax_free_history_views", JSON.stringify([...updated]));
+    navigate(`/simulado/resultado/${simuladoId}`);
+  };
+
    const renderSimuladoHistory = (modoFilter: string) => {
     const filtered = recentSimulados.filter((s: any) => s.modo === modoFilter);
     const emAndamento = filtered.filter((s: any) => s.status === "em_andamento");
@@ -124,46 +155,8 @@ export default function Dashboard() {
       );
     }
 
-    // Free users: can see in-progress but concluidos are gated
-    if (isFreePlan) {
-      return (
-        <div className="space-y-4">
-          {emAndamento.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">📌 Em andamento</h3>
-              {emAndamento.map((s: any) => (
-                <Card key={s.id} className="border-l-4 border-l-warning transition-all hover:shadow-md">
-                  <CardHeader className="flex-row items-center justify-between py-3">
-                    <div>
-                      <CardTitle className="text-sm">
-                        {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
-                      </CardTitle>
-                      <CardDescription>
-                        {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
-                        <span className="text-warning font-medium">Em andamento</span>
-                      </CardDescription>
-                    </div>
-                    <Button size="sm" className="gap-2" onClick={(e) => { e.stopPropagation(); navigate(`/simulado?continuar=${s.id}`); }}>
-                      <PlayCircle className="h-4 w-4" /> Continuar
-                    </Button>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          )}
-          <Card className="border-primary/30">
-            <CardContent className="py-8 text-center space-y-3">
-              <div className="text-3xl">🔒</div>
-              <h3 className="font-display text-lg font-semibold">Histórico completo disponível no Plano Pro</h3>
-              <p className="text-sm text-muted-foreground">
-                Assine um plano pago para acessar o histórico de simulados concluídos, revisar questões e acompanhar sua evolução.
-              </p>
-              <Button onClick={() => navigate("/planos")}>Ver Planos</Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
+    const freeViewsUsed = freeHistoryViews.size;
+    const freeViewsLeft = Math.max(0, FREE_HISTORY_LIMIT - freeViewsUsed);
 
     return (
       <Tabs defaultValue={emAndamento.length > 0 ? "em_andamento" : "concluidos"} className="w-full">
@@ -229,11 +222,20 @@ export default function Dashboard() {
             </CardContent></Card>
           ) : (
             <div className="space-y-3">
-              {concluidos.map((s: any) => (
+              {isFreePlan && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+                  📊 Plano Free: {freeViewsLeft > 0 ? `Você pode abrir mais ${freeViewsLeft} histórico(s) completo(s).` : "Limite de visualizações atingido."}{" "}
+                  {freeViewsLeft === 0 && <button className="text-primary font-medium hover:underline" onClick={() => navigate("/planos")}>Assine o Plano Pro</button>}
+                </div>
+              )}
+              {concluidos.map((s: any) => {
+                const isViewable = !isFreePlan || freeHistoryViews.has(s.id) || freeViewsUsed < FREE_HISTORY_LIMIT;
+                const isLocked = isFreePlan && !freeHistoryViews.has(s.id) && freeViewsUsed >= FREE_HISTORY_LIMIT;
+                return (
                 <Card
                   key={s.id}
-                  className="cursor-pointer transition-all hover:shadow-md hover:border-primary/50"
-                  onClick={() => navigate(`/simulado/resultado/${s.id}`)}
+                  className={`transition-all ${isLocked ? "opacity-60" : "cursor-pointer hover:shadow-md hover:border-primary/50"}`}
+                  onClick={() => handleFreeHistoryClick(s.id)}
                 >
                   <CardHeader className="flex-row items-center justify-between py-3">
                     <div>
@@ -248,21 +250,26 @@ export default function Dashboard() {
                         )}
                       </CardDescription>
                     </div>
+                    {isLocked ? (
+                      <Badge variant="secondary" className="gap-1">🔒 Pro</Badge>
+                    ) : (
                     <Button
                       variant="outline"
                       size="sm"
                       className="gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/simulado/resultado/${s.id}`);
+                        handleFreeHistoryClick(s.id);
                       }}
                     >
                       <Eye className="h-4 w-4" />
                       Revisar
                     </Button>
+                    )}
                   </CardHeader>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
