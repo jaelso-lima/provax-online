@@ -62,7 +62,7 @@ export default function Index() {
             </div>
             <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
               <Zap className="h-4 w-4" />
-              Concursos • ENEM • Universidade — Uma plataforma, três caminhos de aprovação
+              Concursos • ENEM • Redação — Uma plataforma, dois caminhos de aprovação
             </div>
             <h1 className="mx-auto max-w-4xl font-display text-4xl font-bold leading-tight md:text-6xl lg:text-7xl">
               Você não precisa estudar mais.{" "}
@@ -96,11 +96,10 @@ export default function Index() {
             </h2>
             <p className="mt-3 text-muted-foreground">O ProvaX se adapta ao seu caminho de aprovação</p>
           </motion.div>
-          <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-3">
+          <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
             {[
               { icon: GraduationCap, title: "Concurso Público", desc: "Simulados por banca, estado, cargo, matéria e ano. Questões no padrão FGV, CESPE, VUNESP, FCC.", color: "text-primary", border: "hover:border-primary" },
-              { icon: Target, title: "ENEM", desc: "Questões por área do conhecimento + Redação com correção por IA nas 5 competências.", color: "text-accent", border: "hover:border-accent" },
-              { icon: BookOpen, title: "Universidade", desc: "Provas de faculdade por curso: Direito, Medicina, Engenharia, Administração e mais.", color: "text-primary", border: "hover:border-primary" },
+              { icon: Target, title: "ENEM + Redação", desc: "Questões por área do conhecimento + Redação com correção por IA nas 5 competências do ENEM.", color: "text-accent", border: "hover:border-accent" },
             ].map((item, i) => (
               <motion.div key={item.title} {...stagger} transition={{ delay: i * 0.1 }}>
                 <Card className={`h-full border-2 transition-all ${item.border} hover:shadow-lg cursor-pointer`} onClick={() => navigate("/register")}>
@@ -254,7 +253,7 @@ export default function Index() {
         <div className="container">
           <motion.div {...fadeUp} className="text-center mb-12">
             <h2 className="font-display text-3xl font-bold md:text-4xl">Tudo que você precisa para ser aprovado</h2>
-            <p className="mt-3 text-muted-foreground">Uma plataforma completa para concurso, ENEM e universidade</p>
+            <p className="mt-3 text-muted-foreground">Uma plataforma completa para concurso, ENEM e redação</p>
           </motion.div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
@@ -468,7 +467,7 @@ export default function Index() {
               { number: "10", label: "Questões grátis/dia", icon: Flame },
               { number: "24h", label: "Professor IA disponível", icon: MessageCircle },
               { number: "1 XP", label: "Por questão acertada", icon: Trophy },
-              { number: "3 modos", label: "Concurso, ENEM, Uni", icon: Target },
+              { number: "2 modos", label: "Concurso + ENEM", icon: Target },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.1 }} className="text-center">
                 <item.icon className="mx-auto mb-2 h-6 w-6 text-primary" />
@@ -489,7 +488,7 @@ export default function Index() {
           <div className="space-y-4">
             {[
               { q: "Preciso pagar para começar?", a: "Não! Você ganha 10 questões por dia gratuitamente para sempre. Sem cartão de crédito. Comece a praticar agora." },
-              { q: "Serve para ENEM e faculdade também?", a: "Sim! O ProvaX tem 3 modos: Concurso Público, ENEM e Universidade. Em cada um, as questões são adaptadas ao formato real da prova." },
+              { q: "Serve para ENEM também?", a: "Sim! O ProvaX tem 2 modos: Concurso Público e ENEM. Em cada um, as questões são adaptadas ao formato real da prova. E a redação tem correção por IA nas 5 competências!" },
               { q: "Como funciona o XP?", a: "Cada questão que você acerta vale 1 XP. Ao subir de nível, ganha 20 moedas de recompensa. Quanto mais pratica, mais rápido evolui!" },
               { q: "As questões são iguais às da prova?", a: "As questões são geradas por IA treinada no padrão exato de cada banca e vestibular. É o treino mais próximo da prova real que existe." },
               { q: "Posso cancelar quando quiser?", a: "Sim! Cancele a qualquer momento. E ainda tem garantia de 7 dias nos planos pagos — não gostou, devolvemos seu dinheiro." },

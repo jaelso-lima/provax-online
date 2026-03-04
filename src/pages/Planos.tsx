@@ -41,7 +41,7 @@ const PLANOS = [
       { text: "Simulado personalizado", enabled: true },
       { text: "Estatísticas básicas", enabled: true },
       { text: "Histórico de erros completo", enabled: true },
-      { text: "Concurso + ENEM + Universidade", enabled: true },
+      { text: "Concurso + ENEM + Redação", enabled: true },
       { text: "Ranking", enabled: false },
       { text: "Filtro por banca/estado", enabled: false },
     ],
@@ -226,7 +226,7 @@ export default function Planos() {
             Planos semestral e anual com validade fixa a partir da data de contratação.
           </p>
           <p className="text-xs text-muted-foreground">
-            Funciona para Concurso Público, ENEM e Universidade — tudo numa plataforma só.
+            Funciona para Concurso Público, ENEM e Redação — tudo numa plataforma só.
           </p>
         </div>
 
