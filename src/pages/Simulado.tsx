@@ -382,7 +382,11 @@ export default function Simulado() {
       if (aiError) throw new Error(aiError.message || "Erro ao gerar questões");
       if (aiData?.error) throw new Error(aiData.error);
 
-      const generatedQuestoes: Questao[] = aiData.questoes || [];
+      const generatedQuestoes: Questao[] = (aiData.questoes || []).map((q: any) => ({
+        ...q,
+        // Fallback: if AI didn't return materia_nome, use selected matéria name
+        materia_nome: q.materia_nome || (materiaId ? materias.find(m => m.id === materiaId)?.nome : undefined),
+      }));
       if (generatedQuestoes.length === 0) {
         toast({ title: "IA não retornou questões. Tente novamente.", variant: "destructive" });
         setLoading(false); return;
