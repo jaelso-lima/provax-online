@@ -116,6 +116,23 @@ export default function Simulado() {
   const isFreePlan = !profile?.plano || profile.plano === "free";
   const isPremiumUser = profile?.plano && profile.plano !== "free";
 
+  // Animated loading messages
+  const loadingMessages = [
+    "🧠 Preparando questões com IA...",
+    "📚 Selecionando conteúdos relevantes...",
+    "✍️ Elaborando enunciados e alternativas...",
+    "🔍 Verificando qualidade das questões...",
+    "⚡ Quase pronto, finalizando...",
+  ];
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+  useEffect(() => {
+    if (!loading) { setLoadingMsgIdx(0); return; }
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) => (prev + 1) % loadingMessages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [loading]);
+
   // Resume an in-progress simulado
   useEffect(() => {
     if (!continuarId || !user) return;
