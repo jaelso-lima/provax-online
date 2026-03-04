@@ -41,6 +41,16 @@ interface Questao {
   alternativas: { letra: string; texto: string }[];
   resposta_correta: string;
   explicacao?: string;
+  materia_nome?: string;
+}
+
+// Metadata context for displaying on question cards
+interface SimuladoMeta {
+  banca_nome?: string;
+  area_nome?: string;
+  carreira_nome?: string;
+  ano?: string;
+  estado_nome?: string;
 }
 
 export default function Simulado() {
@@ -100,6 +110,7 @@ export default function Simulado() {
   const [startTime, setStartTime] = useState(Date.now());
   const [tempoAcumulado, setTempoAcumulado] = useState(0);
   const finalizarRef = useRef<HTMLDivElement>(null);
+  const [simuladoMeta, setSimuladoMeta] = useState<SimuladoMeta>({});
 
   const isFreePlan = !profile?.plano || profile.plano === "free";
   const isPremiumUser = profile?.plano && profile.plano !== "free";
