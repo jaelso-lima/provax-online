@@ -159,7 +159,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-    const callAI = async (): Promise<any[]> => {
+    const BATCH_SIZE = 10; // Max questions per AI call for speed
+
+    const callAIBatch = async (batchQtd: number, batchContext: string): Promise<any[]> => {
+      const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano });
+
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -167,17 +171,17 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Gere exatamente ${quantidade} questões agora.` },
+            { role: "system", content: batchPrompt },
+            { role: "user", content: `Gere exatamente ${batchQtd} questões agora.` },
           ],
           tools: [
             {
               type: "function",
               function: {
                 name: "return_questions",
-                description: `Retorna um array de ${quantidade} questões de múltipla escolha.`,
+                description: `Retorna um array de ${batchQtd} questões de múltipla escolha.`,
                 parameters: {
                   type: "object",
                   properties: {
@@ -187,7 +191,7 @@ serve(async (req) => {
                         type: "object",
                         properties: {
                           enunciado: { type: "string", description: "Texto completo do enunciado" },
-                          materia_nome: { type: "string", description: "Nome da matéria/disciplina desta questão (ex: Português, Matemática, Direito Constitucional)" },
+                          materia_nome: { type: "string", description: "Nome da matéria/disciplina desta questão" },
                           alternativas: {
                             type: "array",
                             items: {
@@ -237,23 +241,81 @@ serve(async (req) => {
       return JSON.parse(toolCall.function.arguments).questoes;
     };
 
-    // --- Tentativa com retry ---
+    // --- Build batches for parallel execution ---
+    interface BatchJob { qtd: number; context: string; }
+    const batches: BatchJob[] = [];
+
+    if (provaCompleta && distribuicao) {
+      // For prova completa: split by subject groups from distribution
+      // Parse distribution lines like "5 questões de Português"
+      const distLines = distribuicao.split("\n").filter((l: string) => l.match(/^\d+ questões de /));
+      for (const line of distLines) {
+        const match = line.match(/^(\d+) questões de (.+)$/);
+        if (!match) continue;
+        const subjQtd = parseInt(match[1]);
+        const subjName = match[2];
+        // Split large subjects into sub-batches
+        let remaining = subjQtd;
+        while (remaining > 0) {
+          const batchQtd = Math.min(remaining, BATCH_SIZE);
+          remaining -= batchQtd;
+          batches.push({
+            qtd: batchQtd,
+            context: `${filterParts.join(". ")}. Gere ${batchQtd} questões de ${subjName}. Todas devem ter materia_nome = "${subjName}".`,
+          });
+        }
+      }
+    }
+
+    // Fallback: no distribution parsed or non-prova-completa
+    if (batches.length === 0) {
+      let remaining = quantidade;
+      while (remaining > 0) {
+        const batchQtd = Math.min(remaining, BATCH_SIZE);
+        remaining -= batchQtd;
+        batches.push({ qtd: batchQtd, context: filterParts.join(". ") });
+      }
+    }
+
+    console.log(`Splitting ${quantidade} questions into ${batches.length} parallel batches`);
+
+    // --- Execute batches in parallel (max 4 concurrent to avoid rate limits) ---
+    const MAX_CONCURRENT = 4;
     let questoes: any[] = [];
     let lastError: any = null;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const raw = await callAI();
-        const { valid, cleaned } = validateQuestions(raw, quantidade);
-        if (valid) {
-          questoes = cleaned;
-          break;
+    for (let i = 0; i < batches.length; i += MAX_CONCURRENT) {
+      const chunk = batches.slice(i, i + MAX_CONCURRENT);
+      const results = await Promise.allSettled(
+        chunk.map(async (batch) => {
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const raw = await callAIBatch(batch.qtd, batch.context);
+              const { valid, cleaned } = validateQuestions(raw, batch.qtd);
+              if (valid) return cleaned;
+              console.warn(`Batch validation: ${cleaned.length}/${batch.qtd} valid, retrying...`);
+              if (cleaned.length > 0) return cleaned; // Accept partial on retry
+            } catch (e) {
+              if ((e as any).status === 429 || (e as any).status === 402) throw e;
+              lastError = e;
+            }
+          }
+          return [];
+        })
+      );
+
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          questoes.push(...r.value);
+        } else {
+          lastError = r.reason;
+          if (lastError?.status === 429 || lastError?.status === 402) throw lastError;
         }
-        console.warn(`Attempt ${attempt + 1}: validation failed, ${cleaned.length}/${quantidade} valid`);
-        lastError = { userMessage: "IA retornou questões em formato inválido", status: 500 };
-      } catch (e) {
-        lastError = e;
-        if ((e as any).status === 429 || (e as any).status === 402) throw e;
+      }
+
+      // Small delay between chunks to avoid rate limits
+      if (i + MAX_CONCURRENT < batches.length) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
     }
 
