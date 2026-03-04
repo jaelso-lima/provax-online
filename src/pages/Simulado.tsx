@@ -41,6 +41,16 @@ interface Questao {
   alternativas: { letra: string; texto: string }[];
   resposta_correta: string;
   explicacao?: string;
+  materia_nome?: string;
+}
+
+// Metadata context for displaying on question cards
+interface SimuladoMeta {
+  banca_nome?: string;
+  area_nome?: string;
+  carreira_nome?: string;
+  ano?: string;
+  estado_nome?: string;
 }
 
 export default function Simulado() {
@@ -100,6 +110,7 @@ export default function Simulado() {
   const [startTime, setStartTime] = useState(Date.now());
   const [tempoAcumulado, setTempoAcumulado] = useState(0);
   const finalizarRef = useRef<HTMLDivElement>(null);
+  const [simuladoMeta, setSimuladoMeta] = useState<SimuladoMeta>({});
 
   const isFreePlan = !profile?.plano || profile.plano === "free";
   const isPremiumUser = profile?.plano && profile.plano !== "free";
@@ -322,6 +333,17 @@ export default function Simulado() {
       let bodyPayload: any = { quantidade: qtd, nivel: nivel || "medio", modo };
       let provaCompletaContext = "";
 
+      // Build metadata context from selected filters
+      const meta: SimuladoMeta = {};
+      if (modo === "concurso") {
+        if (bancaId) meta.banca_nome = bancas.find(b => b.id === bancaId)?.nome;
+        if (areaId) meta.area_nome = areas.find(a => a.id === areaId)?.nome;
+        if (carreiraId) meta.carreira_nome = carreiras.find(c => c.id === carreiraId)?.nome;
+        if (stateId) meta.estado_nome = states.find(s => s.id === stateId)?.nome;
+        if (anoConcurso) meta.ano = anoConcurso;
+      }
+      setSimuladoMeta(meta);
+
       if (tipoMode === "prova_completa" && modo === "concurso") {
         const config = await getProvaCompletaConfig(bancaId, areaId, carreiraId || undefined);
         if (config.totalQuestoes === 0) {
@@ -360,7 +382,11 @@ export default function Simulado() {
       if (aiError) throw new Error(aiError.message || "Erro ao gerar questões");
       if (aiData?.error) throw new Error(aiData.error);
 
-      const generatedQuestoes: Questao[] = aiData.questoes || [];
+      const generatedQuestoes: Questao[] = (aiData.questoes || []).map((q: any) => ({
+        ...q,
+        // Fallback: if AI didn't return materia_nome, use selected matéria name
+        materia_nome: q.materia_nome || (materiaId ? materias.find(m => m.id === materiaId)?.nome : undefined),
+      }));
       if (generatedQuestoes.length === 0) {
         toast({ title: "IA não retornou questões. Tente novamente.", variant: "destructive" });
         setLoading(false); return;
@@ -469,7 +495,9 @@ export default function Simulado() {
           <div className="rounded-lg bg-accent/10 p-4 text-center"><p className="text-sm text-muted-foreground">Acertos</p><p className="text-3xl font-bold text-accent">{resultado.acertos}/{resultado.total}</p></div>
           <div className="rounded-lg bg-warning/10 p-4 text-center"><p className="text-sm text-muted-foreground">XP Ganho</p><p className="text-3xl font-bold text-warning">+{resultado.xpGanho}</p></div>
         </div>
-        <div><h3 className="mb-3 font-display text-lg font-semibold">Correção Detalhada</h3><div className="space-y-3">{questoes.map((q, i) => { const resp = respostas[i]; const correta = resp === q.resposta_correta; return (<Card key={i} className={`border-l-4 ${correta ? "border-l-accent" : "border-l-destructive"}`}><CardContent className="pt-4"><p className="mb-2 text-sm font-medium">{i+1}. {q.enunciado}</p><p className="text-xs"><span className={resp ? (correta ? "text-accent" : "text-destructive") : "text-muted-foreground"}>Sua: {resp || "—"}</span> | <span className="font-medium text-accent">Correta: {q.resposta_correta}</span></p>{q.explicacao && <p className="mt-2 text-xs text-muted-foreground italic">{q.explicacao}</p>}</CardContent></Card>); })}</div></div>
+        <div><h3 className="mb-3 font-display text-lg font-semibold">Correção Detalhada</h3><div className="space-y-3">{questoes.map((q, i) => { const resp = respostas[i]; const correta = resp === q.resposta_correta; return (<Card key={i} className={`border-l-4 ${correta ? "border-l-accent" : "border-l-destructive"}`}><CardContent className="pt-4">
+          {(q.materia_nome || simuladoMeta.banca_nome) && <div className="mb-1.5 flex flex-wrap gap-1">{q.materia_nome && <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">📚 {q.materia_nome}</span>}{simuladoMeta.banca_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">🏛️ {simuladoMeta.banca_nome}</span>}{simuladoMeta.carreira_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">💼 {simuladoMeta.carreira_nome}</span>}</div>}
+          <p className="mb-2 text-sm font-medium">{i+1}. {q.enunciado}</p><p className="text-xs"><span className={resp ? (correta ? "text-accent" : "text-destructive") : "text-muted-foreground"}>Sua: {resp || "—"}</span> | <span className="font-medium text-accent">Correta: {q.resposta_correta}</span></p>{q.explicacao && <p className="mt-2 text-xs text-muted-foreground italic">{q.explicacao}</p>}</CardContent></Card>); })}</div></div>
         <div className="flex gap-3 justify-center"><Button onClick={() => navigate("/dashboard")}>Voltar</Button><Button variant="outline" onClick={() => { setResultado(null); setSimuladoId(null); setQuestoes([]); }}>Novo Simulado</Button></div>
       </CardContent></Card></main><AppFooter /></div>
     );
@@ -509,7 +537,16 @@ export default function Simulado() {
             </CardContent>
           </Card>
         ) : (
-          <Card><CardContent className="pt-6"><p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => handleAnswer(o.letra)}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
+          <Card><CardContent className="pt-6">
+            {/* Metadata badges */}
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {q.materia_nome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {q.materia_nome}</span>}
+              {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
+              {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
+              {simuladoMeta.area_nome && !q.materia_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
+              {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
+            </div>
+            <p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => handleAnswer(o.letra)}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
         )}
 
         <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1 || (isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT - 1)} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>

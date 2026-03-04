@@ -34,7 +34,9 @@ REGRAS OBRIGATÓRIAS:
 5. Não repetir padrões entre questões
 6. Variar a posição da resposta correta (distribuir entre A-E)
 7. Linguagem formal e técnica adequada ao contexto
-8. Enunciados claros, sem ambiguidade`;
+8. Enunciados claros, sem ambiguidade
+9. OBRIGATÓRIO: Cada questão deve incluir o campo "materia_nome" com o nome da matéria/disciplina da questão
+10. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada (agrupe questões por matéria na mesma sequência)`;
 
   return `${base}\n\n${modoInstructions[modo] || modoInstructions.concurso}\n\n${filterContext ? `Contexto dos filtros: ${filterContext}` : ""}\n\n${rules}`;
 }
@@ -185,6 +187,7 @@ serve(async (req) => {
                         type: "object",
                         properties: {
                           enunciado: { type: "string", description: "Texto completo do enunciado" },
+                          materia_nome: { type: "string", description: "Nome da matéria/disciplina desta questão (ex: Português, Matemática, Direito Constitucional)" },
                           alternativas: {
                             type: "array",
                             items: {
@@ -200,7 +203,7 @@ serve(async (req) => {
                           resposta_correta: { type: "string", enum: ["A", "B", "C", "D", "E"] },
                           explicacao: { type: "string", description: "Explicação detalhada da resposta correta" },
                         },
-                        required: ["enunciado", "alternativas", "resposta_correta", "explicacao"],
+                        required: ["enunciado", "materia_nome", "alternativas", "resposta_correta", "explicacao"],
                         additionalProperties: false,
                       },
                     },

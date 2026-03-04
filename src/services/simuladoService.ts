@@ -67,5 +67,5 @@ export function buildProvaCompletaPromptContext(
   const lines = distribuicao.map(
     (d) => `${d.quantidade} questões de ${d.materia_nome}`
   );
-  return `Distribuição da prova completa:\n${lines.join("\n")}`;
+  return `Distribuição da prova completa (SIGA EXATAMENTE ESTA ORDEM — gere as questões agrupadas por matéria nesta sequência):\n${lines.join("\n")}`;
 }
