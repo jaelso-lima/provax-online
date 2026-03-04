@@ -104,9 +104,8 @@ export default function AdminPdfImporter() {
                 <Label>Tipo *</Label>
                 <Select value={tipo} onValueChange={setTipo}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                   <SelectContent>
                     <SelectItem value="concurso">Concurso</SelectItem>
-                    <SelectItem value="universidade">Universidade</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -128,23 +127,6 @@ export default function AdminPdfImporter() {
                   <div>
                     <Label>Cargo</Label>
                     <Input value={cargo} onChange={(e) => setCargo(e.target.value)} placeholder="Ex: Analista" />
-                  </div>
-                </>
-              )}
-              {tipo === "universidade" && (
-                <>
-                  <div>
-                    <Label>Curso</Label>
-                    <Select value={cursoId} onValueChange={setCursoId}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {cursos?.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Semestre</Label>
-                    <Input type="number" value={semestre} onChange={(e) => setSemestre(e.target.value)} min="1" max="12" />
                   </div>
                 </>
               )}
