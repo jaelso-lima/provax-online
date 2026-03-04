@@ -333,6 +333,17 @@ export default function Simulado() {
       let bodyPayload: any = { quantidade: qtd, nivel: nivel || "medio", modo };
       let provaCompletaContext = "";
 
+      // Build metadata context from selected filters
+      const meta: SimuladoMeta = {};
+      if (modo === "concurso") {
+        if (bancaId) meta.banca_nome = bancas.find(b => b.id === bancaId)?.nome;
+        if (areaId) meta.area_nome = areas.find(a => a.id === areaId)?.nome;
+        if (carreiraId) meta.carreira_nome = carreiras.find(c => c.id === carreiraId)?.nome;
+        if (stateId) meta.estado_nome = states.find(s => s.id === stateId)?.nome;
+        if (anoConcurso) meta.ano = anoConcurso;
+      }
+      setSimuladoMeta(meta);
+
       if (tipoMode === "prova_completa" && modo === "concurso") {
         const config = await getProvaCompletaConfig(bancaId, areaId, carreiraId || undefined);
         if (config.totalQuestoes === 0) {
