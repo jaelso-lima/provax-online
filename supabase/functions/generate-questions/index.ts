@@ -73,21 +73,23 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !authUser) {
       return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: corsHeaders });
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = authUser.id;
 
     // --- Body & Sanitização ---
     const body = await req.json();
-    const allowedQuantidades = [5, 10, 20, 60];
-    const allowedNiveis = ["facil", "media", "dificil"];
-    const allowedModos = ["concurso", "enem", "universidade"];
+    const allowedNiveis = ["facil", "medio", "media", "dificil"];
+    const allowedModos = ["concurso", "enem"];
 
-    const quantidade = allowedQuantidades.includes(body.quantidade) ? body.quantidade : 10;
-    const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "media";
+    // For prova_completa, allow any quantity up to 80; otherwise stick to fixed options
+    const rawQuantidade = typeof body.quantidade === "number" ? body.quantidade : 10;
+    const quantidade = body.provaCompleta === true
+      ? Math.min(Math.max(rawQuantidade, 5), 80)
+      : ([5, 10, 20, 60].includes(rawQuantidade) ? rawQuantidade : 10);
+    const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "medio";
     const modo = allowedModos.includes(body.modo) ? body.modo : "concurso";
     const materia = typeof body.materia === "string" ? body.materia.slice(0, 100) : undefined;
     const banca = typeof body.banca === "string" ? body.banca.slice(0, 100) : undefined;
@@ -113,12 +115,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Limite de requisições atingido. Aguarde alguns minutos." }), { status: 429, headers: corsHeaders });
     }
 
-    // --- Verificar saldo ---
-    const { data: profile } = await supabase.from("profiles").select("saldo_moedas").eq("id", userId).single();
-    const custo = quantidade;
-    if (!profile || profile.saldo_moedas < custo) {
-      return new Response(JSON.stringify({ error: "Saldo insuficiente" }), { status: 402, headers: corsHeaders });
-    }
+    // Coin check removed — daily limits and coin deduction handled client-side
+    // Edge function just generates questions for authenticated users
 
     // --- Resolver nomes dos filtros para contexto ---
     const filterParts: string[] = [];
