@@ -104,9 +104,8 @@ export default function AdminPdfImporter() {
                 <Label>Tipo *</Label>
                 <Select value={tipo} onValueChange={setTipo}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                   <SelectContent>
                     <SelectItem value="concurso">Concurso</SelectItem>
-                    <SelectItem value="universidade">Universidade</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

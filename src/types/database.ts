@@ -53,7 +53,7 @@ export interface Area {
   id: string;
   nome: string;
   descricao: string | null;
-  modo: 'concurso' | 'enem' | 'universidade' | 'ambos';
+  modo: 'concurso' | 'enem' | 'ambos';
   created_at: string;
 }
 
@@ -94,7 +94,7 @@ export interface Questao {
   area_id: string | null;
   topic_id: string | null;
   ano: number | null;
-  modo: 'concurso' | 'enem' | 'universidade';
+  modo: 'concurso' | 'enem';
   dificuldade: 'facil' | 'media' | 'dificil';
   status_questao: 'valida' | 'anulada' | 'alterada';
   created_at: string;
@@ -111,7 +111,7 @@ export interface Simulado {
   state_id: string | null;
   esfera_id: string | null;
   area_id: string | null;
-  modo: 'concurso' | 'enem' | 'universidade';
+  modo: 'concurso' | 'enem';
   quantidade: number;
   pontuacao: number | null;
   acertos: number;

@@ -146,7 +146,7 @@ export default function AdminDashboard() {
 
   const usageByMode = stats?.usage_by_mode
     ? Object.entries(stats.usage_by_mode).map(([name, value]) => ({
-        name: name === "concurso" ? "Concurso" : name === "enem" ? "ENEM" : name === "universidade" ? "Universidade" : name,
+        name: name === "concurso" ? "Concurso" : name === "enem" ? "ENEM" : name,
         total: value as number,
       }))
     : [];

@@ -5,7 +5,7 @@ export interface PdfImport {
   id: string;
   nome_arquivo: string;
   hash_arquivo: string;
-  tipo: 'concurso' | 'universidade';
+  tipo: 'concurso';
   banca_id: string | null;
   curso_id: string | null;
   semestre: number | null;
