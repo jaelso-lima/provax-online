@@ -20,6 +20,7 @@ export default function AdminReport() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string>("all");
 
   // PDF section checkboxes
   const [includeFinancial, setIncludeFinancial] = useState(true);
