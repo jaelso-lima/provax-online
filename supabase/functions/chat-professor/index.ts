@@ -27,7 +27,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get user profile for name
+    // Get user profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("nome, plano, saldo_moedas")
@@ -35,6 +35,69 @@ serve(async (req) => {
       .single();
 
     const userName = profile?.nome || "Estudante";
+
+    // Get user performance data for personalization
+    let performanceContext = "";
+    try {
+      // Get finished simulados
+      const { data: simulados } = await supabase
+        .from("simulados")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "finalizado");
+
+      if (simulados && simulados.length > 0) {
+        const simIds = simulados.map((s: any) => s.id);
+        
+        // Get all responses with materia info
+        const { data: respostas } = await supabase
+          .from("respostas")
+          .select("acertou, questoes(materia_id, materias:materia_id(nome))")
+          .in("simulado_id", simIds);
+
+        if (respostas && respostas.length > 0) {
+          const materiaMap = new Map<string, { nome: string; total: number; acertos: number }>();
+          let totalAcertos = 0;
+          let totalErros = 0;
+
+          for (const r of respostas as any[]) {
+            const q = r.questoes;
+            if (!q?.materia_id) continue;
+            const mid = q.materia_id;
+            const mname = q.materias?.nome || "?";
+            if (!materiaMap.has(mid)) materiaMap.set(mid, { nome: mname, total: 0, acertos: 0 });
+            const e = materiaMap.get(mid)!;
+            e.total++;
+            if (r.acertou) { e.acertos++; totalAcertos++; } else { totalErros++; }
+          }
+
+          const stats = Array.from(materiaMap.values())
+            .filter(s => s.total >= 2)
+            .map(s => ({ ...s, taxa: Math.round((s.acertos / s.total) * 100) }));
+
+          const fracos = [...stats].sort((a, b) => a.taxa - b.taxa).slice(0, 3);
+          const fortes = [...stats].sort((a, b) => b.taxa - a.taxa).slice(0, 3);
+
+          performanceContext = `\n\nDADOS REAIS DO ALUNO (use para personalizar):
+- Questões respondidas: ${respostas.length}
+- Acertos: ${totalAcertos} (${Math.round((totalAcertos / respostas.length) * 100)}%)
+- Erros: ${totalErros}`;
+
+          if (fracos.length > 0) {
+            performanceContext += `\nPONTOS FRACOS:`;
+            for (const f of fracos) performanceContext += `\n- ${f.nome}: ${f.taxa}% (${f.acertos}/${f.total})`;
+          }
+          if (fortes.length > 0) {
+            performanceContext += `\nPONTOS FORTES:`;
+            for (const f of fortes) performanceContext += `\n- ${f.nome}: ${f.taxa}% (${f.acertos}/${f.total})`;
+          }
+
+          performanceContext += `\n\nUse esses dados para dar recomendações personalizadas. Se o aluno erra muito em alguma matéria, sugira revisão específica, exercícios focados e explicações simplificadas. Elogie os pontos fortes.`;
+        }
+      }
+    } catch (e) {
+      console.error("Error loading performance:", e);
+    }
 
     const { messages } = await req.json();
 
@@ -54,10 +117,12 @@ REGRAS IMPORTANTES:
 - Seja conciso mas completo nas explicações
 - Quando apropriado, sugira exercícios práticos ou dicas de estudo
 - Formate suas respostas usando markdown para melhor legibilidade
+- IMPORTANTE: Use os dados reais de desempenho do aluno para personalizar suas respostas e recomendações
 
 Você domina: Direito Constitucional, Administrativo, Penal, Civil, Processual, Tributário, Português, Matemática, Raciocínio Lógico, Informática, Atualidades, Administração Pública, Contabilidade, Economia, Legislação do SUS, Saúde Pública, Ciências Humanas, Ciências da Natureza, Linguagens e Redação.
+${performanceContext}
 
-Comece sempre sendo acolhedor e pergunte como pode ajudar ${userName} hoje.`;
+Comece sempre sendo acolhedor e pergunte como pode ajudar ${userName} hoje. Se tiver dados de desempenho, mencione brevemente os pontos fortes e sugira focar nos pontos fracos.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

@@ -23,13 +23,17 @@ import {
   type SimuladoTipoMode,
 } from "@/services/simuladoService";
 
-const CUSTOS: Record<string, number> = { "5": 5, "10": 10, "20": 15, "60": 0 };
 const ENEM_AREAS = [
   { id: "linguagens", nome: "Linguagens" },
   { id: "matematica", nome: "Matemática" },
   { id: "humanas", nome: "Ciências Humanas" },
   { id: "natureza", nome: "Ciências da Natureza" },
 ];
+
+// Free daily limits
+const FREE_DAILY_LIMIT = 10;
+// Prova completa: block at question 12 (index 11) for free users
+const FREE_PROVA_COMPLETA_LIMIT = 12;
 
 interface Questao {
   id?: string;
@@ -97,6 +101,9 @@ export default function Simulado() {
   const [tempoAcumulado, setTempoAcumulado] = useState(0);
   const finalizarRef = useRef<HTMLDivElement>(null);
 
+  const isFreePlan = !profile?.plano || profile.plano === "free";
+  const isPremiumUser = profile?.plano && profile.plano !== "free";
+
   // Resume an in-progress simulado
   useEffect(() => {
     if (!continuarId || !user) return;
@@ -137,6 +144,9 @@ export default function Simulado() {
           await supabase.from("simulados").update({ status: "finalizado", finished_at: new Date().toISOString(), pontuacao: 0, acertos: 0 }).eq("id", continuarId);
           navigate(`/simulado?modo=${sim.modo}`); return;
         }
+
+        // Detect if this is a prova_completa for gate logic
+        if (sim.tipo === "prova_completa") setTipoMode("prova_completa");
 
         setSimuladoId(sim.id); setQuestoes(allQuestoes); setRespostas(savedRespostas);
         setTempoAcumulado(sim.tempo_gasto || 0); setStartTime(Date.now());
@@ -198,7 +208,6 @@ export default function Simulado() {
           }
         });
     }
-    // ENEM mode doesn't need reference data loading
   }, [modo, continuarId]);
 
   // Auto-start: trigger generation once filters are set
@@ -237,9 +246,16 @@ export default function Simulado() {
       .finally(() => setProvaCompletaLoading(false));
   }, [bancaId, areaId, modo]);
 
-  const custo = tipoMode === "prova_completa" ? 0 : (quantidade === "60" ? 0 : CUSTOS[quantidade] || 5);
-  const isPremiumOnly = quantidade === "60" && profile?.plano !== "premium";
-  const isFreePlan = !profile?.plano || profile.plano === "free";
+  // New coin logic: Free users get FREE_DAILY_LIMIT questions/day for free
+  // Beyond that, they need coins (1 coin = 1 question)
+  // Premium users: unlimited, no coins needed
+  const getCusto = () => {
+    if (isPremiumUser) return 0;
+    if (tipoMode === "prova_completa") return 0; // Free to start, gated at Q12
+    return 0; // Free daily limit handles it
+  };
+  const custo = getCusto();
+
   const [showUpgradeGate, setShowUpgradeGate] = useState(false);
 
   const validarFiltros = () => {
@@ -255,13 +271,27 @@ export default function Simulado() {
     } else {
       if (!areaEnem) { toast({ title: "Selecione a área do ENEM", variant: "destructive" }); return false; }
     }
-    if (isPremiumOnly) { toast({ title: "Exclusivo Premium", variant: "destructive" }); return false; }
     return true;
   };
 
-  const handleGerarClick = () => {
+  const handleGerarClick = async () => {
     if (!validarFiltros()) return;
-    if (custo > 0 && (profile?.saldo_moedas ?? 0) < custo) { setShowInsuficiente(true); return; }
+
+    // Check daily limit for free users (non prova_completa)
+    if (isFreePlan && tipoMode !== "prova_completa") {
+      const { data: limitData } = await supabase.rpc("check_daily_limit", { _user_id: user!.id });
+      const limit = limitData as any;
+      if (limit && !limit.pode_gerar) {
+        // Check if user has coins to continue
+        const qtd = parseInt(quantidade);
+        if ((profile?.saldo_moedas ?? 0) < qtd) {
+          setShowInsuficiente(true);
+          return;
+        }
+        // Will use coins
+      }
+    }
+
     setShowConfirm(true);
   };
 
@@ -269,9 +299,23 @@ export default function Simulado() {
     setShowConfirm(false);
     setLoading(true);
     try {
-      if (custo > 0) {
-        const { error: moedaErr } = await supabase.rpc("descontar_moedas", { _user_id: user!.id, _valor: custo, _descricao: `Simulado ${tipoMode === "prova_completa" ? "Prova Completa" : quantidade + " questões"}` });
-        if (moedaErr) throw new Error(moedaErr.message);
+      // Check daily limit and deduct coins if needed for free users
+      if (isFreePlan && tipoMode !== "prova_completa") {
+        const { data: limitData } = await supabase.rpc("check_daily_limit", { _user_id: user!.id });
+        const limit = limitData as any;
+        const qtd = parseInt(quantidade);
+        
+        if (limit && !limit.pode_gerar) {
+          // Beyond daily limit — use coins (1 coin = 1 question)
+          const coinCost = qtd;
+          if ((profile?.saldo_moedas ?? 0) < coinCost) {
+            setShowInsuficiente(true);
+            setLoading(false);
+            return;
+          }
+          const { error: moedaErr } = await supabase.rpc("descontar_moedas", { _user_id: user!.id, _valor: coinCost, _descricao: `Simulado extra ${qtd} questões (além do limite diário)` });
+          if (moedaErr) throw new Error(moedaErr.message);
+        }
       }
 
       let qtd = parseInt(quantidade);
@@ -319,11 +363,15 @@ export default function Simulado() {
       const generatedQuestoes: Questao[] = aiData.questoes || [];
       if (generatedQuestoes.length === 0) {
         toast({ title: "IA não retornou questões. Tente novamente.", variant: "destructive" });
-        if (custo > 0) await supabase.rpc("adicionar_moedas", { _user_id: user!.id, _valor: custo, _descricao: "Reembolso simulado" });
         setLoading(false); return;
       }
 
-      const simTipo = tipoMode === "prova_completa" ? "prova_completa" : (qtd === 60 ? "prova_completa" : "normal");
+      // Increment daily usage for free users
+      if (isFreePlan && tipoMode !== "prova_completa") {
+        await supabase.rpc("incrementar_uso_diario", { _user_id: user!.id, _quantidade: generatedQuestoes.length });
+      }
+
+      const simTipo = tipoMode === "prova_completa" ? "prova_completa" : "normal";
       const { data: sim, error: sErr } = await supabase.from("simulados").insert({
         user_id: user!.id, tipo: simTipo, quantidade: generatedQuestoes.length, total_questoes: generatedQuestoes.length,
         carreira_id: carreiraId || null, materia_id: materiaId || null, banca_id: bancaId || null,
@@ -377,10 +425,7 @@ export default function Simulado() {
       for (let i = 0; i < questoes.length; i++) { if (respostas[i] === questoes[i].resposta_correta) acertos++; }
       const nota = Math.round((acertos / questoes.length) * 100);
 
-      let bonus = 0;
-      if (nota >= 90) bonus = 10; else if (nota >= 80) bonus = 5;
-      if (bonus > 0) await supabase.rpc("adicionar_moedas", { _user_id: user!.id, _valor: bonus, _descricao: `Bônus nota ${nota}%` });
-
+      // XP: 1 point per correct answer only
       const xpGanho = acertos;
       if (xpGanho > 0) await supabase.rpc("adicionar_xp", { _user_id: user!.id, _xp_ganho: xpGanho });
       await supabase.from("simulados").update({ pontuacao: nota, acertos, tempo_gasto: tempoTotal, status: "finalizado", finished_at: new Date().toISOString(), ultima_questao_respondida: questoes.length }).eq("id", simuladoId!);
@@ -393,7 +438,7 @@ export default function Simulado() {
       }
 
       await refreshProfile();
-      setResultado({ nota, acertos, total: questoes.length, bonus, xpGanho, tempoTotal, tempoMedioPorQuestao: Math.round(tempoTotal / questoes.length) });
+      setResultado({ nota, acertos, total: questoes.length, xpGanho, tempoTotal, tempoMedioPorQuestao: Math.round(tempoTotal / questoes.length) });
       toast({ title: `Simulado finalizado! Nota: ${nota}%` });
     } catch (err: any) { toast({ title: "Erro ao finalizar", description: err.message, variant: "destructive" }); }
     setFinalizando(false);
@@ -419,13 +464,11 @@ export default function Simulado() {
       <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-3xl flex-1 py-8">
         <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard</Button>
         <Card><CardHeader className="text-center"><CardTitle className="font-display text-3xl">📊 Relatório do Simulado</CardTitle></CardHeader><CardContent className="space-y-6">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           <div className="rounded-lg bg-primary/10 p-4 text-center"><p className="text-sm text-muted-foreground">Nota</p><p className="text-3xl font-bold text-primary">{resultado.nota}%</p></div>
           <div className="rounded-lg bg-accent/10 p-4 text-center"><p className="text-sm text-muted-foreground">Acertos</p><p className="text-3xl font-bold text-accent">{resultado.acertos}/{resultado.total}</p></div>
-          <div className="rounded-lg bg-warning/10 p-4 text-center"><p className="text-sm text-muted-foreground">Tempo Médio</p><p className="text-3xl font-bold text-warning">{resultado.tempoMedioPorQuestao}s</p></div>
-          <div className="rounded-lg bg-coin/10 p-4 text-center"><p className="text-sm text-muted-foreground">XP Ganho</p><p className="text-3xl font-bold text-coin">+{resultado.xpGanho}</p></div>
+          <div className="rounded-lg bg-warning/10 p-4 text-center"><p className="text-sm text-muted-foreground">XP Ganho</p><p className="text-3xl font-bold text-warning">+{resultado.xpGanho}</p></div>
         </div>
-        {resultado.bonus > 0 && <div className="rounded-lg border border-coin bg-coin/5 p-3 text-center text-sm font-medium">🎉 Bônus de {resultado.bonus} moedas!</div>}
         <div><h3 className="mb-3 font-display text-lg font-semibold">Correção Detalhada</h3><div className="space-y-3">{questoes.map((q, i) => { const resp = respostas[i]; const correta = resp === q.resposta_correta; return (<Card key={i} className={`border-l-4 ${correta ? "border-l-accent" : "border-l-destructive"}`}><CardContent className="pt-4"><p className="mb-2 text-sm font-medium">{i+1}. {q.enunciado}</p><p className="text-xs"><span className={resp ? (correta ? "text-accent" : "text-destructive") : "text-muted-foreground"}>Sua: {resp || "—"}</span> | <span className="font-medium text-accent">Correta: {q.resposta_correta}</span></p>{q.explicacao && <p className="mt-2 text-xs text-muted-foreground italic">{q.explicacao}</p>}</CardContent></Card>); })}</div></div>
         <div className="flex gap-3 justify-center"><Button onClick={() => navigate("/dashboard")}>Voltar</Button><Button variant="outline" onClick={() => { setResultado(null); setSimuladoId(null); setQuestoes([]); }}>Novo Simulado</Button></div>
       </CardContent></Card></main><AppFooter /></div>
@@ -436,8 +479,8 @@ export default function Simulado() {
   if (simuladoId && questoes.length > 0) {
     const q = questoes[currentIdx]; const respondidas = Object.keys(respostas).length; const progresso = Math.round((respondidas / questoes.length) * 100);
     const isProvaCompleta = tipoMode === "prova_completa";
-    const freeQuestionLimit = 10;
-    const isLockedQuestion = isProvaCompleta && isFreePlan && currentIdx >= freeQuestionLimit;
+    // Gate at question 12 (index 11) for free users in prova completa
+    const isLockedQuestion = isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT;
 
     return (
       <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
@@ -448,20 +491,20 @@ export default function Simulado() {
           <Card className="border-primary/30">
             <CardContent className="pt-6 text-center space-y-4">
               <div className="text-4xl">🔒</div>
-              <h3 className="font-display text-xl font-bold">Questão Bloqueada</h3>
+              <h3 className="font-display text-xl font-bold">Para continuar a prova completa, assine o Plano Pro.</h3>
               <p className="text-sm text-muted-foreground">
-                Você respondeu as <strong>{freeQuestionLimit} questões gratuitas</strong> da Prova Completa!
+                Você respondeu <strong>{FREE_PROVA_COMPLETA_LIMIT} questões</strong> da Prova Completa.
                 Para desbloquear todas as <strong>{questoes.length} questões</strong>, assine o plano Pro.
               </p>
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
                 💡 Com o plano Pro você tem acesso ilimitado a provas completas de todas as bancas!
               </div>
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => setCurrentIdx(freeQuestionLimit - 1)}>Voltar às questões</Button>
+                <Button variant="outline" onClick={() => setCurrentIdx(FREE_PROVA_COMPLETA_LIMIT - 1)}>Voltar às questões</Button>
                 <Button onClick={() => navigate("/planos")}>Assinar Plano Pro</Button>
               </div>
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={handleFinalizar} disabled={finalizando}>
-                {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar com {Math.min(respondidas, freeQuestionLimit)} questões
+                {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar com {Math.min(respondidas, FREE_PROVA_COMPLETA_LIMIT)} questões
               </Button>
             </CardContent>
           </Card>
@@ -469,14 +512,14 @@ export default function Simulado() {
           <Card><CardContent className="pt-6"><p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => handleAnswer(o.letra)}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
         )}
 
-        <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1 || (isProvaCompleta && isFreePlan && currentIdx >= freeQuestionLimit - 1)} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>
+        <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1 || (isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT - 1)} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>
         <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => {
-          const locked = isProvaCompleta && isFreePlan && i >= freeQuestionLimit;
+          const locked = isProvaCompleta && isFreePlan && i >= FREE_PROVA_COMPLETA_LIMIT;
           return (<button key={i} onClick={() => !locked && setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${locked ? "bg-muted text-muted-foreground/50 cursor-not-allowed" : i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{locked ? "🔒" : i+1}</button>);
         })}</div>
         <div ref={finalizarRef} className="mt-6 flex justify-center">
           <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10 text-sm" onClick={handleFinalizar} disabled={finalizando}>
-            {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar ({respondidas}/{isProvaCompleta && isFreePlan ? freeQuestionLimit : questoes.length})
+            {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar ({respondidas}/{isProvaCompleta && isFreePlan ? FREE_PROVA_COMPLETA_LIMIT : questoes.length})
           </Button>
         </div>
       </main><AppFooter /></div>
@@ -515,7 +558,7 @@ export default function Simulado() {
                 <RadioGroupItem value="prova_completa" id="tipo-prova" />
                 <Label htmlFor="tipo-prova" className="cursor-pointer flex-1">
                   <span className="font-medium">🔘 Prova Completa por Banca</span>
-                  <p className="text-xs text-muted-foreground">Distribuição realista baseada em editais (Grátis – 10 questões no Free)</p>
+                  <p className="text-xs text-muted-foreground">Distribuição realista baseada em editais</p>
                 </Label>
               </div>
             </RadioGroup>
@@ -538,12 +581,6 @@ export default function Simulado() {
                 ) : (
                   "📋 Será gerada uma distribuição balanceada automática para esta combinação"
                 )}
-              </div>
-            )}
-
-            {isFreePlan && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm text-primary">
-                🎁 Prova Completa gratuita! No plano Free você responde até <strong>10 questões</strong>. Assine o plano Pro para desbloquear todas!
               </div>
             )}
           </>) : (<>
@@ -574,17 +611,23 @@ export default function Simulado() {
         <div className="space-y-2"><Label>Dificuldade</Label><Select value={nivel} onValueChange={setNivel}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="facil">Fácil</SelectItem><SelectItem value="medio">Médio</SelectItem><SelectItem value="dificil">Difícil</SelectItem></SelectContent></Select></div>
         
         {tipoMode !== "prova_completa" && (
-          <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões (5 moedas)</SelectItem><SelectItem value="10">10 questões (10 moedas)</SelectItem><SelectItem value="20">20 questões (15 moedas)</SelectItem><SelectItem value="60">60 questões (Premium)</SelectItem></SelectContent></Select></div>
+          <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem></SelectContent></Select></div>
         )}
 
-        <Button className="w-full" onClick={handleGerarClick} disabled={loading || isPremiumOnly}>
+        {isFreePlan && tipoMode !== "prova_completa" && (
+          <div className="rounded-lg border border-muted bg-muted/30 p-3 text-xs text-muted-foreground">
+            📋 Plano Free: {FREE_DAILY_LIMIT} questões grátis por dia. Após o limite, use moedas (1 moeda = 1 questão).
+          </div>
+        )}
+
+        <Button className="w-full" onClick={handleGerarClick} disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {tipoMode === "prova_completa" ? "Gerar Prova Completa (Grátis)" : (isPremiumOnly ? "Exclusivo Premium" : `Gerar Simulado (${custo} moedas)`)}
+          {tipoMode === "prova_completa" ? "Gerar Prova Completa" : "Gerar Simulado"}
         </Button>
       </CardContent></Card>
     </main>
-    <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>{tipoMode === "prova_completa" ? "Será gerada uma prova completa com distribuição realista." : `Serão descontadas ${custo} moedas (${profile?.saldo_moedas ?? 0} disponíveis).`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
-    <Dialog open={showInsuficiente} onOpenChange={setShowInsuficiente}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" />Saldo Insuficiente</DialogTitle><DialogDescription>Precisa de {custo} moedas. Saldo: {profile?.saldo_moedas ?? 0}.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowInsuficiente(false)}>Fechar</Button><Button onClick={() => { setShowInsuficiente(false); navigate("/comprar-moedas"); }}>Comprar Moedas</Button></DialogFooter></DialogContent></Dialog>
+    <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>{tipoMode === "prova_completa" ? "Será gerada uma prova completa com distribuição realista." : `Serão geradas ${quantidade} questões.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
+    <Dialog open={showInsuficiente} onOpenChange={setShowInsuficiente}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" />Limite diário atingido</DialogTitle><DialogDescription>Você atingiu o limite de {FREE_DAILY_LIMIT} questões grátis por dia. Use moedas para continuar (1 moeda = 1 questão) ou assine um plano.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowInsuficiente(false)}>Fechar</Button><Button variant="outline" onClick={() => { setShowInsuficiente(false); navigate("/comprar-moedas"); }}>Comprar Moedas</Button><Button onClick={() => { setShowInsuficiente(false); navigate("/planos"); }}>Ver Planos</Button></DialogFooter></DialogContent></Dialog>
     <Dialog open={showConfirmSair} onOpenChange={setShowConfirmSair}><DialogContent><DialogHeader><DialogTitle>Sair do Simulado?</DialogTitle><DialogDescription>Seu progresso será salvo automaticamente. Você poderá continuar de onde parou no Dashboard.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirmSair(false)}>Continuar respondendo</Button><Button onClick={handleSairSalvando}>Salvar e sair</Button></DialogFooter></DialogContent></Dialog>
     <AppFooter />
     </div>
