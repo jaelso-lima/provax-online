@@ -273,7 +273,7 @@ export default function AdminPdfImporter() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => processMut.mutate({ id: imp.id, erro_detalhes: imp.erro_detalhes })}
+                            onClick={() => processMut.mutate({ id: imp.id, gabarito_storage_path: (imp as any).gabarito_storage_path })}
                             disabled={processMut.isPending}
                           >
                             <Play className="h-3 w-3 mr-1" />
