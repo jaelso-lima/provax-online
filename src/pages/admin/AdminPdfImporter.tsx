@@ -90,14 +90,8 @@ export default function AdminPdfImporter() {
   });
 
   const processMut = useMutation({
-    mutationFn: async (imp: { id: string; erro_detalhes?: string | null }) => {
-      // Check if gabarito was uploaded with the import
-      let gabaritoPath: string | null = null;
-      
-      // Check stored gabarito path from upload
-      if (imp.erro_detalhes?.startsWith("gabarito:")) {
-        gabaritoPath = imp.erro_detalhes.replace("gabarito:", "");
-      }
+    mutationFn: async (imp: { id: string; gabarito_storage_path?: string | null }) => {
+      let gabaritoPath: string | null = imp.gabarito_storage_path || null;
       
       // Check if user attached a gabarito specifically for this import
       const perImportGabarito = importGabaritos[imp.id];
