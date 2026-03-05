@@ -23,10 +23,20 @@ async function pdfToBase64(supabase: any, storagePath: string): Promise<string> 
   return btoa(binary);
 }
 
+async function updateImportStatus(supabase: any, importId: string, status: string, details?: string) {
+  const update: any = { status_processamento: status };
+  if (details) update.erro_detalhes = details;
+  else if (status !== "processando") update.erro_detalhes = null;
+  await supabase.from("pdf_imports").update(update).eq("id", importId);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  let supabase: any = null;
+  let importId: string | null = null;
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -36,6 +46,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
+    // Auth check
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       auth: { persistSession: false },
     });
@@ -43,10 +54,11 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
     if (authError || !user) throw new Error("Não autorizado");
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
     });
 
+    // Role check
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -57,27 +69,24 @@ Deno.serve(async (req) => {
       throw new Error("Apenas administradores podem processar PDFs");
     }
 
-    const { import_id, gabarito_storage_path } = await req.json();
-    if (!import_id) throw new Error("import_id é obrigatório");
+    const body = await req.json();
+    importId = body.import_id;
+    const gabaritoStoragePath = body.gabarito_storage_path;
+    if (!importId) throw new Error("import_id é obrigatório");
 
+    // Get import record
     const { data: importRecord, error: importError } = await supabase
       .from("pdf_imports")
       .select("*")
-      .eq("id", import_id)
+      .eq("id", importId)
       .single();
 
     if (importError || !importRecord) throw new Error("Registro de importação não encontrado");
 
-    await supabase
-      .from("pdf_imports")
-      .update({ status_processamento: "processando" })
-      .eq("id", import_id);
+    await updateImportStatus(supabase, importId, "processando");
 
     if (!lovableApiKey) {
-      await supabase.from("pdf_imports").update({
-        status_processamento: "erro",
-        erro_detalhes: "LOVABLE_API_KEY não configurada",
-      }).eq("id", import_id);
+      await updateImportStatus(supabase, importId, "erro", "LOVABLE_API_KEY não configurada");
       throw new Error("API key não configurada");
     }
 
@@ -86,24 +95,23 @@ Deno.serve(async (req) => {
     try {
       provaBase64 = await pdfToBase64(supabase, importRecord.storage_path);
     } catch (e) {
-      await supabase.from("pdf_imports").update({
-        status_processamento: "erro",
-        erro_detalhes: "Erro ao baixar PDF da prova: " + (e as Error).message,
-      }).eq("id", import_id);
+      await updateImportStatus(supabase, importId, "erro", "Erro ao baixar PDF da prova: " + (e as Error).message);
       throw e;
     }
 
-    // Download gabarito PDF if provided
+    // Download gabarito PDF - check body param first, then import record
+    const effectiveGabaritoPath = gabaritoStoragePath || importRecord.gabarito_storage_path;
     let gabaritoBase64: string | null = null;
-    if (gabarito_storage_path) {
+    if (effectiveGabaritoPath) {
       try {
-        gabaritoBase64 = await pdfToBase64(supabase, gabarito_storage_path);
+        gabaritoBase64 = await pdfToBase64(supabase, effectiveGabaritoPath);
+        console.log("Gabarito carregado com sucesso:", effectiveGabaritoPath);
       } catch (e) {
         console.log("Aviso: não foi possível baixar gabarito PDF:", (e as Error).message);
       }
     }
 
-    // Build AI messages
+    // Build AI prompt
     const extractionPrompt = `Analise este PDF de prova/edital de concurso público brasileiro e extraia as seguintes informações:
 
 1. METADADOS:
@@ -122,7 +130,7 @@ Para cada questão encontrada, extraia:
 - alternativas: array com as alternativas (A, B, C, D, E)
 - materia: matéria/disciplina da questão (ex: Direito Constitucional, Português, etc.)
 
-${gabaritoBase64 ? "3. O SEGUNDO PDF ANEXADO É O GABARITO. Use-o para associar as respostas corretas a cada questão." : ""}
+${gabaritoBase64 ? "3. O SEGUNDO PDF ANEXADO É O GABARITO OFICIAL. Use-o para associar as respostas corretas a cada questão pelo número." : ""}
 
 IMPORTANTE: Retorne APENAS um JSON válido no formato:
 {
@@ -167,27 +175,45 @@ Se não conseguir identificar algum metadado, use null.`;
       });
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${lovableApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: contentParts }],
-        temperature: 0.1,
-        max_tokens: 16000,
-      }),
-    });
+    // Call AI with timeout protection
+    let aiResponse: Response;
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+      
+      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${lovableApiKey}`,
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{ role: "user", content: contentParts }],
+          temperature: 0.1,
+          max_tokens: 16000,
+        }),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeout);
+    } catch (e) {
+      const msg = (e as Error).name === "AbortError" 
+        ? "Timeout: IA demorou mais de 2 minutos para responder" 
+        : `Erro de conexão com IA: ${(e as Error).message}`;
+      await updateImportStatus(supabase, importId, "erro", msg);
+      throw new Error(msg);
+    }
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      await supabase.from("pdf_imports").update({
-        status_processamento: "erro",
-        erro_detalhes: `Erro na IA: ${aiResponse.status} - ${errorText.slice(0, 500)}`,
-      }).eq("id", import_id);
-      throw new Error("Erro ao processar com IA");
+      const msg = aiResponse.status === 429
+        ? "Rate limit da IA excedido. Tente novamente em alguns minutos."
+        : aiResponse.status === 402
+        ? "Créditos de IA insuficientes."
+        : `Erro na IA: ${aiResponse.status} - ${errorText.slice(0, 500)}`;
+      await updateImportStatus(supabase, importId, "erro", msg);
+      throw new Error(msg);
     }
 
     const aiResult = await aiResponse.json();
@@ -199,10 +225,8 @@ Se não conseguir identificar algum metadado, use null.`;
       if (!jsonMatch) throw new Error("Nenhum JSON encontrado na resposta");
       parsed = JSON.parse(jsonMatch[0]);
     } catch (e) {
-      await supabase.from("pdf_imports").update({
-        status_processamento: "erro",
-        erro_detalhes: `Erro ao parsear resposta da IA: ${(e as Error).message}. Resposta: ${content.slice(0, 500)}`,
-      }).eq("id", import_id);
+      await updateImportStatus(supabase, importId, "erro",
+        `Erro ao parsear resposta da IA: ${(e as Error).message}. Resposta: ${content.slice(0, 500)}`);
       throw new Error("Erro ao parsear resposta da IA");
     }
 
@@ -268,6 +292,7 @@ Se não conseguir identificar algum metadado, use null.`;
 
     // Insert extracted questions
     let insertedCount = 0;
+    let errorCount = 0;
     for (const q of questoes) {
       if (!q.enunciado || !q.alternativas?.length) continue;
 
@@ -306,6 +331,7 @@ Se não conseguir identificar algum metadado, use null.`;
       });
 
       if (!qError) insertedCount++;
+      else errorCount++;
     }
 
     // Update import record
@@ -316,12 +342,12 @@ Se não conseguir identificar algum metadado, use null.`;
       area_id: areaId,
       ano: meta.ano || importRecord.ano,
       cargo: meta.cargo || importRecord.cargo,
-      erro_detalhes: null,
-    }).eq("id", import_id);
+      erro_detalhes: errorCount > 0 ? `${errorCount} questões falharam ao inserir` : null,
+    }).eq("id", importId);
 
-    // Clean up gabarito file from storage
-    if (gabarito_storage_path) {
-      await supabase.storage.from("pdf-imports").remove([gabarito_storage_path]);
+    // Clean up gabarito file from storage (only if it was a per-request upload)
+    if (gabaritoStoragePath && gabaritoStoragePath !== importRecord.gabarito_storage_path) {
+      await supabase.storage.from("pdf-imports").remove([gabaritoStoragePath]);
     }
 
     // Audit log
@@ -330,13 +356,14 @@ Se não conseguir identificar algum metadado, use null.`;
       acao: "PDF_PROCESSADO",
       tabela: "pdf_imports",
       detalhes: {
-        import_id,
+        import_id: importId,
         questoes_extraidas: insertedCount,
+        questoes_com_erro: errorCount,
         banca_detectada: meta.banca_organizadora,
         concurso: meta.concurso_nome,
         estado: meta.estado,
         area: meta.area,
-        had_gabarito: !!gabarito_storage_path,
+        had_gabarito: !!effectiveGabaritoPath,
       },
     });
 
@@ -352,6 +379,17 @@ Se não conseguir identificar algum metadado, use null.`;
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    // Safety net: if we have supabase client and importId, ensure status is not stuck at "processando"
+    if (supabase && importId) {
+      try {
+        const { data: check } = await supabase.from("pdf_imports")
+          .select("status_processamento").eq("id", importId).single();
+        if (check?.status_processamento === "processando") {
+          await updateImportStatus(supabase, importId, "erro", (error as Error).message);
+        }
+      } catch (_) { /* ignore cleanup errors */ }
+    }
+
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
