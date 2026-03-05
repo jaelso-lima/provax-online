@@ -55,20 +55,22 @@ export default function AdminPdfImporter() {
         if (uploadError) throw new Error("Erro ao enviar gabarito: " + uploadError.message);
       }
 
+      const effectiveBancaId = bancaId && bancaId !== "auto" ? bancaId : null;
+
       const result = await pdfImportService.uploadPdf(file, {
         tipo: tipo as any,
-        banca_id: bancaId || null,
+        banca_id: effectiveBancaId,
         curso_id: null,
         semestre: null,
         ano: ano ? Number(ano) : null,
         cargo: cargo || null,
       }, user.id);
 
-      // Store gabarito path in the import record if provided
+      // Store gabarito path in the import record
       if (gabaritoPath && result?.id) {
         await supabase.from("pdf_imports").update({
-          erro_detalhes: `gabarito:${gabaritoPath}`,
-        }).eq("id", result.id);
+          gabarito_storage_path: gabaritoPath,
+        } as any).eq("id", result.id);
       }
 
       return { ...result, gabaritoPath };
@@ -88,14 +90,8 @@ export default function AdminPdfImporter() {
   });
 
   const processMut = useMutation({
-    mutationFn: async (imp: { id: string; erro_detalhes?: string | null }) => {
-      // Check if gabarito was uploaded with the import
-      let gabaritoPath: string | null = null;
-      
-      // Check stored gabarito path from upload
-      if (imp.erro_detalhes?.startsWith("gabarito:")) {
-        gabaritoPath = imp.erro_detalhes.replace("gabarito:", "");
-      }
+    mutationFn: async (imp: { id: string; gabarito_storage_path?: string | null }) => {
+      let gabaritoPath: string | null = imp.gabarito_storage_path || null;
       
       // Check if user attached a gabarito specifically for this import
       const perImportGabarito = importGabaritos[imp.id];
@@ -150,7 +146,7 @@ export default function AdminPdfImporter() {
     return <Clock className="h-4 w-4 text-yellow-500" />;
   };
 
-  const hasGabarito = (imp: any) => imp.erro_detalhes?.startsWith("gabarito:") || !!importGabaritos[imp.id];
+  const hasGabarito = (imp: any) => !!imp.gabarito_storage_path || !!importGabaritos[imp.id];
 
   return (
     <AdminLayout>
@@ -277,7 +273,7 @@ export default function AdminPdfImporter() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => processMut.mutate({ id: imp.id, erro_detalhes: imp.erro_detalhes })}
+                            onClick={() => processMut.mutate({ id: imp.id, gabarito_storage_path: (imp as any).gabarito_storage_path })}
                             disabled={processMut.isPending}
                           >
                             <Play className="h-3 w-3 mr-1" />
