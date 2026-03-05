@@ -55,20 +55,22 @@ export default function AdminPdfImporter() {
         if (uploadError) throw new Error("Erro ao enviar gabarito: " + uploadError.message);
       }
 
+      const effectiveBancaId = bancaId && bancaId !== "auto" ? bancaId : null;
+
       const result = await pdfImportService.uploadPdf(file, {
         tipo: tipo as any,
-        banca_id: bancaId || null,
+        banca_id: effectiveBancaId,
         curso_id: null,
         semestre: null,
         ano: ano ? Number(ano) : null,
         cargo: cargo || null,
       }, user.id);
 
-      // Store gabarito path in the import record if provided
+      // Store gabarito path in the import record
       if (gabaritoPath && result?.id) {
         await supabase.from("pdf_imports").update({
-          erro_detalhes: `gabarito:${gabaritoPath}`,
-        }).eq("id", result.id);
+          gabarito_storage_path: gabaritoPath,
+        } as any).eq("id", result.id);
       }
 
       return { ...result, gabaritoPath };
