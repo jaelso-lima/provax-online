@@ -146,7 +146,7 @@ export default function AdminPdfImporter() {
     return <Clock className="h-4 w-4 text-yellow-500" />;
   };
 
-  const hasGabarito = (imp: any) => imp.erro_detalhes?.startsWith("gabarito:") || !!importGabaritos[imp.id];
+  const hasGabarito = (imp: any) => !!imp.gabarito_storage_path || !!importGabaritos[imp.id];
 
   return (
     <AdminLayout>
