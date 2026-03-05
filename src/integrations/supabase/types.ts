@@ -869,6 +869,7 @@ export type Database = {
           created_at: string
           curso_id: string | null
           erro_detalhes: string | null
+          gabarito_storage_path: string | null
           hash_arquivo: string
           id: string
           nome_arquivo: string
@@ -888,6 +889,7 @@ export type Database = {
           created_at?: string
           curso_id?: string | null
           erro_detalhes?: string | null
+          gabarito_storage_path?: string | null
           hash_arquivo: string
           id?: string
           nome_arquivo: string
@@ -907,6 +909,7 @@ export type Database = {
           created_at?: string
           curso_id?: string | null
           erro_detalhes?: string | null
+          gabarito_storage_path?: string | null
           hash_arquivo?: string
           id?: string
           nome_arquivo?: string
