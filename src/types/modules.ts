@@ -13,6 +13,7 @@ export interface PdfImport {
   cargo: string | null;
   area_id: string | null;
   storage_path: string;
+  gabarito_storage_path: string | null;
   total_questoes_extraidas: number;
   status_processamento: 'pendente' | 'processado' | 'erro';
   erro_detalhes: string | null;
