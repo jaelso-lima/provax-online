@@ -515,6 +515,157 @@ export type Database = {
         }
         Relationships: []
       }
+      document_chunks: {
+        Row: {
+          assunto: string | null
+          chunk_text: string
+          created_at: string
+          document_id: string
+          id: string
+          materia: string | null
+          ordem: number
+          tokens_count: number | null
+        }
+        Insert: {
+          assunto?: string | null
+          chunk_text: string
+          created_at?: string
+          document_id: string
+          id?: string
+          materia?: string | null
+          ordem?: number
+          tokens_count?: number | null
+        }
+        Update: {
+          assunto?: string | null
+          chunk_text?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          materia?: string | null
+          ordem?: number
+          tokens_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_embeddings: {
+        Row: {
+          chunk_id: string
+          created_at: string
+          document_id: string
+          embedding_vector: string | null
+          id: string
+          model_version: string | null
+        }
+        Insert: {
+          chunk_id: string
+          created_at?: string
+          document_id: string
+          embedding_vector?: string | null
+          id?: string
+          model_version?: string | null
+        }
+        Update: {
+          chunk_id?: string
+          created_at?: string
+          document_id?: string
+          embedding_vector?: string | null
+          id?: string
+          model_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_embeddings_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "document_chunks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_embeddings_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          ano: number | null
+          area: string | null
+          arquivo_pdf: string
+          banca: string | null
+          cargo: string | null
+          created_at: string
+          estado: string | null
+          id: string
+          pdf_import_id: string | null
+          status: string
+          texto_extraido: string | null
+          tipo_documento: string
+          title: string
+          total_chunks: number | null
+          total_questoes: number | null
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          ano?: number | null
+          area?: string | null
+          arquivo_pdf: string
+          banca?: string | null
+          cargo?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          pdf_import_id?: string | null
+          status?: string
+          texto_extraido?: string | null
+          tipo_documento?: string
+          title: string
+          total_chunks?: number | null
+          total_questoes?: number | null
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          ano?: number | null
+          area?: string | null
+          arquivo_pdf?: string
+          banca?: string | null
+          cargo?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          pdf_import_id?: string | null
+          status?: string
+          texto_extraido?: string | null
+          tipo_documento?: string
+          title?: string
+          total_chunks?: number | null
+          total_questoes?: number | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_pdf_import_id_fkey"
+            columns: ["pdf_import_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       esferas: {
         Row: {
           created_at: string
