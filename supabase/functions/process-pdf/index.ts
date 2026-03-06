@@ -24,10 +24,29 @@ async function pdfToBase64(supabase: any, storagePath: string): Promise<string> 
 }
 
 async function updateImportStatus(supabase: any, importId: string, status: string, details?: string) {
-  const update: any = { status_processamento: status };
+  const update: any = { status_processamento: status, updated_at: new Date().toISOString() };
   if (details) update.erro_detalhes = details;
   else if (status !== "processando") update.erro_detalhes = null;
   await supabase.from("pdf_imports").update(update).eq("id", importId);
+}
+
+// Split text into chunks of ~1000 chars for knowledge base
+function splitIntoChunks(text: string, maxChunkSize = 1000): string[] {
+  if (!text || text.trim().length === 0) return [];
+  const paragraphs = text.split(/\n{2,}/);
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const p of paragraphs) {
+    if ((current + "\n\n" + p).length > maxChunkSize && current.length > 0) {
+      chunks.push(current.trim());
+      current = p;
+    } else {
+      current = current ? current + "\n\n" + p : p;
+    }
+  }
+  if (current.trim().length > 0) chunks.push(current.trim());
+  return chunks;
 }
 
 Deno.serve(async (req) => {
@@ -91,9 +110,11 @@ Deno.serve(async (req) => {
     }
 
     // Download main PDF
+    console.log("Baixando PDF:", importRecord.storage_path);
     let provaBase64: string;
     try {
       provaBase64 = await pdfToBase64(supabase, importRecord.storage_path);
+      console.log("PDF baixado com sucesso, tamanho base64:", provaBase64.length);
     } catch (e) {
       await updateImportStatus(supabase, importId, "erro", "Erro ao baixar PDF da prova: " + (e as Error).message);
       throw e;
@@ -105,9 +126,9 @@ Deno.serve(async (req) => {
     if (effectiveGabaritoPath) {
       try {
         gabaritoBase64 = await pdfToBase64(supabase, effectiveGabaritoPath);
-        console.log("Gabarito carregado com sucesso:", effectiveGabaritoPath);
+        console.log("Gabarito carregado:", effectiveGabaritoPath);
       } catch (e) {
-        console.log("Aviso: não foi possível baixar gabarito PDF:", (e as Error).message);
+        console.log("Aviso: não foi possível baixar gabarito:", (e as Error).message);
       }
     }
 
@@ -123,14 +144,19 @@ Deno.serve(async (req) => {
 - cargo: cargo(s) da prova
 - area: área de atuação (ex: Administrativa, Tribunais, Fiscal, Policial)
 
-2. QUESTÕES (se for uma prova com questões):
+2. TEXTO COMPLETO EXTRAÍDO:
+- texto_extraido: todo o texto do documento, preservando a estrutura
+
+3. QUESTÕES (se for uma prova com questões):
 Para cada questão encontrada, extraia:
 - numero: número da questão
 - enunciado: texto completo do enunciado
 - alternativas: array com as alternativas (A, B, C, D, E)
-- materia: matéria/disciplina da questão (ex: Direito Constitucional, Português, etc.)
+- materia: matéria/disciplina da questão
+- assunto: assunto específico dentro da matéria
+- dificuldade: "facil", "media" ou "dificil"
 
-${gabaritoBase64 ? "3. O SEGUNDO PDF ANEXADO É O GABARITO OFICIAL. Use-o para associar as respostas corretas a cada questão pelo número." : ""}
+${gabaritoBase64 ? "4. O SEGUNDO PDF ANEXADO É O GABARITO OFICIAL. Use-o para associar as respostas corretas a cada questão pelo número." : ""}
 
 IMPORTANTE: Retorne APENAS um JSON válido no formato:
 {
@@ -143,6 +169,7 @@ IMPORTANTE: Retorne APENAS um JSON válido no formato:
     "cargo": "...",
     "area": "..."
   },
+  "texto_extraido": "todo o texto extraído do PDF aqui...",
   "questoes": [
     {
       "numero": 1,
@@ -155,6 +182,8 @@ IMPORTANTE: Retorne APENAS um JSON válido no formato:
         {"letra": "E", "texto": "..."}
       ],
       "materia": "...",
+      "assunto": "...",
+      "dificuldade": "media",
       "resposta_correta": "A"
     }
   ]
@@ -176,10 +205,11 @@ Se não conseguir identificar algum metadado, use null.`;
     }
 
     // Call AI with timeout protection
+    console.log("Chamando IA para processar PDF...");
     let aiResponse: Response;
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+      const timeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
       
       aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -191,7 +221,7 @@ Se não conseguir identificar algum metadado, use null.`;
           model: "google/gemini-2.5-flash",
           messages: [{ role: "user", content: contentParts }],
           temperature: 0.1,
-          max_tokens: 16000,
+          max_tokens: 32000,
         }),
         signal: controller.signal,
       });
@@ -199,7 +229,7 @@ Se não conseguir identificar algum metadado, use null.`;
       clearTimeout(timeout);
     } catch (e) {
       const msg = (e as Error).name === "AbortError" 
-        ? "Timeout: IA demorou mais de 2 minutos para responder" 
+        ? "Timeout: IA demorou mais de 3 minutos para responder. Tente novamente." 
         : `Erro de conexão com IA: ${(e as Error).message}`;
       await updateImportStatus(supabase, importId, "erro", msg);
       throw new Error(msg);
@@ -211,13 +241,14 @@ Se não conseguir identificar algum metadado, use null.`;
         ? "Rate limit da IA excedido. Tente novamente em alguns minutos."
         : aiResponse.status === 402
         ? "Créditos de IA insuficientes."
-        : `Erro na IA: ${aiResponse.status} - ${errorText.slice(0, 500)}`;
+        : `Erro na IA (${aiResponse.status}): ${errorText.slice(0, 500)}`;
       await updateImportStatus(supabase, importId, "erro", msg);
       throw new Error(msg);
     }
 
     const aiResult = await aiResponse.json();
     const content = aiResult.choices?.[0]?.message?.content || "";
+    console.log("Resposta da IA recebida, tamanho:", content.length);
 
     let parsed;
     try {
@@ -232,6 +263,7 @@ Se não conseguir identificar algum metadado, use null.`;
 
     const meta = parsed.metadata || {};
     const questoes = parsed.questoes || [];
+    const textoExtraido = parsed.texto_extraido || "";
 
     // Auto-create or find banca
     let bancaId = importRecord.banca_id;
@@ -290,6 +322,54 @@ Se não conseguir identificar algum metadado, use null.`;
       }
     }
 
+    // =============================================
+    // KNOWLEDGE BASE: Create document and chunks
+    // =============================================
+    let documentId: string | null = null;
+    try {
+      const { data: docRecord } = await supabase.from("documents").insert({
+        title: importRecord.nome_arquivo,
+        tipo_documento: "prova",
+        banca: meta.banca_organizadora || null,
+        cargo: meta.cargo || importRecord.cargo || null,
+        ano: meta.ano || importRecord.ano || null,
+        area: meta.area || null,
+        estado: meta.estado || null,
+        arquivo_pdf: importRecord.storage_path,
+        texto_extraido: textoExtraido.slice(0, 65000), // limit text storage
+        status: "processado",
+        pdf_import_id: importId,
+        uploaded_by: user.id,
+      }).select("id").single();
+
+      if (docRecord) {
+        documentId = docRecord.id;
+        
+        // Create chunks from extracted text
+        const chunks = splitIntoChunks(textoExtraido);
+        if (chunks.length > 0) {
+          const chunkRecords = chunks.map((text, i) => ({
+            document_id: documentId,
+            chunk_text: text,
+            ordem: i,
+            tokens_count: Math.ceil(text.length / 4), // rough token estimate
+          }));
+          
+          await supabase.from("document_chunks").insert(chunkRecords);
+          
+          // Update document with chunk count
+          await supabase.from("documents").update({
+            total_chunks: chunks.length,
+          }).eq("id", documentId);
+        }
+        
+        console.log(`Knowledge base: ${chunks.length} chunks criados para documento ${documentId}`);
+      }
+    } catch (e) {
+      console.log("Aviso: erro ao criar documento no knowledge base:", (e as Error).message);
+      // Non-critical error, continue with question extraction
+    }
+
     // Insert extracted questions
     let insertedCount = 0;
     let errorCount = 0;
@@ -309,6 +389,20 @@ Se não conseguir identificar algum metadado, use null.`;
         }
       }
 
+      // Auto-find or create topic
+      let topicId = null;
+      if (q.assunto && materiaId) {
+        const { data: existingTopic } = await supabase
+          .from("topics").select("id").ilike("nome", q.assunto.trim()).eq("materia_id", materiaId).limit(1).single();
+        if (existingTopic) {
+          topicId = existingTopic.id;
+        } else {
+          const { data: newTopic } = await supabase
+            .from("topics").insert({ nome: q.assunto.trim(), materia_id: materiaId }).select("id").single();
+          if (newTopic) topicId = newTopic.id;
+        }
+      }
+
       const alternativas = q.alternativas.map((a: any) => ({
         letra: a.letra,
         texto: a.texto,
@@ -323,15 +417,26 @@ Se não conseguir identificar algum metadado, use null.`;
         banca_id: bancaId,
         area_id: areaId,
         materia_id: materiaId,
+        topic_id: topicId,
         concurso_id: concursoId,
         state_id: stateId,
         ano: meta.ano || importRecord.ano,
-        dificuldade: "media",
+        dificuldade: q.dificuldade || "media",
         status_questao: q.resposta_correta ? "valida" : "pendente_revisao",
       });
 
       if (!qError) insertedCount++;
-      else errorCount++;
+      else {
+        errorCount++;
+        console.log("Erro ao inserir questão:", qError.message);
+      }
+    }
+
+    // Update document with question count
+    if (documentId) {
+      await supabase.from("documents").update({
+        total_questoes: insertedCount,
+      }).eq("id", documentId);
     }
 
     // Update import record
@@ -345,11 +450,6 @@ Se não conseguir identificar algum metadado, use null.`;
       erro_detalhes: errorCount > 0 ? `${errorCount} questões falharam ao inserir` : null,
     }).eq("id", importId);
 
-    // Clean up gabarito file from storage (only if it was a per-request upload)
-    if (gabaritoStoragePath && gabaritoStoragePath !== importRecord.gabarito_storage_path) {
-      await supabase.storage.from("pdf-imports").remove([gabaritoStoragePath]);
-    }
-
     // Audit log
     await supabase.from("audit_logs").insert({
       user_id: user.id,
@@ -357,6 +457,7 @@ Se não conseguir identificar algum metadado, use null.`;
       tabela: "pdf_imports",
       detalhes: {
         import_id: importId,
+        document_id: documentId,
         questoes_extraidas: insertedCount,
         questoes_com_erro: errorCount,
         banca_detectada: meta.banca_organizadora,
@@ -364,8 +465,11 @@ Se não conseguir identificar algum metadado, use null.`;
         estado: meta.estado,
         area: meta.area,
         had_gabarito: !!effectiveGabaritoPath,
+        texto_length: textoExtraido.length,
       },
     });
+
+    console.log(`Processamento concluído: ${insertedCount} questões, documento ${documentId}`);
 
     return new Response(
       JSON.stringify({
@@ -375,11 +479,14 @@ Se não conseguir identificar algum metadado, use null.`;
         banca_id: bancaId,
         area_id: areaId,
         concurso_id: concursoId,
+        document_id: documentId,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    // Safety net: if we have supabase client and importId, ensure status is not stuck at "processando"
+    console.error("Erro no processamento:", (error as Error).message);
+    
+    // Safety net: ensure status is not stuck at "processando"
     if (supabase && importId) {
       try {
         const { data: check } = await supabase.from("pdf_imports")
