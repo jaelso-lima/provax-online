@@ -15,11 +15,54 @@ export interface PdfImport {
   storage_path: string;
   gabarito_storage_path: string | null;
   total_questoes_extraidas: number;
-  status_processamento: 'pendente' | 'processado' | 'erro';
+  status_processamento: 'pendente' | 'processado' | 'erro' | 'processando';
   erro_detalhes: string | null;
   uploaded_by: string;
   created_at: string;
   updated_at: string;
+}
+
+// =============================================
+// KNOWLEDGE BASE TYPES
+// =============================================
+export interface Document {
+  id: string;
+  title: string;
+  tipo_documento: 'prova' | 'gabarito' | 'material';
+  banca: string | null;
+  cargo: string | null;
+  ano: number | null;
+  area: string | null;
+  estado: string | null;
+  arquivo_pdf: string;
+  texto_extraido: string | null;
+  total_chunks: number;
+  total_questoes: number;
+  status: 'pendente' | 'processando' | 'processado' | 'erro';
+  pdf_import_id: string | null;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentChunk {
+  id: string;
+  document_id: string;
+  chunk_text: string;
+  ordem: number;
+  materia: string | null;
+  assunto: string | null;
+  tokens_count: number;
+  created_at: string;
+}
+
+export interface DocumentEmbedding {
+  id: string;
+  document_id: string;
+  chunk_id: string;
+  embedding_vector: string | null;
+  model_version: string;
+  created_at: string;
 }
 
 // =============================================
