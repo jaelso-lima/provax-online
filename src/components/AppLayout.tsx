@@ -1,10 +1,13 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Target, FileText, Coins, Crown, User, Trophy, LogOut, Menu, X, Mail, Instagram,
+  LayoutDashboard, Target, FileText, Coins, Crown, User, Trophy, LogOut, Menu, X, Mail, Instagram, Briefcase, Shield,
 } from "lucide-react";
 
 const navItems = [
