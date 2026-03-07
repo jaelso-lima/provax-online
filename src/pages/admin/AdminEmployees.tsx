@@ -93,11 +93,16 @@ export default function AdminEmployees() {
     mutationFn: async (employeeId: string) => {
       const stats = employeeStats(employeeId);
       if (stats.devedor <= 0) throw new Error("Sem saldo devedor para registrar pagamento");
-      return employeeService.createPayment(employeeId, paymentMes, stats.devedor);
+      // Create payment already marked as paid
+      const payment = await employeeService.createPayment(employeeId, paymentMes, stats.devedor);
+      // Mark as paid immediately to trigger expense auto-creation
+      await employeeService.markPaymentPaid(payment.id);
+      return payment;
     },
     onSuccess: () => {
-      toast.success("Pagamento registrado");
+      toast.success("Pagamento registrado e marcado como pago!");
       queryClient.invalidateQueries({ queryKey: ["admin-employee-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-employee-all-tasks"] });
       setShowPayment(null);
     },
     onError: (e: any) => toast.error(e.message),
