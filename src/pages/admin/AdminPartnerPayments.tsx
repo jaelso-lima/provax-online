@@ -193,6 +193,18 @@ export default function AdminPartnerPayments() {
                         {pay.mes_referencia} • R$ {Number(pay.valor).toFixed(2)}
                         {pay.observacao && ` • ${pay.observacao}`}
                       </p>
+                      {pay.data_pagamento && (
+                        <p className="text-xs text-muted-foreground">
+                          Pago em: {new Date(pay.data_pagamento).toLocaleDateString("pt-BR")}
+                        </p>
+                      )}
+                      {pay.partners?.pix_chave && (
+                        <p className="text-xs text-blue-500">
+                          PIX ({pay.partners.pix_tipo || "—"}): {pay.partners.pix_chave}
+                          {pay.partners.banco && ` • ${pay.partners.banco}`}
+                          {pay.partners.titular && ` • ${pay.partners.titular}`}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       {pay.status_pagamento === "pago" ? (
