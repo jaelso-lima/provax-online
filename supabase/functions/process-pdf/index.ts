@@ -133,32 +133,35 @@ Deno.serve(async (req) => {
     }
 
     // Build AI prompt
-    const extractionPrompt = `Analise este PDF de prova/edital de concurso público brasileiro e extraia as seguintes informações:
+    const extractionPrompt = `Analise este PDF de prova/edital de concurso público brasileiro e extraia as seguintes informações.
+
+IMPORTANTE: Retorne APENAS um JSON válido. NÃO inclua o texto completo do documento no JSON.
 
 1. METADADOS:
 - banca_organizadora: nome da banca (ex: CESPE, FCC, VUNESP, FGV, IBFC, etc.)
 - estado: sigla do estado (ex: SP, RJ, MG, DF)
 - concurso_nome: nome completo do concurso
 - orgao: órgão que está realizando o concurso
-- ano: ano da prova
+- ano: ano da prova (número)
 - cargo: cargo(s) da prova
 - area: área de atuação (ex: Administrativa, Tribunais, Fiscal, Policial)
 
-2. TEXTO COMPLETO EXTRAÍDO:
-- texto_extraido: todo o texto do documento, preservando a estrutura
+2. RESUMO DO TEXTO:
+- texto_resumo: resumo do conteúdo do documento em até 500 palavras
 
 3. QUESTÕES (se for uma prova com questões):
 Para cada questão encontrada, extraia:
 - numero: número da questão
 - enunciado: texto completo do enunciado
-- alternativas: array com as alternativas (A, B, C, D, E)
+- alternativas: array com as alternativas [{letra, texto}]
 - materia: matéria/disciplina da questão
 - assunto: assunto específico dentro da matéria
 - dificuldade: "facil", "media" ou "dificil"
+- resposta_correta: letra da resposta correta (A, B, C, D ou E)
 
 ${gabaritoBase64 ? "4. O SEGUNDO PDF ANEXADO É O GABARITO OFICIAL. Use-o para associar as respostas corretas a cada questão pelo número." : ""}
 
-IMPORTANTE: Retorne APENAS um JSON válido no formato:
+Retorne APENAS este JSON:
 {
   "metadata": {
     "banca_organizadora": "...",
@@ -169,7 +172,7 @@ IMPORTANTE: Retorne APENAS um JSON válido no formato:
     "cargo": "...",
     "area": "..."
   },
-  "texto_extraido": "todo o texto extraído do PDF aqui...",
+  "texto_resumo": "resumo breve do conteúdo...",
   "questoes": [
     {
       "numero": 1,
@@ -190,7 +193,8 @@ IMPORTANTE: Retorne APENAS um JSON válido no formato:
 }
 
 Se não conseguir extrair questões (ex: é um edital), retorne questoes como array vazio.
-Se não conseguir identificar algum metadado, use null.`;
+Se não conseguir identificar algum metadado, use null.
+NÃO use caracteres de controle dentro das strings. Escape aspas duplas com backslash.`;
 
     const contentParts: any[] = [
       { type: "text", text: extractionPrompt },
