@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { employeeService } from "@/services/employeeService";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { UserPlus, Users, DollarSign, FileText, CheckCircle, Clock, Radar, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminEmployees() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [showPayment, setShowPayment] = useState<string | null>(null);
