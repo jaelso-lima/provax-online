@@ -52,13 +52,13 @@ export default function EmployeeDashboard() {
     enabled: !!employee,
   });
 
-  // My PDFs
+  // My PDFs - full details like admin
   const { data: myPdfs } = useQuery({
     queryKey: ["my-pdfs", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pdf_imports")
-        .select("id, nome_arquivo, status_processamento, created_at")
+        .select("id, nome_arquivo, status_processamento, created_at, tipo, ano, cargo, total_questoes_extraidas, erro_detalhes, gabarito_storage_path, storage_path")
         .eq("uploaded_by", user!.id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -66,6 +66,7 @@ export default function EmployeeDashboard() {
       return data;
     },
     enabled: !!user,
+    refetchInterval: 10000, // Auto-refresh every 10s to catch processing updates
   });
 
   if (empLoading) {
