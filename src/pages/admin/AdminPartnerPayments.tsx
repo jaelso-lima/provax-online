@@ -142,7 +142,7 @@ export default function AdminPartnerPayments() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  // currentMonth already declared above
 
   const selectedEst = partnerEstimates.find((p) => p.id === newPayment.partner_id);
 
