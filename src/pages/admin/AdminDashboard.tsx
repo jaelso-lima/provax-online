@@ -654,7 +654,63 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Paying users breakdown */}
+        {/* Cash Flow Summary */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold">R$ {dashFaturamento.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Receita Mensal</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <DollarSign className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold">R$ {dashDespesas.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Despesas Mês</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-accent/10">
+                  <DollarSign className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-primary">R$ {dashLucro.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Lucro Líquido</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Wallet className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-primary">R$ {dashFluxoCaixa.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Fluxo de Caixa</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+
         {subsPlanData.length > 0 && (
           <Card>
             <CardHeader>
