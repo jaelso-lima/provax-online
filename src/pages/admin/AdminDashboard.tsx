@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
 import { generateContractPDF, getContractClauses } from "@/lib/contractPdf";
 import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
@@ -496,6 +496,9 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Partner Payment History */}
+              <PartnerPaymentHistory userId={user!.id} />
 
               <Card className="border-dashed">
                 <CardContent className="py-6 text-center">
