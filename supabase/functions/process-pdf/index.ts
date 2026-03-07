@@ -133,32 +133,35 @@ Deno.serve(async (req) => {
     }
 
     // Build AI prompt
-    const extractionPrompt = `Analise este PDF de prova/edital de concurso público brasileiro e extraia as seguintes informações:
+    const extractionPrompt = `Analise este PDF de prova/edital de concurso público brasileiro e extraia as seguintes informações.
+
+IMPORTANTE: Retorne APENAS um JSON válido. NÃO inclua o texto completo do documento no JSON.
 
 1. METADADOS:
 - banca_organizadora: nome da banca (ex: CESPE, FCC, VUNESP, FGV, IBFC, etc.)
 - estado: sigla do estado (ex: SP, RJ, MG, DF)
 - concurso_nome: nome completo do concurso
 - orgao: órgão que está realizando o concurso
-- ano: ano da prova
+- ano: ano da prova (número)
 - cargo: cargo(s) da prova
 - area: área de atuação (ex: Administrativa, Tribunais, Fiscal, Policial)
 
-2. TEXTO COMPLETO EXTRAÍDO:
-- texto_extraido: todo o texto do documento, preservando a estrutura
+2. RESUMO DO TEXTO:
+- texto_resumo: resumo do conteúdo do documento em até 500 palavras
 
 3. QUESTÕES (se for uma prova com questões):
 Para cada questão encontrada, extraia:
 - numero: número da questão
 - enunciado: texto completo do enunciado
-- alternativas: array com as alternativas (A, B, C, D, E)
+- alternativas: array com as alternativas [{letra, texto}]
 - materia: matéria/disciplina da questão
 - assunto: assunto específico dentro da matéria
 - dificuldade: "facil", "media" ou "dificil"
+- resposta_correta: letra da resposta correta (A, B, C, D ou E)
 
 ${gabaritoBase64 ? "4. O SEGUNDO PDF ANEXADO É O GABARITO OFICIAL. Use-o para associar as respostas corretas a cada questão pelo número." : ""}
 
-IMPORTANTE: Retorne APENAS um JSON válido no formato:
+Retorne APENAS este JSON:
 {
   "metadata": {
     "banca_organizadora": "...",
@@ -169,7 +172,7 @@ IMPORTANTE: Retorne APENAS um JSON válido no formato:
     "cargo": "...",
     "area": "..."
   },
-  "texto_extraido": "todo o texto extraído do PDF aqui...",
+  "texto_resumo": "resumo breve do conteúdo...",
   "questoes": [
     {
       "numero": 1,
@@ -190,7 +193,8 @@ IMPORTANTE: Retorne APENAS um JSON válido no formato:
 }
 
 Se não conseguir extrair questões (ex: é um edital), retorne questoes como array vazio.
-Se não conseguir identificar algum metadado, use null.`;
+Se não conseguir identificar algum metadado, use null.
+NÃO use caracteres de controle dentro das strings. Escape aspas duplas com backslash.`;
 
     const contentParts: any[] = [
       { type: "text", text: extractionPrompt },
@@ -221,7 +225,8 @@ Se não conseguir identificar algum metadado, use null.`;
           model: "google/gemini-2.5-flash",
           messages: [{ role: "user", content: contentParts }],
           temperature: 0.1,
-          max_tokens: 32000,
+          max_tokens: 64000,
+          response_format: { type: "json_object" },
         }),
         signal: controller.signal,
       });
@@ -252,18 +257,49 @@ Se não conseguir identificar algum metadado, use null.`;
 
     let parsed;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Nenhum JSON encontrado na resposta");
-      parsed = JSON.parse(jsonMatch[0]);
+      // Clean AI response: remove markdown code blocks, fix common issues
+      let cleanContent = content
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .trim();
+      
+      // Extract JSON object - use a balanced brace approach
+      const startIdx = cleanContent.indexOf("{");
+      if (startIdx === -1) throw new Error("Nenhum JSON encontrado na resposta");
+      
+      let braceCount = 0;
+      let endIdx = -1;
+      for (let i = startIdx; i < cleanContent.length; i++) {
+        if (cleanContent[i] === "{") braceCount++;
+        else if (cleanContent[i] === "}") {
+          braceCount--;
+          if (braceCount === 0) { endIdx = i; break; }
+        }
+      }
+      
+      if (endIdx === -1) throw new Error("JSON incompleto na resposta da IA");
+      
+      let jsonStr = cleanContent.slice(startIdx, endIdx + 1);
+      
+      // Fix common JSON issues from AI responses
+      jsonStr = jsonStr
+        .replace(/,\s*}/g, "}")       // trailing commas before }
+        .replace(/,\s*]/g, "]")       // trailing commas before ]
+        .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === "\n" || ch === "\r" || ch === "\t" ? ch : " "); // control chars
+      
+      parsed = JSON.parse(jsonStr);
     } catch (e) {
+      // Second attempt: try to extract just metadata and questoes separately
+      console.error("Falha no parse JSON:", (e as Error).message);
+      console.log("Primeiros 1000 chars da resposta:", content.slice(0, 1000));
       await updateImportStatus(supabase, importId, "erro",
-        `Erro ao parsear resposta da IA: ${(e as Error).message}. Resposta: ${content.slice(0, 500)}`);
+        `Erro ao parsear resposta da IA: ${(e as Error).message}. Tente reprocessar.`);
       throw new Error("Erro ao parsear resposta da IA");
     }
 
     const meta = parsed.metadata || {};
     const questoes = parsed.questoes || [];
-    const textoExtraido = parsed.texto_extraido || "";
+    const textoExtraido = parsed.texto_resumo || parsed.texto_extraido || "";
 
     // Auto-create or find banca
     let bancaId = importRecord.banca_id;
