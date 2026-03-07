@@ -26,34 +26,66 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { useQuery } from "@tanstack/react-query";
+import { partnerService } from "@/services/partnerService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const allNavItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "owner", "partner"] },
-  { href: "/admin/users", label: "Usuários", icon: Users, roles: ["admin", "owner"] },
-  { href: "/admin/plans", label: "Planos", icon: Package, roles: ["admin", "owner"] },
-  { href: "/admin/billing", label: "Faturamento", icon: CreditCard, roles: ["admin", "owner"] },
-  { href: "/admin/expenses", label: "Despesas", icon: Receipt, roles: ["admin", "owner"] },
-  { href: "/admin/partners", label: "Societário", icon: Handshake, roles: ["admin", "owner"] },
-  { href: "/admin/profit-simulation", label: "Simulador Lucros", icon: Calculator, roles: ["admin", "owner"] },
-  { href: "/admin/exam-radar", label: "Radar Concursos", icon: Radar, roles: ["admin", "owner"] },
-  { href: "/admin/pdf-importer", label: "PDF Importer", icon: Upload, roles: ["admin", "owner"] },
-  { href: "/admin/questions-review", label: "Revisão Questões", icon: ListChecks, roles: ["admin", "owner"] },
-  { href: "/admin/partner-payments", label: "Pagamentos Sócios", icon: DollarSign, roles: ["admin", "owner"] },
-  { href: "/admin/partner-permissions", label: "Permissões Sócios", icon: Settings, roles: ["admin", "owner"] },
-  { href: "/admin/employees", label: "Funcionários", icon: UserCheck, roles: ["admin", "owner"] },
-  { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner"] },
-  { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"] },
-  { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner"] },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "owner", "partner"], permission: null },
+  { href: "/admin/users", label: "Usuários", icon: Users, roles: ["admin", "owner", "partner"], permission: "ver_usuarios" },
+  { href: "/admin/plans", label: "Planos", icon: Package, roles: ["admin", "owner", "partner"], permission: "ver_planos" },
+  { href: "/admin/billing", label: "Faturamento", icon: CreditCard, roles: ["admin", "owner", "partner"], permission: "ver_faturamento" },
+  { href: "/admin/expenses", label: "Despesas", icon: Receipt, roles: ["admin", "owner", "partner"], permission: "ver_despesas" },
+  { href: "/admin/partners", label: "Societário", icon: Handshake, roles: ["admin", "owner", "partner"], permission: "ver_societario" },
+  { href: "/admin/profit-simulation", label: "Simulador Lucros", icon: Calculator, roles: ["admin", "owner", "partner"], permission: "ver_simulador_lucros" },
+  { href: "/admin/exam-radar", label: "Radar Concursos", icon: Radar, roles: ["admin", "owner", "partner"], permission: "ver_radar_concursos" },
+  { href: "/admin/pdf-importer", label: "PDF Importer", icon: Upload, roles: ["admin", "owner", "partner"], permission: "importar_pdfs" },
+  { href: "/admin/questions-review", label: "Revisão Questões", icon: ListChecks, roles: ["admin", "owner", "partner"], permission: "revisar_questoes" },
+  { href: "/admin/partner-payments", label: "Pagamentos Sócios", icon: DollarSign, roles: ["admin", "owner", "partner"], permission: "ver_pagamentos_socios" },
+  { href: "/admin/partner-permissions", label: "Permissões Sócios", icon: Settings, roles: ["admin", "owner"], permission: null },
+  { href: "/admin/employees", label: "Funcionários", icon: UserCheck, roles: ["admin", "owner", "partner"], permission: "ver_funcionarios" },
+  { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner", "partner"], permission: "gerenciar_conteudo" },
+  { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"], permission: "ver_relatorios" },
+  { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner", "partner"], permission: "ver_logs" },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { role, isPartner } = useAdminRole();
+  const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navItems = allNavItems.filter((item) =>
-    item.roles.includes(role || "")
-  );
+  // Fetch partner data + permissions when role is partner
+  const { data: partnerData } = useQuery({
+    queryKey: ["partner-by-user", user?.id],
+    queryFn: () => partnerService.getPartnerByUserId(user!.id),
+    enabled: isPartner && !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: partnerPermissions } = useQuery({
+    queryKey: ["partner-permissions", partnerData?.id],
+    queryFn: () => partnerService.getPermissions(partnerData!.id),
+    enabled: isPartner && !!partnerData?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const permMap: Record<string, boolean> = {};
+  (partnerPermissions || []).forEach((p: any) => {
+    permMap[p.permission] = p.enabled;
+  });
+
+  const navItems = allNavItems.filter((item) => {
+    if (!item.roles.includes(role || "")) return false;
+    // Admin/owner see everything in their role
+    if (role === "admin" || role === "owner") return true;
+    // Partner: dashboard always visible, others require permission
+    if (isPartner) {
+      if (item.permission === null) return true;
+      return permMap[item.permission] === true;
+    }
+    return true;
+  });
 
   return (
     <div className="flex min-h-screen bg-background">
