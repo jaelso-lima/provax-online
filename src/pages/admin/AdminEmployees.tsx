@@ -93,16 +93,38 @@ export default function AdminEmployees() {
     mutationFn: async (employeeId: string) => {
       const stats = employeeStats(employeeId);
       if (stats.devedor <= 0) throw new Error("Sem saldo devedor para registrar pagamento");
-      // Create payment already marked as paid
+      const emp = employees?.find((e: any) => e.id === employeeId);
+      const empName = emp?.profiles?.nome || emp?.profiles?.email || "Funcionário";
+
+      // Create payment already as "pago"
       const payment = await employeeService.createPayment(employeeId, paymentMes, stats.devedor);
-      // Mark as paid immediately to trigger expense auto-creation
       await employeeService.markPaymentPaid(payment.id);
+
+      // Ensure expense is created (fallback if trigger fails)
+      const { data: existingExpense } = await supabase
+        .from("expenses")
+        .select("id")
+        .ilike("descricao", `%${payment.id}%`)
+        .maybeSingle();
+
+      if (!existingExpense) {
+        await supabase.from("expenses").insert({
+          descricao: `Pagamento funcionário: ${empName} (${paymentMes})`,
+          valor: stats.devedor,
+          categoria: "pessoal",
+          data: new Date().toISOString().split("T")[0],
+          created_by: user!.id,
+          observacao: `Gerado automaticamente - Ref: ${paymentMes}`,
+        });
+      }
+
       return payment;
     },
     onSuccess: () => {
-      toast.success("Pagamento registrado e marcado como pago!");
+      toast.success("Pagamento registrado como pago! Despesa lançada automaticamente.");
       queryClient.invalidateQueries({ queryKey: ["admin-employee-payments"] });
       queryClient.invalidateQueries({ queryKey: ["admin-employee-all-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-expenses-billing"] });
       setShowPayment(null);
     },
     onError: (e: any) => toast.error(e.message),
