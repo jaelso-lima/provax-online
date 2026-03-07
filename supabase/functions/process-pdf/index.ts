@@ -299,7 +299,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
 
     const meta = parsed.metadata || {};
     const questoes = parsed.questoes || [];
-    const textoExtraido = parsed.texto_extraido || "";
+    const textoExtraido = parsed.texto_resumo || parsed.texto_extraido || "";
 
     // Auto-create or find banca
     let bancaId = importRecord.banca_id;
