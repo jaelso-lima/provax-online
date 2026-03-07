@@ -10,15 +10,59 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { partnerService } from "@/services/partnerService";
 import { toast } from "sonner";
-import { DollarSign, CheckCircle, Clock, Plus, TrendingUp, Percent } from "lucide-react";
+import { DollarSign, CheckCircle, Clock, Plus, TrendingUp, Percent, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+function useMonthlyFinancials() {
+  const currentMonthStart = new Date().toISOString().slice(0, 7) + "-01";
+
+  const { data: subs } = useQuery({
+    queryKey: ["partner-pay-subs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("periodo, plans(preco_mensal, preco_semestral, preco_anual)")
+        .eq("status", "active");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const { data: expenses } = useQuery({
+    queryKey: ["partner-pay-expenses", currentMonthStart],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("valor")
+        .gte("data", currentMonthStart);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const faturamento = (subs || []).reduce((sum: number, s: any) => {
+    const p = s.plans;
+    if (!p) return sum;
+    if (s.periodo === "mensal") return sum + (p.preco_mensal || 0);
+    if (s.periodo === "semestral") return sum + ((p.preco_semestral || 0) / 6);
+    if (s.periodo === "anual") return sum + ((p.preco_anual || 0) / 12);
+    return sum;
+  }, 0);
+
+  const despesas = (expenses || []).reduce((sum: number, e: any) => sum + Number(e.valor), 0);
+  const lucroLiquido = Math.max(0, faturamento - despesas);
+
+  return { faturamento, despesas, lucroLiquido };
+}
 
 export default function AdminPartnerPayments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newPayment, setNewPayment] = useState({ partner_id: "", mes: "", observacao: "" });
+
+  const { faturamento, despesas, lucroLiquido } = useMonthlyFinancials();
 
   const { data: partners } = useQuery({
     queryKey: ["admin-partners-list"],
@@ -30,33 +74,25 @@ export default function AdminPartnerPayments() {
     queryFn: () => partnerService.listAllPayments(),
   });
 
-  // Get financial data for calculation
-  const { data: finData } = useQuery({
-    queryKey: ["admin-financial-for-partners"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_admin_financial_stats");
-      if (error) throw error;
-      return data as any;
-    },
-  });
-
-  const faturamento = finData?.monthly_revenue ?? 0;
-  const despesas = finData?.monthly_expenses ?? 0;
-  const lucroLiquido = Math.max(0, faturamento - despesas);
-
   const activePartners = partners?.filter((p: any) => p.status === "ativo") || [];
+
+  // Calculate cascading: each partner takes from lucro, remaining = fluxo de caixa
+  const partnerEstimates = activePartners.map((p: any) => {
+    const perc = Number(p.percentual_participacao);
+    const valor = lucroLiquido * (perc / 100);
+    return { ...p, valorReceber: valor, percentual: perc };
+  });
+  const totalRepasses = partnerEstimates.reduce((s, p) => s + p.valorReceber, 0);
+  const fluxoCaixa = lucroLiquido - totalRepasses;
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const partner = activePartners.find((p: any) => p.id === newPayment.partner_id);
-      if (!partner) throw new Error("Selecione um sócio");
-      const calc = partnerService.calculatePartnerEarnings(
-        faturamento, despesas, Number(partner.percentual_participacao)
-      );
+      const est = partnerEstimates.find((p) => p.id === newPayment.partner_id);
+      if (!est) throw new Error("Selecione um sócio");
       return partnerService.createPayment(
         newPayment.partner_id,
         newPayment.mes,
-        calc.valorReceber,
+        est.valorReceber,
         newPayment.observacao || undefined
       );
     },
@@ -72,7 +108,6 @@ export default function AdminPartnerPayments() {
   const markPaidMutation = useMutation({
     mutationFn: async (pay: any) => {
       await partnerService.markPaymentPaid(pay.id);
-      // Auto-create expense for partner payment
       const partnerName = pay.partners?.profiles?.nome || "Sócio";
       await supabase.from("expenses").insert({
         descricao: `Repasse sócio: ${partnerName} (${pay.mes_referencia})`,
@@ -87,12 +122,14 @@ export default function AdminPartnerPayments() {
       toast.success("Pagamento marcado como pago e registrado como despesa");
       queryClient.invalidateQueries({ queryKey: ["admin-partner-payments"] });
       queryClient.invalidateQueries({ queryKey: ["admin-expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-expenses-billing"] });
+      queryClient.invalidateQueries({ queryKey: ["partner-pay-expenses"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   const currentMonth = new Date().toISOString().slice(0, 7);
+
+  const selectedEst = partnerEstimates.find((p) => p.id === newPayment.partner_id);
 
   return (
     <AdminLayout>
@@ -111,14 +148,14 @@ export default function AdminPartnerPayments() {
         </div>
 
         {/* Financial summary */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
                 <div>
                   <p className="text-lg font-bold">R$ {faturamento.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
+                  <p className="text-xs text-muted-foreground">Faturamento Bruto</p>
                 </div>
               </div>
             </CardContent>
@@ -126,19 +163,30 @@ export default function AdminPartnerPayments() {
           <Card>
             <CardContent className="pt-6">
               <p className="text-lg font-bold">R$ {despesas.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">Despesas</p>
+              <p className="text-xs text-muted-foreground">Despesas Mensais</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-lg font-bold text-green-600">R$ {lucroLiquido.toFixed(2)}</p>
+              <p className="text-lg font-bold text-primary">R$ {lucroLiquido.toFixed(2)}</p>
               <p className="text-xs text-muted-foreground">Lucro Líquido</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-lg font-bold">{activePartners.length}</p>
-              <p className="text-xs text-muted-foreground">Sócios Ativos</p>
+              <p className="text-lg font-bold text-destructive">R$ {totalRepasses.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">Total Repasses</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-lg font-bold text-primary">R$ {fluxoCaixa.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Fluxo de Caixa</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -152,20 +200,22 @@ export default function AdminPartnerPayments() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {activePartners.map((p: any) => {
-                const calc = partnerService.calculatePartnerEarnings(
-                  faturamento, despesas, Number(p.percentual_participacao)
-                );
-                return (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <div>
-                      <p className="text-sm font-semibold">{p.profiles?.nome || "—"}</p>
-                      <p className="text-xs text-muted-foreground">{p.percentual_participacao}% de participação</p>
-                    </div>
-                    <p className="text-sm font-bold text-green-600">R$ {calc.valorReceber.toFixed(2)}</p>
+              {partnerEstimates.map((p) => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                  <div>
+                    <p className="text-sm font-semibold">{p.profiles?.nome || "—"}</p>
+                    <p className="text-xs text-muted-foreground">{p.percentual}% do lucro líquido (R$ {lucroLiquido.toFixed(2)})</p>
                   </div>
-                );
-              })}
+                  <p className="text-sm font-bold text-primary">R$ {p.valorReceber.toFixed(2)}</p>
+                </div>
+              ))}
+              <div className="flex items-center justify-between p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
+                <div>
+                  <p className="text-sm font-semibold">Fluxo de Caixa Restante</p>
+                  <p className="text-xs text-muted-foreground">Lucro após todos os repasses</p>
+                </div>
+                <p className="text-sm font-bold text-primary">R$ {fluxoCaixa.toFixed(2)}</p>
+              </div>
               {activePartners.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhum sócio ativo</p>
               )}
@@ -199,7 +249,7 @@ export default function AdminPartnerPayments() {
                         </p>
                       )}
                       {pay.partners?.pix_chave && (
-                        <p className="text-xs text-blue-500">
+                        <p className="text-xs text-accent-foreground">
                           PIX ({pay.partners.pix_tipo || "—"}): {pay.partners.pix_chave}
                           {pay.partners.banco && ` • ${pay.partners.banco}`}
                           {pay.partners.titular && ` • ${pay.partners.titular}`}
@@ -261,14 +311,10 @@ export default function AdminPartnerPayments() {
               <Label>Observação</Label>
               <Input placeholder="Opcional" value={newPayment.observacao} onChange={(e) => setNewPayment({ ...newPayment, observacao: e.target.value })} />
             </div>
-            {newPayment.partner_id && (
-              <div className="p-3 rounded-lg bg-muted text-sm">
-                <p>Valor calculado: <span className="font-bold text-green-600">
-                  R$ {partnerService.calculatePartnerEarnings(
-                    faturamento, despesas,
-                    Number(activePartners.find((p: any) => p.id === newPayment.partner_id)?.percentual_participacao || 0)
-                  ).valorReceber.toFixed(2)}
-                </span></p>
+            {selectedEst && (
+              <div className="p-3 rounded-lg bg-muted text-sm space-y-1">
+                <p>Lucro Líquido: <span className="font-semibold">R$ {lucroLiquido.toFixed(2)}</span></p>
+                <p>{selectedEst.percentual}% = <span className="font-bold text-primary">R$ {selectedEst.valorReceber.toFixed(2)}</span></p>
               </div>
             )}
             <Button className="w-full" onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !newPayment.partner_id || !newPayment.mes}>
