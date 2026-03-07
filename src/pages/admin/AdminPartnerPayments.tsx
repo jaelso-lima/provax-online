@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { partnerService } from "@/services/partnerService";
 import { toast } from "sonner";
 import { DollarSign, CheckCircle, Clock, Plus, TrendingUp, Percent } from "lucide-react";
@@ -14,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminPartnerPayments() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newPayment, setNewPayment] = useState({ partner_id: "", mes: "", observacao: "" });
@@ -68,10 +70,24 @@ export default function AdminPartnerPayments() {
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: (id: string) => partnerService.markPaymentPaid(id),
+    mutationFn: async (pay: any) => {
+      await partnerService.markPaymentPaid(pay.id);
+      // Auto-create expense for partner payment
+      const partnerName = pay.partners?.profiles?.nome || "Sócio";
+      await supabase.from("expenses").insert({
+        descricao: `Repasse sócio: ${partnerName} (${pay.mes_referencia})`,
+        valor: Number(pay.valor),
+        categoria: "pessoal",
+        data: new Date().toISOString().split("T")[0],
+        created_by: user!.id,
+        observacao: `Gerado automaticamente - Ref: ${pay.mes_referencia}`,
+      });
+    },
     onSuccess: () => {
-      toast.success("Pagamento marcado como pago");
+      toast.success("Pagamento marcado como pago e registrado como despesa");
       queryClient.invalidateQueries({ queryKey: ["admin-partner-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-expenses-billing"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -191,7 +207,7 @@ export default function AdminPartnerPayments() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => markPaidMutation.mutate(pay.id)}
+                            onClick={() => markPaidMutation.mutate(pay)}
                             disabled={markPaidMutation.isPending}
                           >
                             Marcar Pago
