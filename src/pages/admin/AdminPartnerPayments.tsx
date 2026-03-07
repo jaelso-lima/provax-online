@@ -216,12 +216,20 @@ export default function AdminPartnerPayments() {
           <CardContent>
             <div className="space-y-2">
               {partnerEstimates.map((p) => (
-                <div key={p.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                <div key={p.id} className={`flex items-center justify-between p-3 rounded-lg border ${p.alreadyPaid ? 'border-primary/30 bg-primary/5 opacity-60' : 'border-border'}`}>
                   <div>
                     <p className="text-sm font-semibold">{p.profiles?.nome || "—"}</p>
-                    <p className="text-xs text-muted-foreground">{p.percentual}% do lucro líquido (R$ {lucroLiquido.toFixed(2)})</p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.percentual}% do lucro líquido (R$ {lucroLiquido.toFixed(2)})
+                    </p>
                   </div>
-                  <p className="text-sm font-bold text-primary">R$ {p.valorReceber.toFixed(2)}</p>
+                  {p.alreadyPaid ? (
+                    <Badge variant="default" className="gap-1">
+                      <CheckCircle className="h-3 w-3" /> Já pago este mês
+                    </Badge>
+                  ) : (
+                    <p className="text-sm font-bold text-primary">R$ {p.valorReceber.toFixed(2)}</p>
+                  )}
                 </div>
               ))}
               <div className="flex items-center justify-between p-3 rounded-lg border-2 border-primary/30 bg-primary/5">
