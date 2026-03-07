@@ -105,6 +105,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <Coins className="h-4 w-4 text-coin" />
               <span>{profile?.saldo_moedas ?? 0}</span>
             </div>
+            {isEmployee && (
+              <Button variant="ghost" size="icon" onClick={() => navigate("/funcionario")} title="Painel Funcionário">
+                <Briefcase className="h-4 w-4 text-primary" />
+              </Button>
+            )}
+            {hasAdminAccess && (
+              <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} title="Painel Admin">
+                <Shield className="h-4 w-4 text-primary" />
+              </Button>
+            )}
             <ThemeToggle />
           </div>
         </header>
