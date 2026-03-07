@@ -1,10 +1,13 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, Target, FileText, Coins, Crown, User, Trophy, LogOut, Menu, X, Mail, Instagram,
+  LayoutDashboard, Target, FileText, Coins, Crown, User, Trophy, LogOut, Menu, X, Mail, Instagram, Briefcase, Shield,
 } from "lucide-react";
 
 const navItems = [
@@ -18,10 +21,26 @@ const navItems = [
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { signOut, profile } = useAuth();
+  const { user, signOut, profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { hasAdminAccess } = useAdminRole();
+
+  const { data: isEmployee } = useQuery({
+    queryKey: ["is-employee", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("temp_employees")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -86,6 +105,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <Coins className="h-4 w-4 text-coin" />
               <span>{profile?.saldo_moedas ?? 0}</span>
             </div>
+            {isEmployee && (
+              <Button variant="ghost" size="icon" onClick={() => navigate("/funcionario")} title="Painel Funcionário">
+                <Briefcase className="h-4 w-4 text-primary" />
+              </Button>
+            )}
+            {hasAdminAccess && (
+              <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} title="Painel Admin">
+                <Shield className="h-4 w-4 text-primary" />
+              </Button>
+            )}
             <ThemeToggle />
           </div>
         </header>
