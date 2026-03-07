@@ -23,6 +23,7 @@ import {
   DollarSign,
   Settings,
   UserCheck,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -42,6 +43,7 @@ const allNavItems = [
   { href: "/admin/pdf-importer", label: "PDF Importer", icon: Upload, roles: ["admin", "owner", "partner"], permission: "importar_pdfs" },
   { href: "/admin/questions-review", label: "Revisão Questões", icon: ListChecks, roles: ["admin", "owner", "partner"], permission: "revisar_questoes" },
   { href: "/admin/partner-payments", label: "Pagamentos Sócios", icon: DollarSign, roles: ["admin", "owner", "partner"], permission: "ver_pagamentos_socios" },
+  { href: "/admin/partner-financial", label: "Meus Ganhos", icon: Wallet, roles: ["partner"], permission: "ver_pagamentos_socios" },
   { href: "/admin/partner-permissions", label: "Permissões Sócios", icon: Settings, roles: ["admin", "owner"], permission: null },
   { href: "/admin/employees", label: "Funcionários", icon: UserCheck, roles: ["admin", "owner", "partner"], permission: "ver_funcionarios" },
   { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner", "partner"], permission: "gerenciar_conteudo" },
