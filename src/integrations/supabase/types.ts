@@ -1111,40 +1111,58 @@ export type Database = {
       }
       partners: {
         Row: {
+          agencia: string | null
+          banco: string | null
           bloqueado_para_edicao: boolean
+          conta: string | null
           created_at: string
           criado_por: string
           data_entrada: string
           id: string
           percentual_participacao: number
+          pix_chave: string | null
+          pix_tipo: string | null
           status: string
           tipo_participacao: string
+          titular: string | null
           updated_at: string
           user_id: string
           valor_investido: number
         }
         Insert: {
+          agencia?: string | null
+          banco?: string | null
           bloqueado_para_edicao?: boolean
+          conta?: string | null
           created_at?: string
           criado_por: string
           data_entrada?: string
           id?: string
           percentual_participacao?: number
+          pix_chave?: string | null
+          pix_tipo?: string | null
           status?: string
           tipo_participacao?: string
+          titular?: string | null
           updated_at?: string
           user_id: string
           valor_investido?: number
         }
         Update: {
+          agencia?: string | null
+          banco?: string | null
           bloqueado_para_edicao?: boolean
+          conta?: string | null
           created_at?: string
           criado_por?: string
           data_entrada?: string
           id?: string
           percentual_participacao?: number
+          pix_chave?: string | null
+          pix_tipo?: string | null
           status?: string
           tipo_participacao?: string
+          titular?: string | null
           updated_at?: string
           user_id?: string
           valor_investido?: number
