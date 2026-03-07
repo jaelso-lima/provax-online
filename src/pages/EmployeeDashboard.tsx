@@ -266,7 +266,9 @@ function PdfUploadSection({ userId, employeeId, valorPorTarefa, onSuccess }: {
       if (gabaritoFile) {
         const gabValidation = pdfImportService.validateFile(gabaritoFile);
         if (gabValidation.valid) {
-          await pdfImportService.uploadGabarito(result.id, gabaritoFile, userId);
+          const gabPath = `gabarito_${Date.now()}_${result.id}.pdf`;
+          await supabase.storage.from("pdf-imports").upload(gabPath, gabaritoFile, { upsert: false });
+          await supabase.from("pdf_imports").update({ gabarito_storage_path: gabPath }).eq("id", result.id);
           await employeeService.registerTask(employeeId, "upload_gabarito", gabaritoFile.name, valorPorTarefa);
         }
       }
