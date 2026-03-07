@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign } from "lucide-react";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign, Wallet } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
 import { generateContractPDF, getContractClauses } from "@/lib/contractPdf";
 import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
@@ -31,6 +31,81 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const [showContract, setShowContract] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+
+  // Cash flow calculation for admin dashboard
+  const currentMonthStart = new Date().toISOString().slice(0, 7) + "-01";
+
+  const { data: activeSubs } = useQuery({
+    queryKey: ["admin-dash-subs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("periodo, plans(preco_mensal, preco_semestral, preco_anual)")
+        .eq("status", "active");
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: isAdmin,
+  });
+
+  const { data: monthExpenses } = useQuery({
+    queryKey: ["admin-dash-expenses", currentMonthStart],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("valor")
+        .gte("data", currentMonthStart);
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  const { data: dashPartners } = useQuery({
+    queryKey: ["admin-dash-partners"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("partners")
+        .select("id, percentual_participacao")
+        .eq("status", "ativo");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  const { data: dashPartnerPayments } = useQuery({
+    queryKey: ["admin-dash-partner-payments"],
+    queryFn: async () => {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const { data, error } = await supabase
+        .from("partner_payments")
+        .select("partner_id, status_pagamento")
+        .eq("mes_referencia", currentMonth)
+        .eq("status_pagamento", "pago");
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  const dashFaturamento = (activeSubs || []).reduce((sum: number, s: any) => {
+    const p = s.plans;
+    if (!p) return sum;
+    if (s.periodo === "mensal") return sum + (p.preco_mensal || 0);
+    if (s.periodo === "semestral") return sum + ((p.preco_semestral || 0) / 6);
+    if (s.periodo === "anual") return sum + ((p.preco_anual || 0) / 12);
+    return sum;
+  }, 0);
+
+  const dashDespesas = (monthExpenses || []).reduce((sum: number, e: any) => sum + Number(e.valor), 0);
+  const dashLucro = Math.max(0, dashFaturamento - dashDespesas);
+  const paidPartnerIdsSet = new Set((dashPartnerPayments || []).map((p: any) => p.partner_id));
+  const dashTotalRepasses = (dashPartners || []).reduce((sum: number, p: any) => {
+    if (paidPartnerIdsSet.has(p.id)) return sum;
+    return sum + dashLucro * (Number(p.percentual_participacao) / 100);
+  }, 0);
+  const dashFluxoCaixa = dashLucro - dashTotalRepasses;
 
   // Admin stats
   const { data: stats, isLoading } = useQuery({
@@ -579,7 +654,63 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Paying users breakdown */}
+        {/* Cash Flow Summary */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold">R$ {dashFaturamento.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Receita Mensal</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <DollarSign className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold">R$ {dashDespesas.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Despesas Mês</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-accent/10">
+                  <DollarSign className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-primary">R$ {dashLucro.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Lucro Líquido</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Wallet className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-primary">R$ {dashFluxoCaixa.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Fluxo de Caixa</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+
         {subsPlanData.length > 0 && (
           <Card>
             <CardHeader>
