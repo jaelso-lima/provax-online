@@ -21,10 +21,26 @@ const navItems = [
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { signOut, profile } = useAuth();
+  const { user, signOut, profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { hasAdminAccess } = useAdminRole();
+
+  const { data: isEmployee } = useQuery({
+    queryKey: ["is-employee", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("temp_employees")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const handleSignOut = async () => {
     await signOut();
