@@ -76,11 +76,20 @@ export default function AdminPartnerPayments() {
 
   const activePartners = partners?.filter((p: any) => p.status === "ativo") || [];
 
-  // Calculate cascading: each partner takes from lucro, remaining = fluxo de caixa
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  // Check which partners already have a PAID payment this month
+  const paidThisMonth = (payments || []).filter(
+    (pay: any) => pay.mes_referencia === currentMonth && pay.status_pagamento === "pago"
+  );
+  const paidPartnerIds = new Set(paidThisMonth.map((p: any) => p.partner_id));
+
+  // Calculate estimates: partners already paid this month show R$0
   const partnerEstimates = activePartners.map((p: any) => {
     const perc = Number(p.percentual_participacao);
-    const valor = lucroLiquido * (perc / 100);
-    return { ...p, valorReceber: valor, percentual: perc };
+    const alreadyPaid = paidPartnerIds.has(p.id);
+    const valor = alreadyPaid ? 0 : lucroLiquido * (perc / 100);
+    return { ...p, valorReceber: valor, percentual: perc, alreadyPaid };
   });
   const totalRepasses = partnerEstimates.reduce((s, p) => s + p.valorReceber, 0);
   const fluxoCaixa = lucroLiquido - totalRepasses;
@@ -89,6 +98,12 @@ export default function AdminPartnerPayments() {
     mutationFn: async () => {
       const est = partnerEstimates.find((p) => p.id === newPayment.partner_id);
       if (!est) throw new Error("Selecione um sócio");
+      if (est.alreadyPaid) throw new Error("Este sócio já foi pago neste mês");
+      // Check for existing pending payment for this partner+month
+      const existing = (payments || []).find(
+        (pay: any) => pay.partner_id === newPayment.partner_id && pay.mes_referencia === newPayment.mes
+      );
+      if (existing) throw new Error(`Já existe um pagamento para este sócio em ${newPayment.mes}`);
       return partnerService.createPayment(
         newPayment.partner_id,
         newPayment.mes,
