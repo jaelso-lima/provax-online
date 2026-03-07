@@ -2159,6 +2159,7 @@ export type Database = {
         Args: { _novo_plano: string; _user_id: string }
         Returns: boolean
       }
+      auto_inactivate_expired_exams: { Args: never; Returns: number }
       cancelar_referral: {
         Args: { _reason: string; _referral_id: string }
         Returns: boolean
