@@ -207,7 +207,7 @@ export default function AdminPartnerPayments() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => markPaidMutation.mutate(pay.id)}
+                            onClick={() => markPaidMutation.mutate(pay)}
                             disabled={markPaidMutation.isPending}
                           >
                             Marcar Pago
