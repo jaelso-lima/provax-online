@@ -25,6 +25,7 @@ import AdminQuestionsReview from "./pages/admin/AdminQuestionsReview";
 import AdminPartnerPayments from "./pages/admin/AdminPartnerPayments";
 import AdminPartnerPermissions from "./pages/admin/AdminPartnerPermissions";
 import AdminEmployees from "./pages/admin/AdminEmployees";
+import EmployeeDashboard from "./pages/EmployeeDashboard";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/ranking" element={<ProtectedRoute><Ranking /></ProtectedRoute>} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
             <Route path="/concursos" element={<ProtectedRoute><ConcursosAbertos /></ProtectedRoute>} />
+            <Route path="/funcionario" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
             <Route path="/termos" element={<TermosDeUso />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />

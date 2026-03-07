@@ -2214,6 +2214,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_partner: { Args: never; Returns: boolean }
+      is_employee: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_partner: { Args: never; Returns: boolean }
       reactivate_account: {
