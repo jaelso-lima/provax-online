@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Upload, FileText, Radar, DollarSign, CheckCircle, Clock, Briefcase,
+  XCircle, AlertCircle, File, BookOpen, Brain,
 } from "lucide-react";
 import type { ExamRadar } from "@/types/modules";
 
