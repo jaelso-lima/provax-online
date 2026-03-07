@@ -252,12 +252,43 @@ Se não conseguir identificar algum metadado, use null.`;
 
     let parsed;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Nenhum JSON encontrado na resposta");
-      parsed = JSON.parse(jsonMatch[0]);
+      // Clean AI response: remove markdown code blocks, fix common issues
+      let cleanContent = content
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .trim();
+      
+      // Extract JSON object - use a balanced brace approach
+      const startIdx = cleanContent.indexOf("{");
+      if (startIdx === -1) throw new Error("Nenhum JSON encontrado na resposta");
+      
+      let braceCount = 0;
+      let endIdx = -1;
+      for (let i = startIdx; i < cleanContent.length; i++) {
+        if (cleanContent[i] === "{") braceCount++;
+        else if (cleanContent[i] === "}") {
+          braceCount--;
+          if (braceCount === 0) { endIdx = i; break; }
+        }
+      }
+      
+      if (endIdx === -1) throw new Error("JSON incompleto na resposta da IA");
+      
+      let jsonStr = cleanContent.slice(startIdx, endIdx + 1);
+      
+      // Fix common JSON issues from AI responses
+      jsonStr = jsonStr
+        .replace(/,\s*}/g, "}")       // trailing commas before }
+        .replace(/,\s*]/g, "]")       // trailing commas before ]
+        .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === "\n" || ch === "\r" || ch === "\t" ? ch : " "); // control chars
+      
+      parsed = JSON.parse(jsonStr);
     } catch (e) {
+      // Second attempt: try to extract just metadata and questoes separately
+      console.error("Falha no parse JSON:", (e as Error).message);
+      console.log("Primeiros 1000 chars da resposta:", content.slice(0, 1000));
       await updateImportStatus(supabase, importId, "erro",
-        `Erro ao parsear resposta da IA: ${(e as Error).message}. Resposta: ${content.slice(0, 500)}`);
+        `Erro ao parsear resposta da IA: ${(e as Error).message}. Tente reprocessar.`);
       throw new Error("Erro ao parsear resposta da IA");
     }
 
