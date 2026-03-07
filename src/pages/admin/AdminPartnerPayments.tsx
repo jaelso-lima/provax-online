@@ -68,10 +68,24 @@ export default function AdminPartnerPayments() {
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: (id: string) => partnerService.markPaymentPaid(id),
+    mutationFn: async (pay: any) => {
+      await partnerService.markPaymentPaid(pay.id);
+      // Auto-create expense for partner payment
+      const partnerName = pay.partners?.profiles?.nome || "Sócio";
+      await supabase.from("expenses").insert({
+        descricao: `Repasse sócio: ${partnerName} (${pay.mes_referencia})`,
+        valor: Number(pay.valor),
+        categoria: "pessoal",
+        data: new Date().toISOString().split("T")[0],
+        created_by: user!.id,
+        observacao: `Gerado automaticamente - Ref: ${pay.mes_referencia}`,
+      });
+    },
     onSuccess: () => {
-      toast.success("Pagamento marcado como pago");
+      toast.success("Pagamento marcado como pago e registrado como despesa");
       queryClient.invalidateQueries({ queryKey: ["admin-partner-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-expenses-billing"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
