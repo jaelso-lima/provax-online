@@ -666,6 +666,85 @@ export type Database = {
           },
         ]
       }
+      employee_payments: {
+        Row: {
+          created_at: string
+          data_pagamento: string | null
+          employee_id: string
+          id: string
+          mes_referencia: string
+          status_pagamento: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          data_pagamento?: string | null
+          employee_id: string
+          id?: string
+          mes_referencia: string
+          status_pagamento?: string
+          valor_total?: number
+        }
+        Update: {
+          created_at?: string
+          data_pagamento?: string | null
+          employee_id?: string
+          id?: string
+          mes_referencia?: string
+          status_pagamento?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_payments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "temp_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_tasks: {
+        Row: {
+          created_at: string
+          data_tarefa: string
+          descricao: string | null
+          employee_id: string
+          id: string
+          status_pagamento: string
+          tipo_tarefa: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data_tarefa?: string
+          descricao?: string | null
+          employee_id: string
+          id?: string
+          status_pagamento?: string
+          tipo_tarefa?: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data_tarefa?: string
+          descricao?: string | null
+          employee_id?: string
+          id?: string
+          status_pagamento?: string
+          tipo_tarefa?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_tasks_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "temp_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       esferas: {
         Row: {
           created_at: string
@@ -909,6 +988,82 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "partner_contracts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_payments: {
+        Row: {
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          mes_referencia: string
+          observacao: string | null
+          partner_id: string
+          status_pagamento: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          mes_referencia: string
+          observacao?: string | null
+          partner_id: string
+          status_pagamento?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          mes_referencia?: string
+          observacao?: string | null
+          partner_id?: string
+          status_pagamento?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_payments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_permissions: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          partner_id: string
+          permission: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          partner_id: string
+          permission: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          partner_id?: string
+          permission?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_permissions_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
@@ -1825,6 +1980,44 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      temp_employees: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          tipo_trabalho: string
+          updated_at: string
+          user_id: string
+          valor_por_tarefa: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          tipo_trabalho?: string
+          updated_at?: string
+          user_id: string
+          valor_por_tarefa?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          tipo_trabalho?: string
+          updated_at?: string
+          user_id?: string
+          valor_por_tarefa?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

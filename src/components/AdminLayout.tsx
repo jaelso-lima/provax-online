@@ -20,6 +20,9 @@ import {
   Radar,
   Upload,
   ListChecks,
+  DollarSign,
+  Settings,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -35,6 +38,9 @@ const allNavItems = [
   { href: "/admin/exam-radar", label: "Radar Concursos", icon: Radar, roles: ["admin", "owner"] },
   { href: "/admin/pdf-importer", label: "PDF Importer", icon: Upload, roles: ["admin", "owner"] },
   { href: "/admin/questions-review", label: "Revisão Questões", icon: ListChecks, roles: ["admin", "owner"] },
+  { href: "/admin/partner-payments", label: "Pagamentos Sócios", icon: DollarSign, roles: ["admin", "owner"] },
+  { href: "/admin/partner-permissions", label: "Permissões Sócios", icon: Settings, roles: ["admin", "owner"] },
+  { href: "/admin/employees", label: "Funcionários", icon: UserCheck, roles: ["admin", "owner"] },
   { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner"] },
   { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"] },
   { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner"] },

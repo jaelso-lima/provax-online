@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
 import { generateContractPDF, getContractClauses } from "@/lib/contractPdf";
 import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
@@ -497,6 +497,9 @@ export default function AdminDashboard() {
                 </Card>
               )}
 
+              {/* Partner Payment History */}
+              <PartnerPaymentHistory userId={user!.id} />
+
               <Card className="border-dashed">
                 <CardContent className="py-6 text-center">
                   <p className="text-sm text-muted-foreground">
@@ -687,5 +690,55 @@ export default function AdminDashboard() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+function PartnerPaymentHistory({ userId }: { userId: string }) {
+  const { data: payments, isLoading } = useQuery({
+    queryKey: ["partner-payment-history", userId],
+    queryFn: async () => {
+      const { data: partner } = await supabase
+        .from("partners")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("status", "ativo")
+        .maybeSingle();
+      if (!partner) return [];
+      const { data, error } = await supabase
+        .from("partner_payments")
+        .select("*")
+        .eq("partner_id", partner.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  if (isLoading || !payments?.length) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-primary" />
+          Histórico de Pagamentos
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {payments.map((pay: any) => (
+            <div key={pay.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+              <div>
+                <p className="text-sm font-semibold">{pay.mes_referencia}</p>
+                <p className="text-xs text-muted-foreground">R$ {Number(pay.valor).toFixed(2)}</p>
+              </div>
+              <Badge variant={pay.status_pagamento === "pago" ? "default" : "outline"}>
+                {pay.status_pagamento === "pago" ? "Pago" : "Pendente"}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
