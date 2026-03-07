@@ -221,7 +221,8 @@ Se não conseguir identificar algum metadado, use null.`;
           model: "google/gemini-2.5-flash",
           messages: [{ role: "user", content: contentParts }],
           temperature: 0.1,
-          max_tokens: 32000,
+          max_tokens: 64000,
+          response_format: { type: "json_object" },
         }),
         signal: controller.signal,
       });
