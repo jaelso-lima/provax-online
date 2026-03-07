@@ -462,17 +462,18 @@ function ExamRadarSection({ employeeId, valorPorTarefa, onTaskCreated }: {
     inscricao_inicio: undefined, inscricao_ate: undefined, data_prova: undefined,
   };
   const [form, setForm] = useState<Partial<ExamRadar>>(emptyForm);
+  const [showPreview, setShowPreview] = useState(false);
 
   const createMut = useMutation({
     mutationFn: async (data: Partial<ExamRadar>) => {
       const exam = await examRadarService.createExam(data);
-      // Register task for payment
       await employeeService.registerTask(employeeId, "cadastro_concurso", data.nome || "Concurso", valorPorTarefa);
       return exam;
     },
     onSuccess: () => {
       toast.success("Concurso cadastrado! Tarefa registrada para pagamento.");
       setForm(emptyForm);
+      setShowPreview(false);
       queryClient.invalidateQueries({ queryKey: ["admin-exam-radar"] });
       onTaskCreated();
     },
@@ -480,6 +481,63 @@ function ExamRadarSection({ employeeId, valorPorTarefa, onTaskCreated }: {
   });
 
   const set = (field: string, value: any) => setForm((p) => ({ ...p, [field]: value }));
+
+  const handleReview = () => {
+    if (!form.nome) return toast.error("Nome do concurso é obrigatório");
+    if (!form.inscricao_ate) return toast.error("Data de fim das inscrições é obrigatória");
+    setShowPreview(true);
+  };
+
+  const previewFields = [
+    { label: "Nome", value: form.nome },
+    { label: "Órgão", value: form.orgao },
+    { label: "Estado", value: form.estado },
+    { label: "Nível", value: form.nivel },
+    { label: "Área", value: form.area },
+    { label: "Banca", value: form.banca_nome },
+    { label: "Vagas", value: form.vagas },
+    { label: "Salário (de)", value: form.salario_de ? `R$ ${Number(form.salario_de).toFixed(2)}` : undefined },
+    { label: "Início Inscrições", value: form.inscricao_inicio },
+    { label: "Fim Inscrições", value: form.inscricao_ate },
+    { label: "Data da Prova", value: form.data_prova },
+    { label: "Link do Edital", value: form.edital_link },
+    { label: "Descrição", value: form.descricao },
+  ];
+
+  if (showPreview) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-primary" /> Confirme as informações antes de enviar
+          </CardTitle>
+          <p className="text-xs text-destructive font-medium">
+            ⚠️ Verifique todos os dados cuidadosamente. Informações incorretas não serão remuneradas.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-lg border border-border bg-muted/50">
+            {previewFields.map(({ label, value }) => (
+              value ? (
+                <div key={label}>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="text-sm font-medium break-words">{String(value)}</p>
+                </div>
+              ) : null
+            ))}
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setShowPreview(false)} className="gap-1">
+              ← Voltar e Editar
+            </Button>
+            <Button onClick={() => createMut.mutate(form)} disabled={createMut.isPending} className="gap-2">
+              {createMut.isPending ? "Enviando..." : <><Send className="h-4 w-4" /> Confirmar e Cadastrar</>}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -556,8 +614,8 @@ function ExamRadarSection({ employeeId, valorPorTarefa, onTaskCreated }: {
           <Label>Descrição</Label>
           <Textarea value={form.descricao || ""} onChange={(e) => set("descricao", e.target.value)} rows={3} />
         </div>
-        <Button onClick={() => createMut.mutate(form)} disabled={createMut.isPending || !form.nome} className="gap-2">
-          {createMut.isPending ? "Salvando..." : <><Radar className="h-4 w-4" /> Cadastrar Concurso</>}
+        <Button onClick={handleReview} disabled={!form.nome} className="gap-2">
+          <CheckCircle className="h-4 w-4" /> Revisar antes de Enviar
         </Button>
       </CardContent>
     </Card>
