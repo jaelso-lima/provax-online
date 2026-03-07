@@ -12,7 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { examRadarService } from "@/services/examRadarService";
 import type { ExamRadar } from "@/types/modules";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Archive, Radar, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Archive, Radar, ExternalLink, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const NIVEIS = ["medio", "superior", "tecnico", "fundamental"];
 const ESTADOS_BR = [
@@ -67,6 +71,15 @@ export default function AdminExamRadar() {
       qc.invalidateQueries({ queryKey: ["admin-exam-radar"] });
       toast({ title: "Concurso arquivado" });
     },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => examRadarService.deleteExam(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-exam-radar"] });
+      toast({ title: "Concurso excluído permanentemente" });
+    },
+    onError: (e: any) => toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
   });
 
   const handleSubmit = () => {
