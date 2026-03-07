@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Upload, FileText, Radar, DollarSign, CheckCircle, Clock, Briefcase,
-  XCircle, AlertCircle, File, BookOpen, Brain,
+  XCircle, AlertCircle, File, BookOpen, Brain, Send,
 } from "lucide-react";
 import type { ExamRadar } from "@/types/modules";
 
@@ -32,28 +32,24 @@ export default function EmployeeDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Get employee record
   const { data: employee, isLoading: empLoading } = useQuery({
     queryKey: ["my-employee", user?.id],
     queryFn: () => employeeService.getEmployeeByUserId(user!.id),
     enabled: !!user,
   });
 
-  // Task summary
   const { data: summary } = useQuery({
     queryKey: ["my-tasks-summary", employee?.id],
     queryFn: () => employeeService.getTasksSummary(employee!.id),
     enabled: !!employee,
   });
 
-  // Payments
   const { data: payments } = useQuery({
     queryKey: ["my-payments", employee?.id],
     queryFn: () => employeeService.listPayments(employee!.id),
     enabled: !!employee,
   });
 
-  // My PDFs - full details like admin
   const { data: myPdfs } = useQuery({
     queryKey: ["my-pdfs", user?.id],
     queryFn: async () => {
@@ -67,7 +63,18 @@ export default function EmployeeDashboard() {
       return data;
     },
     enabled: !!user,
-    refetchInterval: 10000, // Auto-refresh every 10s to catch processing updates
+    refetchInterval: 10000,
+  });
+
+  // Auto-inactivate expired exams on load
+  useQuery({
+    queryKey: ["auto-inactivate-exams"],
+    queryFn: async () => {
+      const { data } = await supabase.rpc("auto_inactivate_expired_exams");
+      return data;
+    },
+    enabled: !!user,
+    refetchInterval: 60000,
   });
 
   if (empLoading) {
@@ -104,18 +111,17 @@ export default function EmployeeDashboard() {
           <p className="text-muted-foreground text-sm">Gerencie seus envios e acompanhe seus pagamentos</p>
         </div>
 
-        {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <p className="text-2xl font-bold">{summary?.count || 0}</p>
-              <p className="text-xs text-muted-foreground">PDFs Enviados</p>
+              <p className="text-xs text-muted-foreground">Tarefas Realizadas</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <p className="text-2xl font-bold">R$ {Number(employee.valor_por_tarefa).toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground">Valor por PDF</p>
+              <p className="text-xs text-muted-foreground">Valor por Tarefa</p>
             </CardContent>
           </Card>
           <Card>
@@ -150,107 +156,16 @@ export default function EmployeeDashboard() {
           </TabsContent>
 
           <TabsContent value="radar">
-            <ExamRadarSection />
+            <ExamRadarSection employeeId={employee.id} valorPorTarefa={Number(employee.valor_por_tarefa)} onTaskCreated={() => {
+              queryClient.invalidateQueries({ queryKey: ["my-tasks-summary"] });
+            }} />
           </TabsContent>
 
           <TabsContent value="historico">
-            {/* Stats cards */}
-            {myPdfs && myPdfs.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <FileText className="h-5 w-5 mx-auto mb-1 text-primary" />
-                    <p className="text-2xl font-bold">{myPdfs.length}</p>
-                    <p className="text-xs text-muted-foreground">Total Enviados</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-500" />
-                    <p className="text-2xl font-bold">{myPdfs.filter((p: any) => p.status_processamento === "processado").length}</p>
-                    <p className="text-xs text-muted-foreground">Processados</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Clock className="h-5 w-5 mx-auto mb-1 text-yellow-500" />
-                    <p className="text-2xl font-bold">{myPdfs.filter((p: any) => p.status_processamento === "pendente" || p.status_processamento === "processando").length}</p>
-                    <p className="text-xs text-muted-foreground">Pendentes</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Brain className="h-5 w-5 mx-auto mb-1 text-primary" />
-                    <p className="text-2xl font-bold">{myPdfs.reduce((acc: number, p: any) => acc + (p.total_questoes_extraidas || 0), 0)}</p>
-                    <p className="text-xs text-muted-foreground">Questões Extraídas</p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* PDF list */}
-            <div className="space-y-3">
-              {!myPdfs?.length ? (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    Nenhum PDF enviado ainda. Use a aba "Upload PDF" para começar.
-                  </CardContent>
-                </Card>
-              ) : (
-                myPdfs.map((pdf: any) => {
-                  const statusIcon = (s: string) => {
-                    if (s === "processado") return <CheckCircle className="h-4 w-4 text-green-500" />;
-                    if (s === "erro") return <XCircle className="h-4 w-4 text-destructive" />;
-                    if (s === "processando") return <Clock className="h-4 w-4 text-blue-500 animate-spin" />;
-                    return <Clock className="h-4 w-4 text-yellow-500" />;
-                  };
-
-                  return (
-                    <Card key={pdf.id}>
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <File className="h-5 w-5 text-muted-foreground shrink-0" />
-                            <div className="min-w-0">
-                              <p className="font-medium text-sm truncate">{pdf.nome_arquivo}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {pdf.tipo} · {pdf.ano || "—"} · {pdf.total_questoes_extraidas || 0} questões
-                                {pdf.cargo && ` · ${pdf.cargo}`}
-                                {pdf.gabarito_storage_path && " · 📋 Gabarito anexado"}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Enviado em {new Date(pdf.created_at).toLocaleDateString("pt-BR")} às {new Date(pdf.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                              </p>
-                              {pdf.erro_detalhes && pdf.status_processamento === "erro" && (
-                                <p className="text-xs text-destructive mt-1 truncate max-w-[400px]" title={pdf.erro_detalhes}>
-                                  <AlertCircle className="h-3 w-3 inline mr-1" />
-                                  {pdf.erro_detalhes}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {statusIcon(pdf.status_processamento)}
-                            <Badge variant={
-                              pdf.status_processamento === "processado" ? "default" :
-                              pdf.status_processamento === "erro" ? "destructive" :
-                              pdf.status_processamento === "processando" ? "secondary" :
-                              "secondary"
-                            }>
-                              {pdf.status_processamento === "processado" ? "✅ Processado" :
-                               pdf.status_processamento === "erro" ? "❌ Erro" :
-                               pdf.status_processamento === "processando" ? "⏳ Processando..." :
-                               "⏱️ Pendente"}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
-            </div>
+            <PdfHistorySection myPdfs={myPdfs} userId={user!.id} employeeId={employee.id} valorPorTarefa={Number(employee.valor_por_tarefa)} onConfirm={() => {
+              queryClient.invalidateQueries({ queryKey: ["my-pdfs"] });
+              queryClient.invalidateQueries({ queryKey: ["my-tasks-summary"] });
+            }} />
           </TabsContent>
 
           <TabsContent value="pagamentos">
@@ -287,6 +202,140 @@ export default function EmployeeDashboard() {
       </main>
       <AppFooter />
     </div>
+  );
+}
+
+// =============================================
+// PDF HISTORY SECTION WITH CONFIRM BUTTON
+// =============================================
+function PdfHistorySection({ myPdfs, userId, employeeId, valorPorTarefa, onConfirm }: {
+  myPdfs: any[] | undefined; userId: string; employeeId: string; valorPorTarefa: number; onConfirm: () => void;
+}) {
+  const confirmMut = useMutation({
+    mutationFn: async (pdfId: string) => {
+      const { error } = await supabase
+        .from("pdf_imports")
+        .update({ status_processamento: "processando" } as any)
+        .eq("id", pdfId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("PDF confirmado e enviado para processamento!");
+      onConfirm();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <>
+      {myPdfs && myPdfs.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <FileText className="h-5 w-5 mx-auto mb-1 text-primary" />
+              <p className="text-2xl font-bold">{myPdfs.length}</p>
+              <p className="text-xs text-muted-foreground">Total Enviados</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-500" />
+              <p className="text-2xl font-bold">{myPdfs.filter((p: any) => p.status_processamento === "processado").length}</p>
+              <p className="text-xs text-muted-foreground">Processados</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <Clock className="h-5 w-5 mx-auto mb-1 text-yellow-500" />
+              <p className="text-2xl font-bold">{myPdfs.filter((p: any) => p.status_processamento === "pendente" || p.status_processamento === "processando").length}</p>
+              <p className="text-xs text-muted-foreground">Pendentes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <Brain className="h-5 w-5 mx-auto mb-1 text-primary" />
+              <p className="text-2xl font-bold">{myPdfs.reduce((acc: number, p: any) => acc + (p.total_questoes_extraidas || 0), 0)}</p>
+              <p className="text-xs text-muted-foreground">Questões Extraídas</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {!myPdfs?.length ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              Nenhum PDF enviado ainda. Use a aba "Upload PDF" para começar.
+            </CardContent>
+          </Card>
+        ) : (
+          myPdfs.map((pdf: any) => {
+            const statusIcon = (s: string) => {
+              if (s === "processado") return <CheckCircle className="h-4 w-4 text-green-500" />;
+              if (s === "erro") return <XCircle className="h-4 w-4 text-destructive" />;
+              if (s === "processando") return <Clock className="h-4 w-4 text-blue-500 animate-spin" />;
+              return <Clock className="h-4 w-4 text-yellow-500" />;
+            };
+
+            return (
+              <Card key={pdf.id}>
+                <CardContent className="p-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <File className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{pdf.nome_arquivo}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {pdf.tipo} · {pdf.ano || "—"} · {pdf.total_questoes_extraidas || 0} questões
+                          {pdf.cargo && ` · ${pdf.cargo}`}
+                          {pdf.gabarito_storage_path && " · 📋 Gabarito anexado"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Enviado em {new Date(pdf.created_at).toLocaleDateString("pt-BR")} às {new Date(pdf.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        {pdf.erro_detalhes && pdf.status_processamento === "erro" && (
+                          <p className="text-xs text-destructive mt-1 truncate max-w-[400px]" title={pdf.erro_detalhes}>
+                            <AlertCircle className="h-3 w-3 inline mr-1" />
+                            {pdf.erro_detalhes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {pdf.status_processamento === "pendente" && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="gap-1"
+                          disabled={confirmMut.isPending}
+                          onClick={() => confirmMut.mutate(pdf.id)}
+                        >
+                          <Send className="h-3 w-3" />
+                          Confirmar Envio
+                        </Button>
+                      )}
+                      {statusIcon(pdf.status_processamento)}
+                      <Badge variant={
+                        pdf.status_processamento === "processado" ? "default" :
+                        pdf.status_processamento === "erro" ? "destructive" :
+                        pdf.status_processamento === "processando" ? "secondary" :
+                        "secondary"
+                      }>
+                        {pdf.status_processamento === "processado" ? "✅ Processado" :
+                         pdf.status_processamento === "erro" ? "❌ Erro" :
+                         pdf.status_processamento === "processando" ? "⏳ Processando..." :
+                         "⏱️ Pendente"}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+    </>
   );
 }
 
@@ -328,10 +377,8 @@ function PdfUploadSection({ userId, employeeId, valorPorTarefa, onSuccess }: {
         userId
       );
 
-      // Register task for payment
       await employeeService.registerTask(employeeId, "upload_pdf", file.name, valorPorTarefa);
 
-      // Upload gabarito if provided
       if (gabaritoFile) {
         const gabValidation = pdfImportService.validateFile(gabaritoFile);
         if (gabValidation.valid) {
@@ -402,23 +449,32 @@ function PdfUploadSection({ userId, employeeId, valorPorTarefa, onSuccess }: {
 }
 
 // =============================================
-// EXAM RADAR SECTION
+// EXAM RADAR SECTION - with dates & remuneration
 // =============================================
-function ExamRadarSection() {
+function ExamRadarSection({ employeeId, valorPorTarefa, onTaskCreated }: {
+  employeeId: string; valorPorTarefa: number; onTaskCreated: () => void;
+}) {
   const queryClient = useQueryClient();
   const emptyForm: Partial<ExamRadar> = {
     nome: "", orgao: "", estado: "", nivel: "medio", area: "",
     vagas: undefined, salario_de: undefined, salario_ate: undefined,
     banca_nome: "", link: "", edital_link: "", descricao: "", status: "ativo",
+    inscricao_inicio: undefined, inscricao_ate: undefined, data_prova: undefined,
   };
   const [form, setForm] = useState<Partial<ExamRadar>>(emptyForm);
 
   const createMut = useMutation({
-    mutationFn: (data: Partial<ExamRadar>) => examRadarService.createExam(data),
+    mutationFn: async (data: Partial<ExamRadar>) => {
+      const exam = await examRadarService.createExam(data);
+      // Register task for payment
+      await employeeService.registerTask(employeeId, "cadastro_concurso", data.nome || "Concurso", valorPorTarefa);
+      return exam;
+    },
     onSuccess: () => {
-      toast.success("Concurso cadastrado!");
+      toast.success("Concurso cadastrado! Tarefa registrada para pagamento.");
       setForm(emptyForm);
       queryClient.invalidateQueries({ queryKey: ["admin-exam-radar"] });
+      onTaskCreated();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -431,6 +487,9 @@ function ExamRadarSection() {
         <CardTitle className="text-base flex items-center gap-2">
           <Radar className="h-4 w-4" /> Cadastrar Concurso no Radar
         </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Você recebe R$ {valorPorTarefa.toFixed(2)} por cada concurso cadastrado.
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -475,6 +534,22 @@ function ExamRadarSection() {
           <div className="space-y-2">
             <Label>Link do Edital</Label>
             <Input value={form.edital_link || ""} onChange={(e) => set("edital_link", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Início das Inscrições</Label>
+            <Input type="date" value={form.inscricao_inicio || ""} onChange={(e) => set("inscricao_inicio", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Fim das Inscrições *</Label>
+            <Input type="date" value={form.inscricao_ate || ""} onChange={(e) => set("inscricao_ate", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Data da Prova</Label>
+            <Input type="date" value={form.data_prova || ""} onChange={(e) => set("data_prova", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Salário (de)</Label>
+            <Input type="number" placeholder="Ex: 3000" value={form.salario_de || ""} onChange={(e) => set("salario_de", parseFloat(e.target.value) || undefined)} />
           </div>
         </div>
         <div className="space-y-2">
