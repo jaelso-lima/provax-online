@@ -154,36 +154,103 @@ export default function EmployeeDashboard() {
           </TabsContent>
 
           <TabsContent value="historico">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Meus PDFs Enviados</CardTitle></CardHeader>
-              <CardContent>
-                {!myPdfs?.length ? (
-                  <p className="text-muted-foreground text-center py-4">Nenhum PDF enviado ainda</p>
-                ) : (
-                  <div className="space-y-2">
-                    {myPdfs.map((pdf: any) => (
-                      <div key={pdf.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">{pdf.nome_arquivo}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(pdf.created_at).toLocaleDateString("pt-BR")}
-                            </p>
+            {/* Stats cards */}
+            {myPdfs && myPdfs.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <FileText className="h-5 w-5 mx-auto mb-1 text-primary" />
+                    <p className="text-2xl font-bold">{myPdfs.length}</p>
+                    <p className="text-xs text-muted-foreground">Total Enviados</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <CheckCircle className="h-5 w-5 mx-auto mb-1 text-green-500" />
+                    <p className="text-2xl font-bold">{myPdfs.filter((p: any) => p.status_processamento === "processado").length}</p>
+                    <p className="text-xs text-muted-foreground">Processados</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Clock className="h-5 w-5 mx-auto mb-1 text-yellow-500" />
+                    <p className="text-2xl font-bold">{myPdfs.filter((p: any) => p.status_processamento === "pendente" || p.status_processamento === "processando").length}</p>
+                    <p className="text-xs text-muted-foreground">Pendentes</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <Brain className="h-5 w-5 mx-auto mb-1 text-primary" />
+                    <p className="text-2xl font-bold">{myPdfs.reduce((acc: number, p: any) => acc + (p.total_questoes_extraidas || 0), 0)}</p>
+                    <p className="text-xs text-muted-foreground">Questões Extraídas</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* PDF list */}
+            <div className="space-y-3">
+              {!myPdfs?.length ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    Nenhum PDF enviado ainda. Use a aba "Upload PDF" para começar.
+                  </CardContent>
+                </Card>
+              ) : (
+                myPdfs.map((pdf: any) => {
+                  const statusIcon = (s: string) => {
+                    if (s === "processado") return <CheckCircle className="h-4 w-4 text-green-500" />;
+                    if (s === "erro") return <XCircle className="h-4 w-4 text-destructive" />;
+                    if (s === "processando") return <Clock className="h-4 w-4 text-blue-500 animate-spin" />;
+                    return <Clock className="h-4 w-4 text-yellow-500" />;
+                  };
+
+                  return (
+                    <Card key={pdf.id}>
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <File className="h-5 w-5 text-muted-foreground shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{pdf.nome_arquivo}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {pdf.tipo} · {pdf.ano || "—"} · {pdf.total_questoes_extraidas || 0} questões
+                                {pdf.cargo && ` · ${pdf.cargo}`}
+                                {pdf.gabarito_storage_path && " · 📋 Gabarito anexado"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Enviado em {new Date(pdf.created_at).toLocaleDateString("pt-BR")} às {new Date(pdf.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                              </p>
+                              {pdf.erro_detalhes && pdf.status_processamento === "erro" && (
+                                <p className="text-xs text-destructive mt-1 truncate max-w-[400px]" title={pdf.erro_detalhes}>
+                                  <AlertCircle className="h-3 w-3 inline mr-1" />
+                                  {pdf.erro_detalhes}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {statusIcon(pdf.status_processamento)}
+                            <Badge variant={
+                              pdf.status_processamento === "processado" ? "default" :
+                              pdf.status_processamento === "erro" ? "destructive" :
+                              pdf.status_processamento === "processando" ? "secondary" :
+                              "secondary"
+                            }>
+                              {pdf.status_processamento === "processado" ? "✅ Processado" :
+                               pdf.status_processamento === "erro" ? "❌ Erro" :
+                               pdf.status_processamento === "processando" ? "⏳ Processando..." :
+                               "⏱️ Pendente"}
+                            </Badge>
                           </div>
                         </div>
-                        <Badge variant={
-                          pdf.status_processamento === "processado" ? "default" :
-                          pdf.status_processamento === "erro" ? "destructive" : "secondary"
-                        }>
-                          {pdf.status_processamento}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="pagamentos">
