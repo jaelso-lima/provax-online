@@ -459,6 +459,7 @@ function PartnerCard({
   onStatusChange,
   onViewContracts,
   onUpdatePercentual,
+  onEditPartner,
   onDownloadContract,
   onViewContractInline,
   onSignAsFounder,
@@ -472,6 +473,7 @@ function PartnerCard({
   onStatusChange: (status: string) => void;
   onViewContracts: () => void;
   onUpdatePercentual: (val: number) => void;
+  onEditPartner: (updates: Record<string, any>) => void;
   onDownloadContract: () => void;
   onViewContractInline: () => void;
   onSignAsFounder: (contractId: string) => void;
@@ -479,6 +481,17 @@ function PartnerCard({
 }) {
   const [editPercentual, setEditPercentual] = useState(false);
   const [newPct, setNewPct] = useState(String(partner.percentual_participacao));
+  const [showEdit, setShowEdit] = useState(false);
+  const [editData, setEditData] = useState({
+    valor_investido: String(partner.valor_investido),
+    tipo_participacao: partner.tipo_participacao,
+    pix_chave: partner.pix_chave || "",
+    pix_tipo: partner.pix_tipo || "",
+    banco: partner.banco || "",
+    agencia: partner.agencia || "",
+    conta: partner.conta || "",
+    titular: partner.titular || "",
+  });
 
   const profile = partner.profiles;
 
