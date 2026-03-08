@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History, Clock, XCircle, PenTool, Eye, Pencil } from "lucide-react";
+import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History, Clock, XCircle, PenTool, Eye, Pencil, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -174,6 +174,32 @@ export default function AdminPartners() {
     onError: () => toast.error("Erro ao atualizar status"),
   });
 
+  // Delete partner completely
+  const deletePartnerMutation = useMutation({
+    mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
+      // Delete related data first
+      await supabase.from("partner_permissions").delete().eq("partner_id", id);
+      await supabase.from("partner_payments").delete().eq("partner_id", id);
+      await supabase.from("partner_profit_simulation").delete().eq("partner_id", id);
+      await supabase.from("partner_contracts").delete().eq("partner_id", id);
+      
+      const { error } = await supabase.from("partners").delete().eq("id", id);
+      if (error) throw error;
+
+      // Revert role back to user
+      await supabase.rpc("admin_update_role", {
+        _target_user_id: userId,
+        _new_role: "user" as any,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Sócio excluído com sucesso. Agora pode recadastrá-lo.");
+      queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir sócio"),
+  });
+
   // Edit partner fields
   const editPartnerMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
@@ -313,6 +339,8 @@ export default function AdminPartners() {
                   onViewContracts={() => setShowContracts(p.id)}
                   onUpdatePercentual={(val) => updatePercentualMutation.mutate({ partnerId: p.id, newPercentual: val })}
                   onEditPartner={(updates) => editPartnerMutation.mutate({ id: p.id, updates })}
+                  onDeletePartner={() => deletePartnerMutation.mutate({ id: p.id, userId: p.user_id })}
+                  deletePending={deletePartnerMutation.isPending}
                   onDownloadContract={() => downloadContract(p)}
                   onViewContractInline={() => setViewContractPartner(p)}
                   onSignAsFounder={(contractId) => signAsFounderMutation.mutate(contractId)}
@@ -460,6 +488,8 @@ function PartnerCard({
   onViewContracts,
   onUpdatePercentual,
   onEditPartner,
+  onDeletePartner,
+  deletePending,
   onDownloadContract,
   onViewContractInline,
   onSignAsFounder,
@@ -474,6 +504,8 @@ function PartnerCard({
   onViewContracts: () => void;
   onUpdatePercentual: (val: number) => void;
   onEditPartner: (updates: Record<string, any>) => void;
+  onDeletePartner: () => void;
+  deletePending: boolean;
   onDownloadContract: () => void;
   onViewContractInline: () => void;
   onSignAsFounder: (contractId: string) => void;
@@ -763,6 +795,34 @@ function PartnerCard({
                 </AlertDialogContent>
               </AlertDialog>
             )}
+
+            {/* Delete partner (for rescinded or to re-register) */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive border-destructive/30 gap-1" disabled={deletePending}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir sócio permanentemente?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todos os dados deste sócio serão removidos (contratos, pagamentos, permissões). 
+                    O usuário voltará a ser um usuário comum e poderá ser recadastrado como sócio novamente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={onDeletePartner}
+                  >
+                    {deletePending ? "Excluindo..." : "Excluir Permanentemente"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </CardContent>
