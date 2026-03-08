@@ -129,17 +129,10 @@ Deno.serve(async (req) => {
       payment_gateway_id: session.id,
     });
 
-    // Update profile plan via RPC to bypass protection trigger
-    await supabase.rpc("atualizar_plano", {
+    // Update profile plan via secure function
+    await supabase.rpc("activate_plan_from_stripe", {
       _user_id: userId,
-      _novo_plano: matchedPlan.slug,
-    }).throwOnError().catch(async () => {
-      // Fallback: direct update with bypass (service role)
-      await supabase.rpc("admin_grant_plan", {
-        _target_user_id: userId,
-        _plan_slug: matchedPlan.slug,
-        _periodo: matchedPeriodo,
-      });
+      _plan_slug: matchedPlan.slug,
     });
 
     // Audit log
