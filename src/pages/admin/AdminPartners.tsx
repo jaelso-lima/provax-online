@@ -174,6 +174,19 @@ export default function AdminPartners() {
     onError: () => toast.error("Erro ao atualizar status"),
   });
 
+  // Edit partner fields
+  const editPartnerMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+      const { error } = await supabase.from("partners").update({ ...updates, updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Sócio atualizado com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao atualizar sócio"),
+  });
+
   // Update percentual (creates new contract)
   const updatePercentualMutation = useMutation({
     mutationFn: async ({ partnerId, newPercentual }: { partnerId: string; newPercentual: number }) => {
