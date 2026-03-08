@@ -1310,6 +1310,9 @@ export type Database = {
           preco_mensal: number | null
           preco_semestral: number | null
           slug: string
+          stripe_link_anual: string | null
+          stripe_link_mensal: string | null
+          stripe_link_semestral: string | null
         }
         Insert: {
           ativo?: boolean
@@ -1322,6 +1325,9 @@ export type Database = {
           preco_mensal?: number | null
           preco_semestral?: number | null
           slug: string
+          stripe_link_anual?: string | null
+          stripe_link_mensal?: string | null
+          stripe_link_semestral?: string | null
         }
         Update: {
           ativo?: boolean
@@ -1334,6 +1340,9 @@ export type Database = {
           preco_mensal?: number | null
           preco_semestral?: number | null
           slug?: string
+          stripe_link_anual?: string | null
+          stripe_link_mensal?: string | null
+          stripe_link_semestral?: string | null
         }
         Relationships: []
       }
@@ -2130,6 +2139,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_plan_from_stripe: {
+        Args: { _plan_slug: string; _user_id: string }
+        Returns: boolean
+      }
       adicionar_moedas: {
         Args: { _descricao: string; _user_id: string; _valor: number }
         Returns: boolean

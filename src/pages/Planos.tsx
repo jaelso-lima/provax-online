@@ -7,15 +7,15 @@ import { CheckCircle, XCircle, Star, Zap, Crown, Percent, Shield, ArrowRight, Al
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Periodo = "mensal" | "semestral" | "anual";
 
-const PLANOS = [
-  {
-    slug: "free",
-    name: "Gratuito",
+const PLANOS_FEATURES: Record<string, { icon: any; headline: string; features: { text: string; enabled: boolean }[]; current?: boolean; popular?: boolean }> = {
+  free: {
     icon: Zap,
-    prices: { mensal: 0, semestral: 0, anual: 0 },
     headline: "Para quem está começando",
     features: [
       { text: "10 questões/dia (Concurso + ENEM)", enabled: true },
@@ -30,11 +30,8 @@ const PLANOS = [
     ],
     current: true,
   },
-  {
-    slug: "start",
-    name: "Start",
+  start: {
     icon: Star,
-    prices: { mensal: 29.9, semestral: 149, anual: 297 },
     headline: "Para quem quer levar a sério",
     features: [
       { text: "25 questões por dia", enabled: true },
@@ -48,11 +45,8 @@ const PLANOS = [
     ],
     popular: true,
   },
-  {
-    slug: "pro",
-    name: "Pro",
+  pro: {
     icon: Crown,
-    prices: { mensal: 49.9, semestral: 249, anual: 497 },
     headline: "Para quem quer aprovação máxima",
     features: [
       { text: "Questões ilimitadas por dia", enabled: true },
@@ -65,7 +59,7 @@ const PLANOS = [
       { text: "Tudo do Start incluso", enabled: true },
     ],
   },
-];
+};
 
 function calcDesconto(mensal: number, total: number, meses: number) {
   if (mensal === 0) return 0;
@@ -80,11 +74,56 @@ function formatPreco(valor: number) {
 
 export default function Planos() {
   const [periodo, setPeriodo] = useState<Periodo>("anual");
+  const { user } = useAuth();
+
+  const { data: dbPlans } = useQuery({
+    queryKey: ["plans-with-links"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("ativo", true)
+        .order("preco_mensal");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleAssinar = (stripeLink: string | null) => {
+    if (!stripeLink) {
+      toast({ title: "Em breve!", description: "Link de pagamento ainda não configurado." });
+      return;
+    }
+    // Append user email as prefill if available
+    const url = new URL(stripeLink);
+    if (user?.email) {
+      url.searchParams.set("prefilled_email", user.email);
+    }
+    window.open(url.toString(), "_blank");
+  };
+
+  // Merge DB plans with static features
+  const planos = (dbPlans || [])
+    .filter((p) => PLANOS_FEATURES[p.slug])
+    .map((p) => ({
+      ...p,
+      ...PLANOS_FEATURES[p.slug],
+      prices: {
+        mensal: Number(p.preco_mensal) || 0,
+        semestral: Number(p.preco_semestral) || 0,
+        anual: Number(p.preco_anual) || 0,
+      },
+      stripeLinks: {
+        mensal: (p as any).stripe_link_mensal || null,
+        semestral: (p as any).stripe_link_semestral || null,
+        anual: (p as any).stripe_link_anual || null,
+      },
+    }));
 
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto">
-        {/* Headline persuasiva — Viés de aversão à perda */}
+        {/* Headline persuasiva */}
         <div className="mb-6 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/5 px-4 py-1.5 text-sm font-medium text-destructive">
@@ -101,7 +140,7 @@ export default function Planos() {
           </motion.div>
         </div>
 
-        {/* Tabs com destaque no anual — Viés de ancoragem */}
+        {/* Tabs */}
         <div className="mb-8 flex justify-center">
           <Tabs value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
             <TabsList>
@@ -119,20 +158,21 @@ export default function Planos() {
 
         {/* Cards de planos */}
         <div className="grid gap-6 md:grid-cols-3">
-          {PLANOS.map((p) => {
+          {planos.map((p, i) => {
             const preco = p.prices[periodo];
             const desconto = periodo !== "mensal"
               ? calcDesconto(p.prices.mensal, preco, periodo === "semestral" ? 6 : 12)
               : 0;
             const Icon = p.icon;
             const isDestaque = periodo === "anual" && p.slug === "pro";
+            const stripeLink = p.stripeLinks[periodo];
 
             return (
               <motion.div
                 key={p.slug}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: p.slug === "free" ? 0 : p.slug === "start" ? 0.1 : 0.2 }}
+                transition={{ delay: i * 0.1 }}
               >
                 <Card
                   className={`relative transition-shadow hover:shadow-lg h-full ${
@@ -161,7 +201,7 @@ export default function Planos() {
                     <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                       <Icon className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle className="font-display text-xl">{p.name}</CardTitle>
+                    <CardTitle className="font-display text-xl">{p.nome}</CardTitle>
                     <p className="text-xs text-muted-foreground">{p.headline}</p>
                     <div className="mt-3">
                       <span className="text-3xl font-bold">{formatPreco(preco)}</span>
@@ -201,13 +241,7 @@ export default function Planos() {
                       className={`w-full ${isDestaque ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
                       variant={p.current ? "outline" : "default"}
                       disabled={p.current}
-                      onClick={() =>
-                        !p.current &&
-                        toast({
-                          title: "Em breve!",
-                          description: "Integração de pagamento será ativada em breve.",
-                        })
-                      }
+                      onClick={() => !p.current && handleAssinar(stripeLink)}
                     >
                       {p.current ? "Seu plano atual" : isDestaque ? "Garantir aprovação máxima" : "Assinar agora"}
                     </Button>
@@ -231,7 +265,7 @@ export default function Planos() {
           </p>
         </div>
 
-        {/* Viés de urgência + escassez */}
+        {/* Viés de urgência */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -246,9 +280,6 @@ export default function Planos() {
             A cada dia sem prática direcionada, você perde tempo precioso que seus concorrentes estão usando.
             Comece agora e saia na frente.
           </p>
-          <Button className="mt-4" size="lg" onClick={() => toast({ title: "Em breve!", description: "Integração de pagamento será ativada em breve." })}>
-            Quero começar agora <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
         </motion.div>
       </div>
     </AppLayout>
