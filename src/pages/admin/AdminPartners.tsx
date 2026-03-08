@@ -820,7 +820,31 @@ function PartnerCard({
               </AlertDialog>
             )}
 
-            {/* Delete partner (for rescinded or to re-register) */}
+            {/* Reactivate rescinded partner */}
+            {partner.status === "rescindido" && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1 border-primary/30 text-primary" disabled={reactivatePending}>
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Reativar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reativar sócio?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      O status do sócio será alterado de "Rescindido" para "Ativo" e ele voltará a ter acesso ao painel de sócio.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={onReactivatePartner}>
+                      {reactivatePending ? "Reativando..." : "Confirmar Reativação"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="text-destructive border-destructive/30 gap-1" disabled={deletePending}>
