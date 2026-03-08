@@ -2139,6 +2139,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_plan_from_stripe: {
+        Args: { _plan_slug: string; _user_id: string }
+        Returns: boolean
+      }
       adicionar_moedas: {
         Args: { _descricao: string; _user_id: string; _valor: number }
         Returns: boolean
