@@ -488,6 +488,8 @@ function PartnerCard({
   onViewContracts,
   onUpdatePercentual,
   onEditPartner,
+  onDeletePartner,
+  deletePending,
   onDownloadContract,
   onViewContractInline,
   onSignAsFounder,
@@ -502,6 +504,8 @@ function PartnerCard({
   onViewContracts: () => void;
   onUpdatePercentual: (val: number) => void;
   onEditPartner: (updates: Record<string, any>) => void;
+  onDeletePartner: () => void;
+  deletePending: boolean;
   onDownloadContract: () => void;
   onViewContractInline: () => void;
   onSignAsFounder: (contractId: string) => void;
