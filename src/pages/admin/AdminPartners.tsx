@@ -795,7 +795,34 @@ function PartnerCard({
                 </AlertDialogContent>
               </AlertDialog>
             )}
-          </div>
+
+            {/* Delete partner (for rescinded or to re-register) */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive border-destructive/30 gap-1" disabled={deletePending}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Excluir
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir sócio permanentemente?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Todos os dados deste sócio serão removidos (contratos, pagamentos, permissões). 
+                    O usuário voltará a ser um usuário comum e poderá ser recadastrado como sócio novamente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={onDeletePartner}
+                  >
+                    {deletePending ? "Excluindo..." : "Excluir Permanentemente"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       </CardContent>
     </Card>
