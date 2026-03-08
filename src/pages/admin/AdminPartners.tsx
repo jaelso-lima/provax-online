@@ -545,6 +545,100 @@ function PartnerCard({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Edit partner */}
+            {partner.status === "ativo" && (
+              <Dialog open={showEdit} onOpenChange={setShowEdit}>
+                <Button variant="outline" size="sm" onClick={() => setShowEdit(true)} className="gap-1">
+                  <Pencil className="h-3.5 w-3.5" />
+                  Editar
+                </Button>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Editar Sócio — {profile?.nome}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 max-h-[60vh] overflow-auto pr-1">
+                    <div className="space-y-2">
+                      <Label>Valor Investido (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={editData.valor_investido}
+                        onChange={(e) => setEditData({ ...editData, valor_investido: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Tipo de Participação</Label>
+                      <Select value={editData.tipo_participacao} onValueChange={(v) => setEditData({ ...editData, tipo_participacao: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="investidor_passivo">Investidor Passivo</SelectItem>
+                          <SelectItem value="investidor_ativo">Investidor Ativo</SelectItem>
+                          <SelectItem value="co_fundador">Co-Fundador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="border-t border-border pt-3">
+                      <p className="text-sm font-medium mb-3">Dados Bancários / PIX</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Tipo PIX</Label>
+                          <Select value={editData.pix_tipo} onValueChange={(v) => setEditData({ ...editData, pix_tipo: v })}>
+                            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cpf">CPF</SelectItem>
+                              <SelectItem value="cnpj">CNPJ</SelectItem>
+                              <SelectItem value="email">E-mail</SelectItem>
+                              <SelectItem value="telefone">Telefone</SelectItem>
+                              <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Chave PIX</Label>
+                          <Input value={editData.pix_chave} onChange={(e) => setEditData({ ...editData, pix_chave: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Banco</Label>
+                          <Input value={editData.banco} onChange={(e) => setEditData({ ...editData, banco: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Agência</Label>
+                          <Input value={editData.agencia} onChange={(e) => setEditData({ ...editData, agencia: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Conta</Label>
+                          <Input value={editData.conta} onChange={(e) => setEditData({ ...editData, conta: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Titular</Label>
+                          <Input value={editData.titular} onChange={(e) => setEditData({ ...editData, titular: e.target.value })} />
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        onEditPartner({
+                          valor_investido: parseFloat(editData.valor_investido) || 0,
+                          tipo_participacao: editData.tipo_participacao,
+                          pix_chave: editData.pix_chave || null,
+                          pix_tipo: editData.pix_tipo || null,
+                          banco: editData.banco || null,
+                          agencia: editData.agencia || null,
+                          conta: editData.conta || null,
+                          titular: editData.titular || null,
+                        });
+                        setShowEdit(false);
+                      }}
+                    >
+                      Salvar Alterações
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+
             {/* Sign as founder */}
             {activeContractId && !founderSigned && !fullySigned && (
               <Button
