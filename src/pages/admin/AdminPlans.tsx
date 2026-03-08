@@ -27,6 +27,9 @@ interface PlanForm {
   preco_anual: number;
   limite_diario_questoes: number;
   ativo: boolean;
+  stripe_link_mensal: string;
+  stripe_link_semestral: string;
+  stripe_link_anual: string;
 }
 
 const emptyPlan: PlanForm = {
@@ -38,6 +41,9 @@ const emptyPlan: PlanForm = {
   preco_anual: 0,
   limite_diario_questoes: 10,
   ativo: true,
+  stripe_link_mensal: "",
+  stripe_link_semestral: "",
+  stripe_link_anual: "",
 };
 
 export default function AdminPlans() {
@@ -65,6 +71,9 @@ export default function AdminPlans() {
           preco_anual: plan.preco_anual,
           limite_diario_questoes: plan.limite_diario_questoes,
           ativo: plan.ativo,
+          stripe_link_mensal: plan.stripe_link_mensal || null,
+          stripe_link_semestral: plan.stripe_link_semestral || null,
+          stripe_link_anual: plan.stripe_link_anual || null,
         }).eq("id", plan.id);
         if (error) throw error;
       } else {
@@ -77,6 +86,9 @@ export default function AdminPlans() {
           preco_anual: plan.preco_anual,
           limite_diario_questoes: plan.limite_diario_questoes,
           ativo: plan.ativo,
+          stripe_link_mensal: plan.stripe_link_mensal || null,
+          stripe_link_semestral: plan.stripe_link_semestral || null,
+          stripe_link_anual: plan.stripe_link_anual || null,
         });
         if (error) throw error;
       }
@@ -106,6 +118,9 @@ export default function AdminPlans() {
       preco_anual: Number(plan.preco_anual) || 0,
       limite_diario_questoes: plan.limite_diario_questoes,
       ativo: plan.ativo,
+      stripe_link_mensal: plan.stripe_link_mensal || "",
+      stripe_link_semestral: plan.stripe_link_semestral || "",
+      stripe_link_anual: plan.stripe_link_anual || "",
     });
     setDialogOpen(true);
   };
@@ -234,6 +249,35 @@ export default function AdminPlans() {
                     value={editingPlan.limite_diario_questoes}
                     onChange={(e) => setEditingPlan({ ...editingPlan, limite_diario_questoes: Number(e.target.value) })}
                   />
+                </div>
+                <div className="space-y-2 border-t border-border pt-4">
+                  <Label className="text-sm font-semibold">Links de Pagamento Stripe</Label>
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Link Mensal</Label>
+                      <Input
+                        value={editingPlan.stripe_link_mensal}
+                        onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_mensal: e.target.value })}
+                        placeholder="https://buy.stripe.com/..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Link Semestral</Label>
+                      <Input
+                        value={editingPlan.stripe_link_semestral}
+                        onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_semestral: e.target.value })}
+                        placeholder="https://buy.stripe.com/..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Link Anual</Label>
+                      <Input
+                        value={editingPlan.stripe_link_anual}
+                        onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_anual: e.target.value })}
+                        placeholder="https://buy.stripe.com/..."
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
