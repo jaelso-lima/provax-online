@@ -174,10 +174,29 @@ export default function AdminPartners() {
     onError: () => toast.error("Erro ao atualizar status"),
   });
 
+  // Reactivate rescinded partner
+  const reactivatePartnerMutation = useMutation({
+    mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
+      const { error } = await supabase.from("partners").update({ status: "ativo", updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) throw error;
+
+      // Restore partner role
+      await supabase.rpc("admin_update_role", {
+        _target_user_id: userId,
+        _new_role: "partner" as any,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Sócio reativado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao reativar sócio"),
+  });
+
   // Delete partner completely
   const deletePartnerMutation = useMutation({
     mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
-      // Delete related data first
       await supabase.from("partner_permissions").delete().eq("partner_id", id);
       await supabase.from("partner_payments").delete().eq("partner_id", id);
       await supabase.from("partner_profit_simulation").delete().eq("partner_id", id);
@@ -186,14 +205,13 @@ export default function AdminPartners() {
       const { error } = await supabase.from("partners").delete().eq("id", id);
       if (error) throw error;
 
-      // Revert role back to user
       await supabase.rpc("admin_update_role", {
         _target_user_id: userId,
         _new_role: "user" as any,
       });
     },
     onSuccess: () => {
-      toast.success("Sócio excluído com sucesso. Agora pode recadastrá-lo.");
+      toast.success("Sócio excluído permanentemente.");
       queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
       queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
     },
