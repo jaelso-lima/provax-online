@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History, Clock, XCircle, PenTool, Eye, Pencil, Trash2 } from "lucide-react";
+import { Shield, UserPlus, FileText, Percent, Ban, CheckCircle, History, Clock, XCircle, PenTool, Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -174,10 +174,29 @@ export default function AdminPartners() {
     onError: () => toast.error("Erro ao atualizar status"),
   });
 
+  // Reactivate rescinded partner
+  const reactivatePartnerMutation = useMutation({
+    mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
+      const { error } = await supabase.from("partners").update({ status: "ativo", updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) throw error;
+
+      // Restore partner role
+      await supabase.rpc("admin_update_role", {
+        _target_user_id: userId,
+        _new_role: "partner" as any,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Sócio reativado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao reativar sócio"),
+  });
+
   // Delete partner completely
   const deletePartnerMutation = useMutation({
     mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
-      // Delete related data first
       await supabase.from("partner_permissions").delete().eq("partner_id", id);
       await supabase.from("partner_payments").delete().eq("partner_id", id);
       await supabase.from("partner_profit_simulation").delete().eq("partner_id", id);
@@ -186,14 +205,13 @@ export default function AdminPartners() {
       const { error } = await supabase.from("partners").delete().eq("id", id);
       if (error) throw error;
 
-      // Revert role back to user
       await supabase.rpc("admin_update_role", {
         _target_user_id: userId,
         _new_role: "user" as any,
       });
     },
     onSuccess: () => {
-      toast.success("Sócio excluído com sucesso. Agora pode recadastrá-lo.");
+      toast.success("Sócio excluído permanentemente.");
       queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
       queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
     },
@@ -341,6 +359,8 @@ export default function AdminPartners() {
                   onEditPartner={(updates) => editPartnerMutation.mutate({ id: p.id, updates })}
                   onDeletePartner={() => deletePartnerMutation.mutate({ id: p.id, userId: p.user_id })}
                   deletePending={deletePartnerMutation.isPending}
+                  onReactivatePartner={() => reactivatePartnerMutation.mutate({ id: p.id, userId: p.user_id })}
+                  reactivatePending={reactivatePartnerMutation.isPending}
                   onDownloadContract={() => downloadContract(p)}
                   onViewContractInline={() => setViewContractPartner(p)}
                   onSignAsFounder={(contractId) => signAsFounderMutation.mutate(contractId)}
@@ -490,6 +510,8 @@ function PartnerCard({
   onEditPartner,
   onDeletePartner,
   deletePending,
+  onReactivatePartner,
+  reactivatePending,
   onDownloadContract,
   onViewContractInline,
   onSignAsFounder,
@@ -506,6 +528,8 @@ function PartnerCard({
   onEditPartner: (updates: Record<string, any>) => void;
   onDeletePartner: () => void;
   deletePending: boolean;
+  onReactivatePartner: () => void;
+  reactivatePending: boolean;
   onDownloadContract: () => void;
   onViewContractInline: () => void;
   onSignAsFounder: (contractId: string) => void;
@@ -796,7 +820,31 @@ function PartnerCard({
               </AlertDialog>
             )}
 
-            {/* Delete partner (for rescinded or to re-register) */}
+            {/* Reactivate rescinded partner */}
+            {partner.status === "rescindido" && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1 border-primary/30 text-primary" disabled={reactivatePending}>
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Reativar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reativar sócio?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      O status do sócio será alterado de "Rescindido" para "Ativo" e ele voltará a ter acesso ao painel de sócio.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={onReactivatePartner}>
+                      {reactivatePending ? "Reativando..." : "Confirmar Reativação"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" className="text-destructive border-destructive/30 gap-1" disabled={deletePending}>
