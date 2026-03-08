@@ -174,6 +174,32 @@ export default function AdminPartners() {
     onError: () => toast.error("Erro ao atualizar status"),
   });
 
+  // Delete partner completely
+  const deletePartnerMutation = useMutation({
+    mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
+      // Delete related data first
+      await supabase.from("partner_permissions").delete().eq("partner_id", id);
+      await supabase.from("partner_payments").delete().eq("partner_id", id);
+      await supabase.from("partner_profit_simulation").delete().eq("partner_id", id);
+      await supabase.from("partner_contracts").delete().eq("partner_id", id);
+      
+      const { error } = await supabase.from("partners").delete().eq("id", id);
+      if (error) throw error;
+
+      // Revert role back to user
+      await supabase.rpc("admin_update_role", {
+        _target_user_id: userId,
+        _new_role: "user" as any,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Sócio excluído com sucesso. Agora pode recadastrá-lo.");
+      queryClient.invalidateQueries({ queryKey: ["admin-partners"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-active-contracts"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir sócio"),
+  });
+
   // Edit partner fields
   const editPartnerMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
