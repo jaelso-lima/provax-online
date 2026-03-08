@@ -339,6 +339,8 @@ export default function AdminPartners() {
                   onViewContracts={() => setShowContracts(p.id)}
                   onUpdatePercentual={(val) => updatePercentualMutation.mutate({ partnerId: p.id, newPercentual: val })}
                   onEditPartner={(updates) => editPartnerMutation.mutate({ id: p.id, updates })}
+                  onDeletePartner={() => deletePartnerMutation.mutate({ id: p.id, userId: p.user_id })}
+                  deletePending={deletePartnerMutation.isPending}
                   onDownloadContract={() => downloadContract(p)}
                   onViewContractInline={() => setViewContractPartner(p)}
                   onSignAsFounder={(contractId) => signAsFounderMutation.mutate(contractId)}
