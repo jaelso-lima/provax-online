@@ -184,12 +184,12 @@ export default function Dashboard() {
             <div className="space-y-3">
               {emAndamento.map((s: any) => (
                 <Card key={s.id} className="border-l-4 border-l-warning transition-all hover:shadow-md">
-                  <CardHeader className="flex-row items-center justify-between py-3">
-                    <div>
-                      <CardTitle className="text-sm">
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-3">
+                    <div className="min-w-0">
+                      <CardTitle className="text-sm truncate">
                         {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-xs">
                         {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
                         <span className="text-warning font-medium">Em andamento</span>
                         {s.ultima_questao_respondida != null && s.ultima_questao_respondida > 0 && (
