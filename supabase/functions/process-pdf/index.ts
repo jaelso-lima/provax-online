@@ -213,7 +213,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
     let aiResponse: Response;
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
+      const timeout = setTimeout(() => controller.abort(), 240000); // 4 min timeout
       
       aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
