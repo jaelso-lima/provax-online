@@ -102,6 +102,30 @@ export default function AdminPlans() {
     onError: (e: any) => toast.error(e.message || "Erro ao salvar plano"),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      // Check if plan has active subscriptions
+      const { data: subs } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("plan_id", planId)
+        .eq("status", "active")
+        .limit(1);
+      if (subs && subs.length > 0) {
+        throw new Error("Não é possível excluir: existem assinaturas ativas neste plano. Desative-o primeiro.");
+      }
+      // Delete plan_features first
+      await supabase.from("plan_features").delete().eq("plan_id", planId);
+      const { error } = await supabase.from("plans").delete().eq("id", planId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Plano excluído com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["admin-plans"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir plano"),
+  });
+
   const openNew = () => {
     setEditingPlan({ ...emptyPlan });
     setDialogOpen(true);
