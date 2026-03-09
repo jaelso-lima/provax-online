@@ -237,12 +237,12 @@ export default function Dashboard() {
                   className={`transition-all ${isLocked ? "opacity-60" : "cursor-pointer hover:shadow-md hover:border-primary/50"}`}
                   onClick={() => handleFreeHistoryClick(s.id)}
                 >
-                  <CardHeader className="flex-row items-center justify-between py-3">
-                    <div>
-                      <CardTitle className="text-sm">
+                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-3">
+                    <div className="min-w-0">
+                      <CardTitle className="text-sm truncate">
                         {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-xs">
                         {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
                         <span className="font-medium text-primary">Nota: {s.pontuacao}% — Acertos: {s.acertos}/{s.total_questoes}</span>
                         {s.tempo_gasto != null && (
