@@ -401,6 +401,19 @@ export default function AdminPdfImporter() {
     onError: (e: any) => toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
   });
 
+  const resetStuckMut = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("reset_stuck_pdf_imports");
+      if (error) throw error;
+      return data as number;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ["pdf-imports"] });
+      toast({ title: `${count} PDF(s) resetados`, description: "Agora você pode reprocessá-los." });
+    },
+    onError: (e: any) => toast({ title: "Erro ao resetar", description: e.message, variant: "destructive" }),
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-6">
