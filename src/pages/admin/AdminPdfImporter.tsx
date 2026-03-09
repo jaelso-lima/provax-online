@@ -401,6 +401,19 @@ export default function AdminPdfImporter() {
     onError: (e: any) => toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
   });
 
+  const resetStuckMut = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("reset_stuck_pdf_imports");
+      if (error) throw error;
+      return data as number;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ["pdf-imports"] });
+      toast({ title: `${count} PDF(s) resetados`, description: "Agora você pode reprocessá-los." });
+    },
+    onError: (e: any) => toast({ title: "Erro ao resetar", description: e.message, variant: "destructive" }),
+  });
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -413,11 +426,19 @@ export default function AdminPdfImporter() {
               Importe provas em PDF — a IA detecta banca, estado e concurso automaticamente
             </p>
           </div>
-          <Link to="/admin/questions-review">
-            <Button variant="outline" size="sm">
-              Revisar Questões
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            {imports && imports.some(i => i.status_processamento === 'processando') && (
+              <Button variant="outline" size="sm" onClick={() => resetStuckMut.mutate()} disabled={resetStuckMut.isPending}>
+                <AlertCircle className="h-4 w-4 mr-1" />
+                {resetStuckMut.isPending ? "Resetando..." : "Resetar Presos"}
+              </Button>
+            )}
+            <Link to="/admin/questions-review">
+              <Button variant="outline" size="sm">
+                Revisar Questões
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}
