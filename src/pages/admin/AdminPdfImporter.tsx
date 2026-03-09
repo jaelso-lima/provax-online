@@ -426,12 +426,19 @@ export default function AdminPdfImporter() {
               Importe provas em PDF — a IA detecta banca, estado e concurso automaticamente
             </p>
           </div>
-          <Link to="/admin/questions-review">
-            <Button variant="outline" size="sm">
-              Revisar Questões
-            </Button>
-          </Link>
-        </div>
+          <div className="flex gap-2">
+            {imports && imports.some(i => i.status_processamento === 'processando') && (
+              <Button variant="outline" size="sm" onClick={() => resetStuckMut.mutate()} disabled={resetStuckMut.isPending}>
+                <AlertCircle className="h-4 w-4 mr-1" />
+                {resetStuckMut.isPending ? "Resetando..." : "Resetar Presos"}
+              </Button>
+            )}
+            <Link to="/admin/questions-review">
+              <Button variant="outline" size="sm">
+                Revisar Questões
+              </Button>
+            </Link>
+          </div>
 
         {/* Stats */}
         {imports && imports.length > 0 && <PdfStats imports={imports} />}
