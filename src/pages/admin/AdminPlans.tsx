@@ -179,6 +179,19 @@ export default function AdminPlans() {
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(plan)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          if (confirm(`Tem certeza que deseja excluir o plano "${plan.nome}"?`)) {
+                            deleteMutation.mutate(plan.id);
+                          }
+                        }}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
