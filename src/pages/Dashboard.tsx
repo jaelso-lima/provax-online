@@ -431,11 +431,11 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        <div className="mb-8 grid gap-4 grid-cols-2 md:grid-cols-4">
-          <Card><CardHeader className="pb-2"><CardDescription>Saldo de Moedas</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold text-coin">{profile?.saldo_moedas ?? 0}</p></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>Simulados Feitos</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.totalSimulados}</p></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>Nota Média</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.notaMedia}%</p></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>Redações</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.totalRedacoes}</p></CardContent></Card>
+        <div className="mb-6 sm:mb-8 grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
+          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Saldo de Moedas</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold text-coin">{profile?.saldo_moedas ?? 0}</p></CardContent></Card>
+          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Simulados Feitos</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold">{stats.totalSimulados}</p></CardContent></Card>
+          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Nota Média</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold">{stats.notaMedia}%</p></CardContent></Card>
+          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Redações</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold">{stats.totalRedacoes}</p></CardContent></Card>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
