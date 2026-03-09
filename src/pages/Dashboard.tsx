@@ -313,7 +313,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
-      <main className="container flex-1 py-8">
+      <main className="container flex-1 px-3 sm:px-4 py-6 sm:py-8">
         <div className="mb-6 sm:mb-8">
           <h1 className="font-display text-2xl sm:text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
