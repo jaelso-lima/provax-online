@@ -513,11 +513,11 @@ export default function Dashboard() {
             <CardContent>
               <div className="space-y-2">
                 {referrals.slice(0, 10).map((r: any) => (
-                  <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
+                  <div key={r.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg border p-3">
                     <div className="flex items-center gap-2">
                       {statusIcon(r.status)}
                       <div>
-                        <p className="text-sm font-medium">Indicação #{r.id.slice(0, 8)}</p>
+                        <p className="text-xs sm:text-sm font-medium">Indicação #{r.id.slice(0, 8)}</p>
                         <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</p>
                       </div>
                     </div>
