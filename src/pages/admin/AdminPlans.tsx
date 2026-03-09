@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Pencil, X, Save } from "lucide-react";
+import { Plus, Pencil, X, Save, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
