@@ -467,7 +467,17 @@ export default function AdminPdfImporter() {
               Importe provas em PDF — a IA detecta banca, estado e concurso automaticamente
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {pendingImports.length > 0 && (
+              <Button
+                size="sm"
+                onClick={processAllPending}
+                disabled={batchProcessing || processMut.isPending}
+              >
+                <Play className="h-4 w-4 mr-1" />
+                {batchProcessing ? `Processando ${batchProgress.current}/${batchProgress.total}...` : `Processar Todos (${pendingImports.length})`}
+              </Button>
+            )}
             {imports && imports.some(i => i.status_processamento === 'processando') && (
               <Button variant="outline" size="sm" onClick={() => resetStuckMut.mutate()} disabled={resetStuckMut.isPending}>
                 <AlertCircle className="h-4 w-4 mr-1" />
@@ -481,6 +491,20 @@ export default function AdminPdfImporter() {
             </Link>
           </div>
         </div>
+
+        {/* Batch progress */}
+        {batchProcessing && (
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Processando em lote...</span>
+                <span className="text-muted-foreground">{batchProgress.current}/{batchProgress.total}</span>
+              </div>
+              <Progress value={(batchProgress.current / batchProgress.total) * 100} />
+              <p className="text-xs text-muted-foreground truncate">📄 {batchProgress.currentFile}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats */}
         {imports && imports.length > 0 && <PdfStats imports={imports} />}
