@@ -439,6 +439,7 @@ export default function AdminPdfImporter() {
               </Button>
             </Link>
           </div>
+        </div>
 
         {/* Stats */}
         {imports && imports.length > 0 && <PdfStats imports={imports} />}
