@@ -347,11 +347,52 @@ function ImportItem({
 // =============================================
 export default function AdminPdfImporter() {
   const qc = useQueryClient();
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, currentFile: "" });
 
   const { data: imports, isLoading } = useQuery({
     queryKey: ["pdf-imports"],
     queryFn: () => pdfImportService.listImports(),
   });
+
+  const pendingImports = imports?.filter(i => i.status_processamento === "pendente" || i.status_processamento === "erro") || [];
+
+  const processAllPending = async () => {
+    if (pendingImports.length === 0) return;
+    setBatchProcessing(true);
+    setBatchProgress({ current: 0, total: pendingImports.length, currentFile: "" });
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < pendingImports.length; i++) {
+      const imp = pendingImports[i];
+      setBatchProgress({ current: i + 1, total: pendingImports.length, currentFile: imp.nome_arquivo });
+      try {
+        const { data, error } = await supabase.functions.invoke("process-pdf", {
+          body: { import_id: imp.id, gabarito_storage_path: imp.gabarito_storage_path },
+        });
+        if (error || data?.error) {
+          failCount++;
+        } else {
+          successCount++;
+        }
+      } catch {
+        failCount++;
+      }
+      qc.invalidateQueries({ queryKey: ["pdf-imports"] });
+      // Small delay between requests to avoid rate limiting
+      if (i < pendingImports.length - 1) {
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+
+    setBatchProcessing(false);
+    toast({
+      title: "Processamento em lote concluído",
+      description: `✅ ${successCount} sucesso | ❌ ${failCount} falhas`,
+    });
+    qc.invalidateQueries({ queryKey: ["pdf-imports"] });
+  };
 
   const processMut = useMutation({
     mutationFn: async ({ imp, gabaritoFile }: { imp: any; gabaritoFile?: File | null }) => {
@@ -426,7 +467,17 @@ export default function AdminPdfImporter() {
               Importe provas em PDF — a IA detecta banca, estado e concurso automaticamente
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {pendingImports.length > 0 && (
+              <Button
+                size="sm"
+                onClick={processAllPending}
+                disabled={batchProcessing || processMut.isPending}
+              >
+                <Play className="h-4 w-4 mr-1" />
+                {batchProcessing ? `Processando ${batchProgress.current}/${batchProgress.total}...` : `Processar Todos (${pendingImports.length})`}
+              </Button>
+            )}
             {imports && imports.some(i => i.status_processamento === 'processando') && (
               <Button variant="outline" size="sm" onClick={() => resetStuckMut.mutate()} disabled={resetStuckMut.isPending}>
                 <AlertCircle className="h-4 w-4 mr-1" />
@@ -440,6 +491,20 @@ export default function AdminPdfImporter() {
             </Link>
           </div>
         </div>
+
+        {/* Batch progress */}
+        {batchProcessing && (
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Processando em lote...</span>
+                <span className="text-muted-foreground">{batchProgress.current}/{batchProgress.total}</span>
+              </div>
+              <Progress value={(batchProgress.current / batchProgress.total) * 100} />
+              <p className="text-xs text-muted-foreground truncate">📄 {batchProgress.currentFile}</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats */}
         {imports && imports.length > 0 && <PdfStats imports={imports} />}
