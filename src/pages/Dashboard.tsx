@@ -314,9 +314,9 @@ export default function Dashboard() {
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
       <main className="container flex-1 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
-          <p className="text-muted-foreground">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Plano: {profile?.plano ?? "free"} • Nível {nivel} •{" "}
             <button onClick={() => selecionarModo(null)} className="text-primary hover:underline">
               {modo === "concurso" ? "🎯 Concurso Público" : "🎓 ENEM"} (trocar)
