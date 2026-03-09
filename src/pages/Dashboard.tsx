@@ -617,10 +617,10 @@ export default function Dashboard() {
               <div className="space-y-3">
                 {redacoes.map((r: any) => (
                   <Card key={r.id} className="transition-all hover:shadow-md">
-                    <CardHeader className="flex-row items-center justify-between py-3">
-                      <div>
-                        <CardTitle className="text-sm">{r.tema}</CardTitle>
-                        <CardDescription>
+                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-3">
+                      <div className="min-w-0">
+                        <CardTitle className="text-sm truncate">{r.tema}</CardTitle>
+                        <CardDescription className="text-xs">
                           {new Date(r.created_at).toLocaleDateString("pt-BR")} •{" "}
                           {r.status === "corrigida" && r.nota != null ? (
                             <span className="font-medium text-primary">Nota: {r.nota}/1000</span>
@@ -629,7 +629,7 @@ export default function Dashboard() {
                           )}
                         </CardDescription>
                       </div>
-                      <Badge variant={r.status === "corrigida" ? "default" : "secondary"}>
+                      <Badge variant={r.status === "corrigida" ? "default" : "secondary"} className="shrink-0">
                         {r.status === "corrigida" ? "Corrigida" : "Pendente"}
                       </Badge>
                     </CardHeader>
