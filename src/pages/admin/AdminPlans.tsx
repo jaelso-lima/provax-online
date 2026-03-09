@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Pencil, X, Save } from "lucide-react";
+import { Plus, Pencil, X, Save, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -102,6 +102,30 @@ export default function AdminPlans() {
     onError: (e: any) => toast.error(e.message || "Erro ao salvar plano"),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      // Check if plan has active subscriptions
+      const { data: subs } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("plan_id", planId)
+        .eq("status", "active")
+        .limit(1);
+      if (subs && subs.length > 0) {
+        throw new Error("Não é possível excluir: existem assinaturas ativas neste plano. Desative-o primeiro.");
+      }
+      // Delete plan_features first
+      await supabase.from("plan_features").delete().eq("plan_id", planId);
+      const { error } = await supabase.from("plans").delete().eq("id", planId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Plano excluído com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["admin-plans"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir plano"),
+  });
+
   const openNew = () => {
     setEditingPlan({ ...emptyPlan });
     setDialogOpen(true);
@@ -154,6 +178,19 @@ export default function AdminPlans() {
                       </Badge>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(plan)}>
                         <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          if (confirm(`Tem certeza que deseja excluir o plano "${plan.nome}"?`)) {
+                            deleteMutation.mutate(plan.id);
+                          }
+                        }}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
