@@ -234,7 +234,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
       clearTimeout(timeout);
     } catch (e) {
       const msg = (e as Error).name === "AbortError" 
-        ? "Timeout: IA demorou mais de 3 minutos para responder. Tente novamente." 
+        ? "Timeout: IA demorou mais de 4 minutos para responder. Tente novamente." 
         : `Erro de conexão com IA: ${(e as Error).message}`;
       await updateImportStatus(supabase, importId, "erro", msg);
       throw new Error(msg);
