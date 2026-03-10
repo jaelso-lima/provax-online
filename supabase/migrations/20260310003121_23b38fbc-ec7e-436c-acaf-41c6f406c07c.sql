@@ -1,0 +1,1 @@
+UPDATE pdf_imports SET status_processamento = 'pendente', erro_detalhes = 'Reset: timeout edge function', updated_at = now() WHERE status_processamento = 'processando' AND updated_at < now() - interval '2 minutes';
