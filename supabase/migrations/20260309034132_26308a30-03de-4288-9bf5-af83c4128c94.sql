@@ -1,1 +1,0 @@
-CREATE POLICY "Plans: admin deleta" ON public.plans FOR DELETE TO authenticated USING (is_admin());

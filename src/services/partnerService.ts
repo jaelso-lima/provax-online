@@ -1,20 +1,12 @@
 import { partnerRepository } from "@/repositories/partnerRepository";
 
 const AVAILABLE_PERMISSIONS = [
-  { key: "ver_usuarios", label: "Usuários" },
-  { key: "ver_planos", label: "Planos" },
-  { key: "ver_faturamento", label: "Faturamento" },
-  { key: "ver_despesas", label: "Despesas" },
-  { key: "ver_societario", label: "Societário" },
-  { key: "ver_simulador_lucros", label: "Simulador de Lucros" },
-  { key: "ver_radar_concursos", label: "Radar Concursos" },
-  { key: "importar_pdfs", label: "PDF Importer" },
-  { key: "revisar_questoes", label: "Revisão de Questões" },
-  { key: "ver_pagamentos_socios", label: "Pagamentos Sócios" },
-  { key: "ver_funcionarios", label: "Funcionários" },
-  { key: "gerenciar_conteudo", label: "Página de Venda" },
-  { key: "ver_relatorios", label: "Relatório PDF" },
-  { key: "ver_logs", label: "Logs" },
+  { key: "ver_faturamento", label: "Ver Faturamento" },
+  { key: "ver_relatorios", label: "Ver Relatórios Financeiros" },
+  { key: "ver_usuarios", label: "Ver Usuários Cadastrados" },
+  { key: "ver_desempenho", label: "Ver Desempenho do Sistema" },
+  { key: "gerenciar_conteudo", label: "Gerenciar Conteúdo" },
+  { key: "importar_pdfs", label: "Importar PDFs" },
 ];
 
 export const partnerService = {

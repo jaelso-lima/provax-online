@@ -1,1 +1,0 @@
-UPDATE public.pdf_imports SET status_processamento = 'pendente', updated_at = now(), erro_detalhes = 'Reset automático: ficou preso em processando por mais de 9 horas' WHERE status_processamento = 'processando';

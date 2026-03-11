@@ -22,10 +22,6 @@ export const examRadarService = {
     return examRadarRepository.softDelete(id);
   },
 
-  async deleteExam(id: string) {
-    return examRadarRepository.hardDelete(id);
-  },
-
   async getFilterOptions() {
     const [estados, areas] = await Promise.all([
       examRadarRepository.getDistinctEstados(),

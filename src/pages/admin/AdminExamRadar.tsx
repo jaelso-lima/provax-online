@@ -12,11 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { examRadarService } from "@/services/examRadarService";
 import type { ExamRadar } from "@/types/modules";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Pencil, Archive, Radar, ExternalLink, Trash2 } from "lucide-react";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Plus, Pencil, Archive, Radar, ExternalLink } from "lucide-react";
 
 const NIVEIS = ["medio", "superior", "tecnico", "fundamental"];
 const ESTADOS_BR = [
@@ -71,15 +67,6 @@ export default function AdminExamRadar() {
       qc.invalidateQueries({ queryKey: ["admin-exam-radar"] });
       toast({ title: "Concurso arquivado" });
     },
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: (id: string) => examRadarService.deleteExam(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-exam-radar"] });
-      toast({ title: "Concurso excluído permanentemente" });
-    },
-    onError: (e: any) => toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
   });
 
   const handleSubmit = () => {
@@ -257,27 +244,6 @@ export default function AdminExamRadar() {
                         <Archive className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir concurso?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            O concurso <strong>"{exam.nome}"</strong> será excluído permanentemente. Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteMut.mutate(exam.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>

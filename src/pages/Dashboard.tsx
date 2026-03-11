@@ -184,12 +184,12 @@ export default function Dashboard() {
             <div className="space-y-3">
               {emAndamento.map((s: any) => (
                 <Card key={s.id} className="border-l-4 border-l-warning transition-all hover:shadow-md">
-                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-3">
-                    <div className="min-w-0">
-                      <CardTitle className="text-sm truncate">
+                  <CardHeader className="flex-row items-center justify-between py-3">
+                    <div>
+                      <CardTitle className="text-sm">
                         {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
                       </CardTitle>
-                      <CardDescription className="text-xs">
+                      <CardDescription>
                         {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
                         <span className="text-warning font-medium">Em andamento</span>
                         {s.ultima_questao_respondida != null && s.ultima_questao_respondida > 0 && (
@@ -237,12 +237,12 @@ export default function Dashboard() {
                   className={`transition-all ${isLocked ? "opacity-60" : "cursor-pointer hover:shadow-md hover:border-primary/50"}`}
                   onClick={() => handleFreeHistoryClick(s.id)}
                 >
-                  <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-3">
-                    <div className="min-w-0">
-                      <CardTitle className="text-sm truncate">
+                  <CardHeader className="flex-row items-center justify-between py-3">
+                    <div>
+                      <CardTitle className="text-sm">
                         {s.tipo === "prova_completa" ? "Prova Completa" : "Simulado"} — {s.quantidade} questões
                       </CardTitle>
-                      <CardDescription className="text-xs">
+                      <CardDescription>
                         {new Date(s.created_at).toLocaleDateString("pt-BR")} •{" "}
                         <span className="font-medium text-primary">Nota: {s.pontuacao}% — Acertos: {s.acertos}/{s.total_questoes}</span>
                         {s.tempo_gasto != null && (
@@ -313,10 +313,10 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
-      <main className="container flex-1 px-3 sm:px-4 py-6 sm:py-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="font-display text-2xl sm:text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+      <main className="container flex-1 py-8">
+        <div className="mb-8">
+          <h1 className="font-display text-3xl font-bold">Olá, {profile?.nome || "Estudante"}! 👋</h1>
+          <p className="text-muted-foreground">
             Plano: {profile?.plano ?? "free"} • Nível {nivel} •{" "}
             <button onClick={() => selecionarModo(null)} className="text-primary hover:underline">
               {modo === "concurso" ? "🎯 Concurso Público" : "🎓 ENEM"} (trocar)
@@ -328,9 +328,9 @@ export default function Dashboard() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="mb-6 border-primary/20 bg-primary/5">
             <CardContent className="py-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                     <Sparkles className="h-5 w-5 text-primary" />
                   </div>
                   <div>
@@ -340,7 +340,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </div>
-                <Button size="sm" variant="default" className="w-full sm:w-auto" onClick={() => navigate(`/simulado?modo=${modo}`)}>
+                <Button size="sm" variant="default" onClick={() => navigate(`/simulado?modo=${modo}`)}>
                   Praticar agora
                 </Button>
               </div>
@@ -431,11 +431,11 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        <div className="mb-6 sm:mb-8 grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
-          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Saldo de Moedas</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold text-coin">{profile?.saldo_moedas ?? 0}</p></CardContent></Card>
-          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Simulados Feitos</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold">{stats.totalSimulados}</p></CardContent></Card>
-          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Nota Média</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold">{stats.notaMedia}%</p></CardContent></Card>
-          <Card><CardHeader className="p-3 sm:p-4 pb-1 sm:pb-2"><CardDescription className="text-xs sm:text-sm">Redações</CardDescription></CardHeader><CardContent className="p-3 sm:p-4 pt-0"><p className="text-2xl sm:text-3xl font-bold">{stats.totalRedacoes}</p></CardContent></Card>
+        <div className="mb-8 grid gap-4 grid-cols-2 md:grid-cols-4">
+          <Card><CardHeader className="pb-2"><CardDescription>Saldo de Moedas</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold text-coin">{profile?.saldo_moedas ?? 0}</p></CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardDescription>Simulados Feitos</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.totalSimulados}</p></CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardDescription>Nota Média</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.notaMedia}%</p></CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardDescription>Redações</CardDescription></CardHeader><CardContent><p className="text-3xl font-bold">{stats.totalRedacoes}</p></CardContent></Card>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -513,11 +513,11 @@ export default function Dashboard() {
             <CardContent>
               <div className="space-y-2">
                 {referrals.slice(0, 10).map((r: any) => (
-                  <div key={r.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-lg border p-3">
+                  <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div className="flex items-center gap-2">
                       {statusIcon(r.status)}
                       <div>
-                        <p className="text-xs sm:text-sm font-medium">Indicação #{r.id.slice(0, 8)}</p>
+                        <p className="text-sm font-medium">Indicação #{r.id.slice(0, 8)}</p>
                         <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</p>
                       </div>
                     </div>
@@ -617,10 +617,10 @@ export default function Dashboard() {
               <div className="space-y-3">
                 {redacoes.map((r: any) => (
                   <Card key={r.id} className="transition-all hover:shadow-md">
-                    <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-3">
-                      <div className="min-w-0">
-                        <CardTitle className="text-sm truncate">{r.tema}</CardTitle>
-                        <CardDescription className="text-xs">
+                    <CardHeader className="flex-row items-center justify-between py-3">
+                      <div>
+                        <CardTitle className="text-sm">{r.tema}</CardTitle>
+                        <CardDescription>
                           {new Date(r.created_at).toLocaleDateString("pt-BR")} •{" "}
                           {r.status === "corrigida" && r.nota != null ? (
                             <span className="font-medium text-primary">Nota: {r.nota}/1000</span>
@@ -629,7 +629,7 @@ export default function Dashboard() {
                           )}
                         </CardDescription>
                       </div>
-                      <Badge variant={r.status === "corrigida" ? "default" : "secondary"} className="shrink-0">
+                      <Badge variant={r.status === "corrigida" ? "default" : "secondary"}>
                         {r.status === "corrigida" ? "Corrigida" : "Pendente"}
                       </Badge>
                     </CardHeader>

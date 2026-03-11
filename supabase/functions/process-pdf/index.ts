@@ -213,7 +213,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
     let aiResponse: Response;
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 240000); // 4 min timeout
+      const timeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
       
       aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -234,7 +234,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
       clearTimeout(timeout);
     } catch (e) {
       const msg = (e as Error).name === "AbortError" 
-        ? "Timeout: IA demorou mais de 4 minutos para responder. Tente novamente." 
+        ? "Timeout: IA demorou mais de 3 minutos para responder. Tente novamente." 
         : `Erro de conexão com IA: ${(e as Error).message}`;
       await updateImportStatus(supabase, importId, "erro", msg);
       throw new Error(msg);
