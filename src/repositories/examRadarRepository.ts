@@ -67,6 +67,14 @@ export const examRadarRepository = {
     if (error) throw error;
   },
 
+  async hardDelete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from(TABLE)
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+
   async getDistinctEstados(): Promise<string[]> {
     const { data, error } = await supabase
       .from(TABLE)

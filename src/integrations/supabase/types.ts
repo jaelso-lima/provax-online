@@ -1111,40 +1111,58 @@ export type Database = {
       }
       partners: {
         Row: {
+          agencia: string | null
+          banco: string | null
           bloqueado_para_edicao: boolean
+          conta: string | null
           created_at: string
           criado_por: string
           data_entrada: string
           id: string
           percentual_participacao: number
+          pix_chave: string | null
+          pix_tipo: string | null
           status: string
           tipo_participacao: string
+          titular: string | null
           updated_at: string
           user_id: string
           valor_investido: number
         }
         Insert: {
+          agencia?: string | null
+          banco?: string | null
           bloqueado_para_edicao?: boolean
+          conta?: string | null
           created_at?: string
           criado_por: string
           data_entrada?: string
           id?: string
           percentual_participacao?: number
+          pix_chave?: string | null
+          pix_tipo?: string | null
           status?: string
           tipo_participacao?: string
+          titular?: string | null
           updated_at?: string
           user_id: string
           valor_investido?: number
         }
         Update: {
+          agencia?: string | null
+          banco?: string | null
           bloqueado_para_edicao?: boolean
+          conta?: string | null
           created_at?: string
           criado_por?: string
           data_entrada?: string
           id?: string
           percentual_participacao?: number
+          pix_chave?: string | null
+          pix_tipo?: string | null
           status?: string
           tipo_participacao?: string
+          titular?: string | null
           updated_at?: string
           user_id?: string
           valor_investido?: number
@@ -1292,6 +1310,9 @@ export type Database = {
           preco_mensal: number | null
           preco_semestral: number | null
           slug: string
+          stripe_link_anual: string | null
+          stripe_link_mensal: string | null
+          stripe_link_semestral: string | null
         }
         Insert: {
           ativo?: boolean
@@ -1304,6 +1325,9 @@ export type Database = {
           preco_mensal?: number | null
           preco_semestral?: number | null
           slug: string
+          stripe_link_anual?: string | null
+          stripe_link_mensal?: string | null
+          stripe_link_semestral?: string | null
         }
         Update: {
           ativo?: boolean
@@ -1316,6 +1340,9 @@ export type Database = {
           preco_mensal?: number | null
           preco_semestral?: number | null
           slug?: string
+          stripe_link_anual?: string | null
+          stripe_link_mensal?: string | null
+          stripe_link_semestral?: string | null
         }
         Relationships: []
       }
@@ -2112,6 +2139,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_plan_from_stripe: {
+        Args: { _plan_slug: string; _user_id: string }
+        Returns: boolean
+      }
       adicionar_moedas: {
         Args: { _descricao: string; _user_id: string; _valor: number }
         Returns: boolean
@@ -2159,6 +2190,7 @@ export type Database = {
         Args: { _novo_plano: string; _user_id: string }
         Returns: boolean
       }
+      auto_inactivate_expired_exams: { Args: never; Returns: number }
       cancelar_referral: {
         Args: { _reason: string; _referral_id: string }
         Returns: boolean
@@ -2222,6 +2254,7 @@ export type Database = {
         Returns: boolean
       }
       reset_daily_credits: { Args: { _user_id: string }; Returns: Json }
+      reset_stuck_pdf_imports: { Args: never; Returns: number }
       suspend_account: {
         Args: { _reason: string; _target_user_id: string }
         Returns: boolean

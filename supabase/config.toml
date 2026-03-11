@@ -1,4 +1,4 @@
-project_id = "shloysxkntqvwwjmhggn"
+project_id = "tibyzcduahvsdybpjwuu"
 
 [functions]
   [functions.auth-email-hook]
@@ -8,4 +8,6 @@ project_id = "shloysxkntqvwwjmhggn"
   [functions.check-registration]
     verify_jwt = false
   [functions.process-pdf]
+    verify_jwt = false
+  [functions.stripe-webhook]
     verify_jwt = false

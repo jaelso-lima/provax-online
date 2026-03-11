@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Pencil, X, Save } from "lucide-react";
+import { Plus, Pencil, X, Save, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,9 @@ interface PlanForm {
   preco_anual: number;
   limite_diario_questoes: number;
   ativo: boolean;
+  stripe_link_mensal: string;
+  stripe_link_semestral: string;
+  stripe_link_anual: string;
 }
 
 const emptyPlan: PlanForm = {
@@ -38,6 +41,9 @@ const emptyPlan: PlanForm = {
   preco_anual: 0,
   limite_diario_questoes: 10,
   ativo: true,
+  stripe_link_mensal: "",
+  stripe_link_semestral: "",
+  stripe_link_anual: "",
 };
 
 export default function AdminPlans() {
@@ -65,6 +71,9 @@ export default function AdminPlans() {
           preco_anual: plan.preco_anual,
           limite_diario_questoes: plan.limite_diario_questoes,
           ativo: plan.ativo,
+          stripe_link_mensal: plan.stripe_link_mensal || null,
+          stripe_link_semestral: plan.stripe_link_semestral || null,
+          stripe_link_anual: plan.stripe_link_anual || null,
         }).eq("id", plan.id);
         if (error) throw error;
       } else {
@@ -77,6 +86,9 @@ export default function AdminPlans() {
           preco_anual: plan.preco_anual,
           limite_diario_questoes: plan.limite_diario_questoes,
           ativo: plan.ativo,
+          stripe_link_mensal: plan.stripe_link_mensal || null,
+          stripe_link_semestral: plan.stripe_link_semestral || null,
+          stripe_link_anual: plan.stripe_link_anual || null,
         });
         if (error) throw error;
       }
@@ -88,6 +100,30 @@ export default function AdminPlans() {
       setEditingPlan(null);
     },
     onError: (e: any) => toast.error(e.message || "Erro ao salvar plano"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (planId: string) => {
+      // Check if plan has active subscriptions
+      const { data: subs } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("plan_id", planId)
+        .eq("status", "active")
+        .limit(1);
+      if (subs && subs.length > 0) {
+        throw new Error("Não é possível excluir: existem assinaturas ativas neste plano. Desative-o primeiro.");
+      }
+      // Delete plan_features first
+      await supabase.from("plan_features").delete().eq("plan_id", planId);
+      const { error } = await supabase.from("plans").delete().eq("id", planId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Plano excluído com sucesso");
+      queryClient.invalidateQueries({ queryKey: ["admin-plans"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao excluir plano"),
   });
 
   const openNew = () => {
@@ -106,6 +142,9 @@ export default function AdminPlans() {
       preco_anual: Number(plan.preco_anual) || 0,
       limite_diario_questoes: plan.limite_diario_questoes,
       ativo: plan.ativo,
+      stripe_link_mensal: plan.stripe_link_mensal || "",
+      stripe_link_semestral: plan.stripe_link_semestral || "",
+      stripe_link_anual: plan.stripe_link_anual || "",
     });
     setDialogOpen(true);
   };
@@ -139,6 +178,19 @@ export default function AdminPlans() {
                       </Badge>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(plan)}>
                         <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          if (confirm(`Tem certeza que deseja excluir o plano "${plan.nome}"?`)) {
+                            deleteMutation.mutate(plan.id);
+                          }
+                        }}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -234,6 +286,35 @@ export default function AdminPlans() {
                     value={editingPlan.limite_diario_questoes}
                     onChange={(e) => setEditingPlan({ ...editingPlan, limite_diario_questoes: Number(e.target.value) })}
                   />
+                </div>
+                <div className="space-y-2 border-t border-border pt-4">
+                  <Label className="text-sm font-semibold">Links de Pagamento Stripe</Label>
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Link Mensal</Label>
+                      <Input
+                        value={editingPlan.stripe_link_mensal}
+                        onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_mensal: e.target.value })}
+                        placeholder="https://buy.stripe.com/..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Link Semestral</Label>
+                      <Input
+                        value={editingPlan.stripe_link_semestral}
+                        onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_semestral: e.target.value })}
+                        placeholder="https://buy.stripe.com/..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Link Anual</Label>
+                      <Input
+                        value={editingPlan.stripe_link_anual}
+                        onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_anual: e.target.value })}
+                        placeholder="https://buy.stripe.com/..."
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch

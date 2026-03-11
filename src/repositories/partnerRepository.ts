@@ -34,7 +34,7 @@ export const partnerRepository = {
   async listAllPartnerPayments() {
     const { data, error } = await supabase
       .from("partner_payments")
-      .select("*, partners(user_id, percentual_participacao, profiles!partners_user_id_fkey(nome, email))")
+      .select("*, partners(user_id, percentual_participacao, pix_chave, pix_tipo, banco, agencia, conta, titular, profiles!partners_user_id_fkey(nome, email))")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data as any[];

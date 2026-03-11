@@ -30,7 +30,6 @@ async function updateImportStatus(supabase: any, importId: string, status: strin
   await supabase.from("pdf_imports").update(update).eq("id", importId);
 }
 
-// Split text into chunks of ~1000 chars for knowledge base
 function splitIntoChunks(text: string, maxChunkSize = 1000): string[] {
   if (!text || text.trim().length === 0) return [];
   const paragraphs = text.split(/\n{2,}/);
@@ -49,6 +48,34 @@ function splitIntoChunks(text: string, maxChunkSize = 1000): string[] {
   return chunks;
 }
 
+// Normalize alternativas from various AI response formats
+function normalizeAlternativas(alts: any): { letra: string; texto: string }[] | null {
+  if (!alts) return null;
+  
+  // Already an array
+  if (Array.isArray(alts)) {
+    return alts
+      .filter((a: any) => a && (a.letra || a.letter) && (a.texto || a.text || a.conteudo))
+      .map((a: any) => ({
+        letra: (a.letra || a.letter || "").toString().toUpperCase(),
+        texto: (a.texto || a.text || a.conteudo || "").toString(),
+      }));
+  }
+  
+  // Object format like { "A": "text", "B": "text" }
+  if (typeof alts === "object") {
+    const result: { letra: string; texto: string }[] = [];
+    for (const [key, value] of Object.entries(alts)) {
+      if (key.match(/^[A-Ea-e]$/) && typeof value === "string") {
+        result.push({ letra: key.toUpperCase(), texto: value });
+      }
+    }
+    if (result.length >= 2) return result;
+  }
+  
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -65,7 +92,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
-    // Auth check
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       auth: { persistSession: false },
     });
@@ -77,7 +103,6 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Role check
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -93,7 +118,6 @@ Deno.serve(async (req) => {
     const gabaritoStoragePath = body.gabarito_storage_path;
     if (!importId) throw new Error("import_id é obrigatório");
 
-    // Get import record
     const { data: importRecord, error: importError } = await supabase
       .from("pdf_imports")
       .select("*")
@@ -114,13 +138,13 @@ Deno.serve(async (req) => {
     let provaBase64: string;
     try {
       provaBase64 = await pdfToBase64(supabase, importRecord.storage_path);
-      console.log("PDF baixado com sucesso, tamanho base64:", provaBase64.length);
+      console.log("PDF baixado, tamanho base64:", provaBase64.length);
     } catch (e) {
-      await updateImportStatus(supabase, importId, "erro", "Erro ao baixar PDF da prova: " + (e as Error).message);
+      await updateImportStatus(supabase, importId, "erro", "Erro ao baixar PDF: " + (e as Error).message);
       throw e;
     }
 
-    // Download gabarito PDF - check body param first, then import record
+    // Download gabarito PDF
     const effectiveGabaritoPath = gabaritoStoragePath || importRecord.gabarito_storage_path;
     let gabaritoBase64: string | null = null;
     if (effectiveGabaritoPath) {
@@ -128,7 +152,7 @@ Deno.serve(async (req) => {
         gabaritoBase64 = await pdfToBase64(supabase, effectiveGabaritoPath);
         console.log("Gabarito carregado:", effectiveGabaritoPath);
       } catch (e) {
-        console.log("Aviso: não foi possível baixar gabarito:", (e as Error).message);
+        console.log("Aviso: gabarito não encontrado:", (e as Error).message);
       }
     }
 
@@ -153,13 +177,15 @@ IMPORTANTE: Retorne APENAS um JSON válido. NÃO inclua o texto completo do docu
 Para cada questão encontrada, extraia:
 - numero: número da questão
 - enunciado: texto completo do enunciado
-- alternativas: array com as alternativas [{letra, texto}]
+- alternativas: array com as alternativas [{"letra": "A", "texto": "..."}, ...]
 - materia: matéria/disciplina da questão
 - assunto: assunto específico dentro da matéria
 - dificuldade: "facil", "media" ou "dificil"
 - resposta_correta: letra da resposta correta (A, B, C, D ou E)
 
 ${gabaritoBase64 ? "4. O SEGUNDO PDF ANEXADO É O GABARITO OFICIAL. Use-o para associar as respostas corretas a cada questão pelo número." : ""}
+
+IMPORTANTE sobre alternativas: SEMPRE retorne como ARRAY de objetos com "letra" e "texto".
 
 Retorne APENAS este JSON:
 {
@@ -193,8 +219,7 @@ Retorne APENAS este JSON:
 }
 
 Se não conseguir extrair questões (ex: é um edital), retorne questoes como array vazio.
-Se não conseguir identificar algum metadado, use null.
-NÃO use caracteres de controle dentro das strings. Escape aspas duplas com backslash.`;
+Se não conseguir identificar algum metadado, use null.`;
 
     const contentParts: any[] = [
       { type: "text", text: extractionPrompt },
@@ -208,12 +233,12 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
       });
     }
 
-    // Call AI with timeout protection
-    console.log("Chamando IA para processar PDF...");
+    // Call AI — 120s timeout to stay within Supabase edge function limits
+    console.log("Chamando IA...");
     let aiResponse: Response;
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 180000); // 3 min timeout
+      const timeout = setTimeout(() => controller.abort(), 120000);
       
       aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -234,7 +259,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
       clearTimeout(timeout);
     } catch (e) {
       const msg = (e as Error).name === "AbortError" 
-        ? "Timeout: IA demorou mais de 3 minutos para responder. Tente novamente." 
+        ? "Timeout: IA demorou mais de 2 minutos. Tente novamente." 
         : `Erro de conexão com IA: ${(e as Error).message}`;
       await updateImportStatus(supabase, importId, "erro", msg);
       throw new Error(msg);
@@ -243,7 +268,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       const msg = aiResponse.status === 429
-        ? "Rate limit da IA excedido. Tente novamente em alguns minutos."
+        ? "Rate limit da IA. Tente novamente em alguns minutos."
         : aiResponse.status === 402
         ? "Créditos de IA insuficientes."
         : `Erro na IA (${aiResponse.status}): ${errorText.slice(0, 500)}`;
@@ -253,19 +278,17 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
 
     const aiResult = await aiResponse.json();
     const content = aiResult.choices?.[0]?.message?.content || "";
-    console.log("Resposta da IA recebida, tamanho:", content.length);
+    console.log("Resposta IA recebida, tamanho:", content.length);
 
     let parsed;
     try {
-      // Clean AI response: remove markdown code blocks, fix common issues
       let cleanContent = content
         .replace(/```json\s*/gi, "")
         .replace(/```\s*/g, "")
         .trim();
       
-      // Extract JSON object - use a balanced brace approach
       const startIdx = cleanContent.indexOf("{");
-      if (startIdx === -1) throw new Error("Nenhum JSON encontrado na resposta");
+      if (startIdx === -1) throw new Error("Nenhum JSON encontrado");
       
       let braceCount = 0;
       let endIdx = -1;
@@ -277,29 +300,48 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
         }
       }
       
-      if (endIdx === -1) throw new Error("JSON incompleto na resposta da IA");
+      if (endIdx === -1) throw new Error("JSON incompleto na resposta");
       
       let jsonStr = cleanContent.slice(startIdx, endIdx + 1);
       
-      // Fix common JSON issues from AI responses
+      // Fix common JSON issues
       jsonStr = jsonStr
-        .replace(/,\s*}/g, "}")       // trailing commas before }
-        .replace(/,\s*]/g, "]")       // trailing commas before ]
-        .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === "\n" || ch === "\r" || ch === "\t" ? ch : " "); // control chars
+        .replace(/,\s*}/g, "}")
+        .replace(/,\s*]/g, "]")
+        .replace(/[\x00-\x1F\x7F]/g, (ch) => ch === "\n" || ch === "\r" || ch === "\t" ? ch : " ");
       
       parsed = JSON.parse(jsonStr);
     } catch (e) {
-      // Second attempt: try to extract just metadata and questoes separately
-      console.error("Falha no parse JSON:", (e as Error).message);
-      console.log("Primeiros 1000 chars da resposta:", content.slice(0, 1000));
-      await updateImportStatus(supabase, importId, "erro",
-        `Erro ao parsear resposta da IA: ${(e as Error).message}. Tente reprocessar.`);
-      throw new Error("Erro ao parsear resposta da IA");
+      console.error("Parse JSON falhou:", (e as Error).message);
+      console.log("Primeiros 500 chars:", content.slice(0, 500));
+      
+      // Try a more aggressive cleanup
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const aggressive = jsonMatch[0]
+            .replace(/,\s*}/g, "}")
+            .replace(/,\s*]/g, "]")
+            .replace(/[\x00-\x1F\x7F]/g, " ")
+            .replace(/\n/g, " ")
+            .replace(/\t/g, " ");
+          parsed = JSON.parse(aggressive);
+          console.log("Parse agressivo funcionou");
+        } else {
+          throw e;
+        }
+      } catch (_) {
+        await updateImportStatus(supabase, importId, "erro",
+          `Erro ao parsear JSON: ${(e as Error).message}. Tente reprocessar.`);
+        throw new Error("Erro ao parsear resposta da IA");
+      }
     }
 
     const meta = parsed.metadata || {};
     const questoes = parsed.questoes || [];
     const textoExtraido = parsed.texto_resumo || parsed.texto_extraido || "";
+
+    console.log(`Metadados: banca=${meta.banca_organizadora}, questões encontradas: ${questoes.length}`);
 
     // Auto-create or find banca
     let bancaId = importRecord.banca_id;
@@ -358,9 +400,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
       }
     }
 
-    // =============================================
-    // KNOWLEDGE BASE: Create document and chunks
-    // =============================================
+    // Knowledge Base: Create document and chunks
     let documentId: string | null = null;
     try {
       const { data: docRecord } = await supabase.from("documents").insert({
@@ -372,7 +412,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
         area: meta.area || null,
         estado: meta.estado || null,
         arquivo_pdf: importRecord.storage_path,
-        texto_extraido: textoExtraido.slice(0, 65000), // limit text storage
+        texto_extraido: textoExtraido.slice(0, 65000),
         status: "processado",
         pdf_import_id: importId,
         uploaded_by: user.id,
@@ -380,37 +420,38 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
 
       if (docRecord) {
         documentId = docRecord.id;
-        
-        // Create chunks from extracted text
         const chunks = splitIntoChunks(textoExtraido);
         if (chunks.length > 0) {
           const chunkRecords = chunks.map((text, i) => ({
             document_id: documentId,
             chunk_text: text,
             ordem: i,
-            tokens_count: Math.ceil(text.length / 4), // rough token estimate
+            tokens_count: Math.ceil(text.length / 4),
           }));
-          
           await supabase.from("document_chunks").insert(chunkRecords);
-          
-          // Update document with chunk count
-          await supabase.from("documents").update({
-            total_chunks: chunks.length,
-          }).eq("id", documentId);
+          await supabase.from("documents").update({ total_chunks: chunks.length }).eq("id", documentId);
         }
-        
-        console.log(`Knowledge base: ${chunks.length} chunks criados para documento ${documentId}`);
+        console.log(`Knowledge base: ${chunks.length} chunks criados`);
       }
     } catch (e) {
-      console.log("Aviso: erro ao criar documento no knowledge base:", (e as Error).message);
-      // Non-critical error, continue with question extraction
+      console.log("Aviso: erro knowledge base:", (e as Error).message);
     }
 
-    // Insert extracted questions
+    // Insert extracted questions one by one with better error handling
     let insertedCount = 0;
     let errorCount = 0;
+    let skippedCount = 0;
+
     for (const q of questoes) {
-      if (!q.enunciado || !q.alternativas?.length) continue;
+      if (!q.enunciado) { skippedCount++; continue; }
+
+      // Normalize alternativas from various formats
+      const alternativas = normalizeAlternativas(q.alternativas);
+      if (!alternativas || alternativas.length < 2) {
+        console.log(`Questão ${q.numero || '?'}: alternativas inválidas, pulando`);
+        skippedCount++;
+        continue;
+      }
 
       let materiaId = null;
       if (q.materia) {
@@ -425,7 +466,6 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
         }
       }
 
-      // Auto-find or create topic
       let topicId = null;
       if (q.assunto && materiaId) {
         const { data: existingTopic } = await supabase
@@ -439,15 +479,12 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
         }
       }
 
-      const alternativas = q.alternativas.map((a: any) => ({
-        letra: a.letra,
-        texto: a.texto,
-      }));
+      const respostaCorreta = (q.resposta_correta || q.gabarito || "A").toString().toUpperCase().trim();
 
       const { error: qError } = await supabase.from("questoes").insert({
         enunciado: q.enunciado,
         alternativas: JSON.stringify(alternativas),
-        resposta_correta: q.resposta_correta || "A",
+        resposta_correta: respostaCorreta,
         modo: "concurso",
         source: "pdf_import",
         banca_id: bancaId,
@@ -458,21 +495,20 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
         state_id: stateId,
         ano: meta.ano || importRecord.ano,
         dificuldade: q.dificuldade || "media",
-        status_questao: q.resposta_correta ? "valida" : "pendente_revisao",
+        status_questao: respostaCorreta ? "valida" : "pendente_revisao",
       });
 
-      if (!qError) insertedCount++;
-      else {
+      if (!qError) {
+        insertedCount++;
+      } else {
         errorCount++;
-        console.log("Erro ao inserir questão:", qError.message);
+        console.log(`Erro questão ${q.numero || '?'}:`, qError.message);
       }
     }
 
     // Update document with question count
     if (documentId) {
-      await supabase.from("documents").update({
-        total_questoes: insertedCount,
-      }).eq("id", documentId);
+      await supabase.from("documents").update({ total_questoes: insertedCount }).eq("id", documentId);
     }
 
     // Update import record
@@ -483,10 +519,11 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
       area_id: areaId,
       ano: meta.ano || importRecord.ano,
       cargo: meta.cargo || importRecord.cargo,
-      erro_detalhes: errorCount > 0 ? `${errorCount} questões falharam ao inserir` : null,
+      erro_detalhes: (errorCount > 0 || skippedCount > 0)
+        ? `${insertedCount} inseridas, ${errorCount} erros, ${skippedCount} puladas`
+        : null,
     }).eq("id", importId);
 
-    // Audit log
     await supabase.from("audit_logs").insert({
       user_id: user.id,
       acao: "PDF_PROCESSADO",
@@ -496,21 +533,24 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
         document_id: documentId,
         questoes_extraidas: insertedCount,
         questoes_com_erro: errorCount,
+        questoes_puladas: skippedCount,
+        total_na_resposta: questoes.length,
         banca_detectada: meta.banca_organizadora,
         concurso: meta.concurso_nome,
         estado: meta.estado,
         area: meta.area,
         had_gabarito: !!effectiveGabaritoPath,
-        texto_length: textoExtraido.length,
       },
     });
 
-    console.log(`Processamento concluído: ${insertedCount} questões, documento ${documentId}`);
+    console.log(`Concluído: ${insertedCount} questões inseridas, ${errorCount} erros, ${skippedCount} puladas de ${questoes.length} total`);
 
     return new Response(
       JSON.stringify({
         success: true,
         questoes_extraidas: insertedCount,
+        questoes_total: questoes.length,
+        questoes_puladas: skippedCount,
         metadata: meta,
         banca_id: bancaId,
         area_id: areaId,
@@ -520,9 +560,8 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Erro no processamento:", (error as Error).message);
+    console.error("Erro:", (error as Error).message);
     
-    // Safety net: ensure status is not stuck at "processando"
     if (supabase && importId) {
       try {
         const { data: check } = await supabase.from("pdf_imports")
@@ -530,7 +569,7 @@ NÃO use caracteres de controle dentro das strings. Escape aspas duplas com back
         if (check?.status_processamento === "processando") {
           await updateImportStatus(supabase, importId, "erro", (error as Error).message);
         }
-      } catch (_) { /* ignore cleanup errors */ }
+      } catch (_) { /* ignore */ }
     }
 
     return new Response(
