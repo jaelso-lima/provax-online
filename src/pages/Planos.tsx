@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackFBEvent } from "@/lib/fbPixel";
 
-type Periodo = "mensal" | "semestral" | "anual";
+type Periodo = "mensal" | "trimestral" | "anual";
 
 const FEATURE_LABELS: Record<string, string> = {
   simulado_basico: "Simulado básico",
