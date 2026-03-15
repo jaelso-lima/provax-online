@@ -161,7 +161,11 @@ export default function Planos() {
                   {isDestaque && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <Badge className="bg-accent text-accent-foreground gap-1">
-                        <Crown className="h-3 w-3" /> Aprovação máxima
+                        {p.slug === "provax-x" ? (
+                          <><Zap className="h-3 w-3" /> Mais popular</>
+                        ) : (
+                          <><Crown className="h-3 w-3" /> Aprovação máxima</>
+                        )}
                       </Badge>
                     </div>
                   )}
