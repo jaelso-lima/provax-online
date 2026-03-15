@@ -138,7 +138,7 @@ export default function Planos() {
           {planos.map((p, i) => {
             const preco = p.prices[periodo];
             const desconto = periodo !== "mensal"
-              ? calcDesconto(p.prices.mensal, preco, periodo === "semestral" ? 6 : 12)
+              ? calcDesconto(p.prices.mensal, preco, periodo === "trimestral" ? 3 : 12)
               : 0;
             const Icon = p.icon;
             const isDestaque = p.slug === "provax-x" || p.slug === "pro";
