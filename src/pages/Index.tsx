@@ -13,18 +13,11 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { trackFBEvent } from "@/lib/fbPixel";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true } };
-
-const KIWIFY_PROVAX_X = "https://pay.kiwify.com.br/izSd5mz";
-
-const handleCTA = (email?: string) => {
-  trackFBEvent("InitiateCheckout", { content_name: "Provax X", value: 14.90, currency: "BRL" });
-  const url = new URL(KIWIFY_PROVAX_X);
-  if (email) url.searchParams.set("email", email);
-  window.open(url.toString(), "_blank");
-};
 
 export default function Index() {
   const { user } = useOptionalAuth();
