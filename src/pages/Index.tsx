@@ -445,8 +445,10 @@ export default function Index() {
                     ))}
                   </ul>
                   <Button className="w-full" onClick={() => {
+                    const link = getLink("start");
+                    if (!link) return;
                     trackFBEvent("InitiateCheckout", { content_name: "Start", value: 29.90, currency: "BRL" });
-                    window.open("https://pay.kiwify.com.br/3hXCsif", "_blank");
+                    window.open(link, "_blank");
                   }}>
                     Assinar Start
                   </Button>
