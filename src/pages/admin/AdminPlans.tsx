@@ -52,7 +52,7 @@ const emptyPlan: PlanForm = {
 };
 
 type LinkStatus = "ok" | "indisponivel" | "erro_conexao" | "sem_link";
-type ValidationResults = Record<string, { mensal?: LinkStatus; semestral?: LinkStatus; anual?: LinkStatus }>;
+type ValidationResults = Record<string, { mensal?: LinkStatus; trimestral?: LinkStatus; anual?: LinkStatus }>;
 
 const STATUS_CONFIG: Record<LinkStatus, { icon: typeof CheckCircle; label: string; color: string }> = {
   ok: { icon: CheckCircle, label: "Disponível", color: "text-emerald-500" },
