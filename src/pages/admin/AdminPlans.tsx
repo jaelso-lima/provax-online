@@ -256,9 +256,9 @@ export default function AdminPlans() {
                   <p className="text-sm font-medium text-destructive">
                     {broken} link(s) com problema
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Produtos indisponíveis na Kiwify não funcionarão para os clientes. Verifique se os produtos estão ativos no painel da Kiwify.
-                  </p>
+                   <p className="text-xs text-muted-foreground mt-1">
+                     Produtos indisponíveis na Cakto não funcionarão para os clientes. Verifique se os produtos estão ativos no painel da Cakto.
+                   </p>
                 </div>
               </div>
             );
