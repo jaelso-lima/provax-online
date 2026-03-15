@@ -38,10 +38,10 @@ export default function Index() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const getLink = (slug: string, periodo: "mensal" | "semestral" | "anual" = "mensal") => {
+  const getLink = (slug: string, periodo: "mensal" | "trimestral" | "anual" = "mensal") => {
     const plan = dbPlans?.find(p => p.slug === slug);
     if (!plan) return null;
-    if (periodo === "semestral") return plan.stripe_link_semestral;
+    if (periodo === "trimestral") return plan.stripe_link_semestral;
     if (periodo === "anual") return plan.stripe_link_anual;
     return plan.stripe_link_mensal;
   };
