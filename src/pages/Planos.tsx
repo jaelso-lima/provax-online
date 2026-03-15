@@ -123,7 +123,7 @@ export default function Planos() {
           <Tabs value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
             <TabsList>
               <TabsTrigger value="mensal">Mensal</TabsTrigger>
-              <TabsTrigger value="semestral">Semestral</TabsTrigger>
+              <TabsTrigger value="trimestral">Trimestral</TabsTrigger>
               <TabsTrigger value="anual" className="relative gap-1">
                 Anual
                 <Badge variant="secondary" className="ml-1 bg-accent text-accent-foreground text-[10px] px-1.5 py-0">
