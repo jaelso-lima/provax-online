@@ -93,7 +93,7 @@ export default function AdminDashboard() {
     const p = s.plans;
     if (!p) return sum;
     if (s.periodo === "mensal") return sum + (p.preco_mensal || 0);
-    if (s.periodo === "semestral") return sum + ((p.preco_semestral || 0) / 6);
+    if (s.periodo === "semestral") return sum + ((p.preco_semestral || 0) / 3);
     if (s.periodo === "anual") return sum + ((p.preco_anual || 0) / 12);
     return sum;
   }, 0);
