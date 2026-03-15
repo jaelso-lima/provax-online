@@ -13,23 +13,47 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { trackFBEvent } from "@/lib/fbPixel";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true } };
-
-const KIWIFY_PROVAX_X = "https://pay.kiwify.com.br/izSd5mz";
-
-const handleCTA = (email?: string) => {
-  trackFBEvent("InitiateCheckout", { content_name: "Provax X", value: 14.90, currency: "BRL" });
-  const url = new URL(KIWIFY_PROVAX_X);
-  if (email) url.searchParams.set("email", email);
-  window.open(url.toString(), "_blank");
-};
 
 export default function Index() {
   const { user } = useOptionalAuth();
   const navigate = useNavigate();
   const [showSticky, setShowSticky] = useState(false);
+
+  const { data: dbPlans } = useQuery({
+    queryKey: ["landing-plans"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("plans")
+        .select("slug, nome, stripe_link_mensal, stripe_link_semestral, stripe_link_anual, preco_mensal, preco_semestral, preco_anual")
+        .eq("ativo", true)
+        .order("preco_mensal");
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getLink = (slug: string, periodo: "mensal" | "semestral" | "anual" = "mensal") => {
+    const plan = dbPlans?.find(p => p.slug === slug);
+    if (!plan) return null;
+    if (periodo === "semestral") return plan.stripe_link_semestral;
+    if (periodo === "anual") return plan.stripe_link_anual;
+    return plan.stripe_link_mensal;
+  };
+
+  const handleCTA = (email?: string) => {
+    const link = getLink("provax-x");
+    if (!link) return;
+    trackFBEvent("InitiateCheckout", { content_name: "Provax X", value: 14.90, currency: "BRL" });
+    const url = new URL(link);
+    if (email) url.searchParams.set("email", email);
+    window.open(url.toString(), "_blank");
+  };
 
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
@@ -421,8 +445,10 @@ export default function Index() {
                     ))}
                   </ul>
                   <Button className="w-full" onClick={() => {
+                    const link = getLink("start");
+                    if (!link) return;
                     trackFBEvent("InitiateCheckout", { content_name: "Start", value: 29.90, currency: "BRL" });
-                    window.open("https://pay.kiwify.com.br/3hXCsif", "_blank");
+                    window.open(link, "_blank");
                   }}>
                     Assinar Start
                   </Button>
@@ -463,8 +489,10 @@ export default function Index() {
                     ))}
                   </ul>
                   <Button className="w-full" variant="outline" onClick={() => {
+                    const link = getLink("pro");
+                    if (!link) return;
                     trackFBEvent("InitiateCheckout", { content_name: "Pro", value: 49.90, currency: "BRL" });
-                    window.open("https://pay.kiwify.com.br/3qht2r5", "_blank");
+                    window.open(link, "_blank");
                   }}>
                     Assinar Pro
                   </Button>
