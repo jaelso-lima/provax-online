@@ -344,9 +344,9 @@ export default function AdminPlans() {
                     <p className="text-muted-foreground">{plan.descricao || "Sem descrição"}</p>
                     <div className="grid grid-cols-3 gap-2 pt-2">
                       {(["mensal", "trimestral", "anual"] as const).map((periodo) => {
-                        const priceKey = `preco_${periodo}` as const;
+                        const priceKey = periodo === "trimestral" ? "preco_semestral" : `preco_${periodo}` as const;
                         const price = Number((plan as any)[priceKey] || 0);
-                        const linkStatus = planValidation?.[periodo];
+                        const linkStatus = planValidation?.[periodo === "trimestral" ? "semestral" as any : periodo];
 
                         return (
                           <div key={periodo}>
