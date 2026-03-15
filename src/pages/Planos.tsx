@@ -212,7 +212,7 @@ export default function Planos() {
                       className={`w-full ${isDestaque ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
                       variant={p.isCurrent ? "outline" : "default"}
                       disabled={p.isCurrent}
-                      onClick={() => !p.isCurrent && handleAssinar(stripeLink)}
+                      onClick={() => !p.isCurrent && handleAssinar(stripeLink, p.nome)}
                     >
                       {p.isCurrent ? "Seu plano atual" : "Assinar agora"}
                     </Button>

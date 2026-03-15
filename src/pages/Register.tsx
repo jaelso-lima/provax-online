@@ -93,6 +93,7 @@ export default function Register() {
           toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
         }
       } else {
+        trackFBEvent("CompleteRegistration", { content_name: "ProvaX Signup" });
         toast({ 
           title: "Conta criada! 📧", 
           description: "Enviamos um link de confirmação para seu email. Verifique sua caixa de entrada (e spam) para ativar sua conta.",
