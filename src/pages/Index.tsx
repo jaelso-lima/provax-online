@@ -24,6 +24,37 @@ export default function Index() {
   const navigate = useNavigate();
   const [showSticky, setShowSticky] = useState(false);
 
+  const { data: dbPlans } = useQuery({
+    queryKey: ["landing-plans"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("plans")
+        .select("slug, nome, stripe_link_mensal, stripe_link_semestral, stripe_link_anual, preco_mensal, preco_semestral, preco_anual")
+        .eq("ativo", true)
+        .order("preco_mensal");
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const getLink = (slug: string, periodo: "mensal" | "semestral" | "anual" = "mensal") => {
+    const plan = dbPlans?.find(p => p.slug === slug);
+    if (!plan) return null;
+    if (periodo === "semestral") return plan.stripe_link_semestral;
+    if (periodo === "anual") return plan.stripe_link_anual;
+    return plan.stripe_link_mensal;
+  };
+
+  const handleCTA = (email?: string) => {
+    const link = getLink("provax-x");
+    if (!link) return;
+    trackFBEvent("InitiateCheckout", { content_name: "Provax X", value: 14.90, currency: "BRL" });
+    const url = new URL(link);
+    if (email) url.searchParams.set("email", email);
+    window.open(url.toString(), "_blank");
+  };
+
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
