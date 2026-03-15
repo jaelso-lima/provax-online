@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackFBEvent } from "@/lib/fbPixel";
 
-type Periodo = "mensal" | "semestral" | "anual";
+type Periodo = "mensal" | "trimestral" | "anual";
 
 const FEATURE_LABELS: Record<string, string> = {
   simulado_basico: "Simulado básico",
@@ -86,12 +86,12 @@ export default function Planos() {
       features,
       prices: {
         mensal: Number(p.preco_mensal) || 0,
-        semestral: Number(p.preco_semestral) || 0,
+        trimestral: Number(p.preco_semestral) || 0,
         anual: Number(p.preco_anual) || 0,
       },
       stripeLinks: {
         mensal: p.stripe_link_mensal || null,
-        semestral: p.stripe_link_semestral || null,
+        trimestral: p.stripe_link_semestral || null,
         anual: p.stripe_link_anual || null,
       },
       isCurrent: profile?.plano === p.slug,
@@ -123,7 +123,7 @@ export default function Planos() {
           <Tabs value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
             <TabsList>
               <TabsTrigger value="mensal">Mensal</TabsTrigger>
-              <TabsTrigger value="semestral">Semestral</TabsTrigger>
+              <TabsTrigger value="trimestral">Trimestral</TabsTrigger>
               <TabsTrigger value="anual" className="relative gap-1">
                 Anual
                 <Badge variant="secondary" className="ml-1 bg-accent text-accent-foreground text-[10px] px-1.5 py-0">
@@ -138,7 +138,7 @@ export default function Planos() {
           {planos.map((p, i) => {
             const preco = p.prices[periodo];
             const desconto = periodo !== "mensal"
-              ? calcDesconto(p.prices.mensal, preco, periodo === "semestral" ? 6 : 12)
+              ? calcDesconto(p.prices.mensal, preco, periodo === "trimestral" ? 3 : 12)
               : 0;
             const Icon = p.icon;
             const isDestaque = p.slug === "provax-x" || p.slug === "pro";
@@ -181,7 +181,7 @@ export default function Planos() {
                       <span className="text-3xl font-bold text-foreground">{formatPreco(preco)}</span>
                       {preco > 0 && (
                         <span className="text-sm text-muted-foreground">
-                          /{periodo === "mensal" ? "mês" : periodo === "semestral" ? "semestre" : "ano"}
+                          /{periodo === "mensal" ? "mês" : periodo === "trimestral" ? "trimestre" : "ano"}
                         </span>
                       )}
                     </div>
@@ -192,7 +192,7 @@ export default function Planos() {
                     )}
                     {periodo !== "mensal" && preco > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        ≈ {formatPreco(preco / (periodo === "semestral" ? 6 : 12))}/mês
+                        ≈ {formatPreco(preco / (periodo === "trimestral" ? 3 : 12))}/mês
                       </p>
                     )}
                   </CardHeader>
@@ -233,7 +233,7 @@ export default function Planos() {
             <Shield className="h-4 w-4" /> Garantia de 7 dias — não gostou, devolvemos seu dinheiro.
           </div>
           <p className="text-xs text-muted-foreground">
-            Planos semestral e anual com validade fixa a partir da data de contratação.
+            Planos trimestral e anual com validade fixa a partir da data de contratação.
           </p>
         </div>
 

@@ -52,7 +52,7 @@ const emptyPlan: PlanForm = {
 };
 
 type LinkStatus = "ok" | "indisponivel" | "erro_conexao" | "sem_link";
-type ValidationResults = Record<string, { mensal?: LinkStatus; semestral?: LinkStatus; anual?: LinkStatus }>;
+type ValidationResults = Record<string, { mensal?: LinkStatus; trimestral?: LinkStatus; anual?: LinkStatus }>;
 
 const STATUS_CONFIG: Record<LinkStatus, { icon: typeof CheckCircle; label: string; color: string }> = {
   ok: { icon: CheckCircle, label: "Disponível", color: "text-emerald-500" },
@@ -256,9 +256,9 @@ export default function AdminPlans() {
                   <p className="text-sm font-medium text-destructive">
                     {broken} link(s) com problema
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Produtos indisponíveis na Kiwify não funcionarão para os clientes. Verifique se os produtos estão ativos no painel da Kiwify.
-                  </p>
+                   <p className="text-xs text-muted-foreground mt-1">
+                     Produtos indisponíveis na Cakto não funcionarão para os clientes. Verifique se os produtos estão ativos no painel da Cakto.
+                   </p>
                 </div>
               </div>
             );
@@ -343,10 +343,10 @@ export default function AdminPlans() {
                   <CardContent className="space-y-2 text-sm">
                     <p className="text-muted-foreground">{plan.descricao || "Sem descrição"}</p>
                     <div className="grid grid-cols-3 gap-2 pt-2">
-                      {(["mensal", "semestral", "anual"] as const).map((periodo) => {
-                        const priceKey = `preco_${periodo}` as const;
+                      {(["mensal", "trimestral", "anual"] as const).map((periodo) => {
+                        const priceKey = periodo === "trimestral" ? "preco_semestral" : `preco_${periodo}` as const;
                         const price = Number((plan as any)[priceKey] || 0);
-                        const linkStatus = planValidation?.[periodo];
+                        const linkStatus = planValidation?.[periodo === "trimestral" ? "semestral" as any : periodo];
 
                         return (
                           <div key={periodo}>
@@ -412,7 +412,7 @@ export default function AdminPlans() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Semestral (R$)</Label>
+                    <Label className="text-xs">Trimestral (R$)</Label>
                     <Input
                       type="number"
                       value={editingPlan.preco_semestral}
@@ -437,22 +437,22 @@ export default function AdminPlans() {
                   />
                 </div>
                 <div className="space-y-2 border-t border-border pt-4">
-                  <Label className="text-sm font-semibold">Links de Checkout (Kiwify)</Label>
+                  <Label className="text-sm font-semibold">Links de Checkout (Cakto)</Label>
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Link Mensal</Label>
                       <Input
                         value={editingPlan.stripe_link_mensal}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_mensal: e.target.value })}
-                        placeholder="https://pay.kiwify.com.br/..."
+                        placeholder="https://pay.cakto.com.br/..."
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Link Semestral</Label>
+                      <Label className="text-xs">Link Trimestral</Label>
                       <Input
                         value={editingPlan.stripe_link_semestral}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_semestral: e.target.value })}
-                        placeholder="https://pay.kiwify.com.br/..."
+                        placeholder="https://pay.cakto.com.br/..."
                       />
                     </div>
                     <div className="space-y-1">
@@ -460,7 +460,7 @@ export default function AdminPlans() {
                       <Input
                         value={editingPlan.stripe_link_anual}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_anual: e.target.value })}
-                        placeholder="https://pay.kiwify.com.br/..."
+                        placeholder="https://pay.cakto.com.br/..."
                       />
                     </div>
                   </div>

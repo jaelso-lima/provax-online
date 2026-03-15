@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
 
         if (resp.status >= 400) return "indisponivel";
 
-        // Kiwify shows "não está mais disponível" when product is inactive
+        // Cakto shows unavailable patterns when product is inactive
         const unavailablePatterns = [
           "não está mais disponível",
           "nao esta mais disponivel",
@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
           "product not found",
           "page not found",
           "404",
+          "checkout não encontrado",
         ];
 
         const lowerText = text.toLowerCase();

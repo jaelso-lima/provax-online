@@ -38,10 +38,10 @@ export default function Index() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const getLink = (slug: string, periodo: "mensal" | "semestral" | "anual" = "mensal") => {
+  const getLink = (slug: string, periodo: "mensal" | "trimestral" | "anual" = "mensal") => {
     const plan = dbPlans?.find(p => p.slug === slug);
     if (!plan) return null;
-    if (periodo === "semestral") return plan.stripe_link_semestral;
+    if (periodo === "trimestral") return plan.stripe_link_semestral;
     if (periodo === "anual") return plan.stripe_link_anual;
     return plan.stripe_link_mensal;
   };
@@ -428,7 +428,7 @@ export default function Index() {
                   </div>
                   <CardTitle className="font-display text-xl">Start</CardTitle>
                   <p className="text-3xl font-bold mt-2">R$ 29,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
-                  <p className="text-xs text-muted-foreground">ou R$ 149/semestre • R$ 297/ano</p>
+                  <p className="text-xs text-muted-foreground">ou trimestral • anual</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
@@ -470,7 +470,7 @@ export default function Index() {
                   </div>
                   <CardTitle className="font-display text-xl">Pro</CardTitle>
                   <p className="text-3xl font-bold mt-2">R$ 49,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
-                  <p className="text-xs text-muted-foreground">ou R$ 249/semestre • R$ 497/ano</p>
+                  <p className="text-xs text-muted-foreground">ou trimestral • anual</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
@@ -537,12 +537,12 @@ export default function Index() {
           </motion.div>
           <div className="space-y-4">
             {[
-              { q: "Como funciona o pagamento?", a: "Você assina por R$ 14,90/mês na Kiwify com pagamento recorrente seguro. Após a confirmação, seu acesso é liberado automaticamente." },
+              { q: "Como funciona o pagamento?", a: "Você assina por R$ 14,90/mês com pagamento recorrente seguro. Após a confirmação, seu acesso é liberado automaticamente." },
               { q: "Serve para ENEM também?", a: "Sim! O ProvaX tem 2 modos: Concurso Público e ENEM. Em cada um, as questões são adaptadas ao formato real da prova. E a redação tem correção por IA nas 5 competências!" },
               { q: "Como funciona o XP?", a: "Cada questão que você acerta vale 1 XP. Ao subir de nível, ganha 20 moedas de recompensa. Quanto mais pratica, mais rápido evolui!" },
               { q: "As questões são iguais às da prova?", a: "As questões são geradas por IA treinada no padrão exato de cada banca e vestibular. É o treino mais próximo da prova real que existe." },
               { q: "Posso cancelar quando quiser?", a: "Sim! Cancele a qualquer momento. E ainda tem garantia de 7 dias — não gostou, devolvemos seu dinheiro." },
-              { q: "Qual a diferença entre os planos?", a: "O Provax X dá 25 questões/dia + estatísticas + histórico de erros por R$ 14,90/mês. O Start é o mesmo acesso por R$ 29,90 com opção semestral/anual. O Pro dá 60/dia + filtro por banca/estado + ranking + simulado reverso." },
+              { q: "Qual a diferença entre os planos?", a: "O Provax X dá 25 questões/dia + estatísticas + histórico de erros por R$ 14,90/mês. O Start é o mesmo acesso por R$ 29,90 com opção trimestral/anual. O Pro dá 60/dia + filtro por banca/estado + ranking + simulado reverso." },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.05 }} className="rounded-xl border bg-background/50 p-5">
                 <p className="font-medium text-foreground mb-2">{item.q}</p>
