@@ -420,8 +420,11 @@ export default function Index() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full" asChild>
-                    <Link to="/planos">Ver detalhes</Link>
+                  <Button className="w-full" onClick={() => {
+                    trackFBEvent("InitiateCheckout", { content_name: "Start", value: 29.90, currency: "BRL" });
+                    window.open("https://pay.kiwify.com.br/3hXCsif", "_blank");
+                  }}>
+                    Assinar Start
                   </Button>
                 </CardContent>
               </Card>
@@ -459,8 +462,11 @@ export default function Index() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full" variant="outline" asChild>
-                    <Link to="/planos">Ver detalhes</Link>
+                  <Button className="w-full" variant="outline" onClick={() => {
+                    trackFBEvent("InitiateCheckout", { content_name: "Pro", value: 49.90, currency: "BRL" });
+                    window.open("https://pay.kiwify.com.br/3qht2r5", "_blank");
+                  }}>
+                    Assinar Pro
                   </Button>
                 </CardContent>
               </Card>

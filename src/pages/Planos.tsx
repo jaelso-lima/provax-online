@@ -178,7 +178,7 @@ export default function Planos() {
                       <p className="text-xs text-muted-foreground">{p.descricao}</p>
                     )}
                     <div className="mt-3">
-                      <span className="text-3xl font-bold">{formatPreco(preco)}</span>
+                      <span className="text-3xl font-bold text-foreground">{formatPreco(preco)}</span>
                       {preco > 0 && (
                         <span className="text-sm text-muted-foreground">
                           /{periodo === "mensal" ? "mês" : periodo === "semestral" ? "semestre" : "ano"}
