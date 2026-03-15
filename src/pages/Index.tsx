@@ -470,7 +470,7 @@ export default function Index() {
                   </div>
                   <CardTitle className="font-display text-xl">Pro</CardTitle>
                   <p className="text-3xl font-bold mt-2">R$ 49,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
-                  <p className="text-xs text-muted-foreground">ou R$ 249/semestre • R$ 497/ano</p>
+                  <p className="text-xs text-muted-foreground">ou trimestral • anual</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
