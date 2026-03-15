@@ -343,7 +343,7 @@ export default function AdminPlans() {
                   <CardContent className="space-y-2 text-sm">
                     <p className="text-muted-foreground">{plan.descricao || "Sem descrição"}</p>
                     <div className="grid grid-cols-3 gap-2 pt-2">
-                      {(["mensal", "semestral", "anual"] as const).map((periodo) => {
+                      {(["mensal", "trimestral", "anual"] as const).map((periodo) => {
                         const priceKey = `preco_${periodo}` as const;
                         const price = Number((plan as any)[priceKey] || 0);
                         const linkStatus = planValidation?.[periodo];
