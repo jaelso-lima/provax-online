@@ -60,14 +60,15 @@ export default function Planos() {
     },
   });
 
-  const handleAssinar = (stripeLink: string | null) => {
+  const handleAssinar = (stripeLink: string | null, planName?: string) => {
     if (!stripeLink) {
       toast({ title: "Em breve!", description: "Link de pagamento ainda não configurado." });
       return;
     }
+    trackFBEvent("InitiateCheckout", { content_name: planName || "Plano", currency: "BRL" });
     const url = new URL(stripeLink);
     if (user?.email) {
-      url.searchParams.set("prefilled_email", user.email);
+      url.searchParams.set("email", user.email);
     }
     window.open(url.toString(), "_blank");
   };
