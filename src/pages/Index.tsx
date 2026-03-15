@@ -12,9 +12,19 @@ import {
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true } };
+
+const KIWIFY_PROVAX_X = "https://pay.kiwify.com.br/izSd5mz";
+
+const handleCTA = (email?: string) => {
+  trackFBEvent("InitiateCheckout", { content_name: "Provax X", value: 14.90, currency: "BRL" });
+  const url = new URL(KIWIFY_PROVAX_X);
+  if (email) url.searchParams.set("email", email);
+  window.open(url.toString(), "_blank");
+};
 
 export default function Index() {
   const { user } = useOptionalAuth();
@@ -44,7 +54,9 @@ export default function Index() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/login">Entrar</Link></Button>
-                <Button size="sm" asChild><Link to="/register">Começar Grátis</Link></Button>
+                <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+                  Assinar R$ 14,90/mês
+                </Button>
               </>
             )}
           </div>
@@ -73,15 +85,15 @@ export default function Index() {
               e te faz praticar exatamente o que cai na prova — seja concurso público ou ENEM.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button size="lg" asChild className="text-base px-10 h-14 text-lg shadow-lg shadow-primary/25">
-                <Link to="/register">Começar agora — é grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              <Button size="lg" className="text-base px-10 h-14 text-lg shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+                Assinar por R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("metodo")?.scrollIntoView({ behavior: "smooth" })}>
                 Entender o método <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              ✅ 10 questões grátis por dia • Sem cartão de crédito • Cancele quando quiser
+              ✅ Acesso imediato • Menos de R$ 0,50/dia • Cancele quando quiser
             </p>
           </motion.div>
         </div>
@@ -102,7 +114,7 @@ export default function Index() {
               { icon: Target, title: "ENEM + Redação", desc: "Questões por área do conhecimento + Redação com correção por IA nas 5 competências do ENEM.", color: "text-accent", border: "hover:border-accent" },
             ].map((item, i) => (
               <motion.div key={item.title} {...stagger} transition={{ delay: i * 0.1 }}>
-                <Card className={`h-full border-2 transition-all ${item.border} hover:shadow-lg cursor-pointer`} onClick={() => navigate("/register")}>
+                <Card className={`h-full border-2 transition-all ${item.border} hover:shadow-lg cursor-pointer`} onClick={() => handleCTA()}>
                   <CardHeader className="text-center">
                     <item.icon className={`mx-auto mb-2 h-12 w-12 ${item.color}`} />
                     <CardTitle className="font-display text-xl">{item.title}</CardTitle>
@@ -312,7 +324,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* PLANOS — Ação (AIDA) + Ancoragem + Efeito Chamariz */}
+      {/* PLANO PROVAX X — Destaque principal */}
       <section id="planos" className="border-t bg-card py-20">
         <div className="container">
           <motion.div {...fadeUp} className="text-center mb-4">
@@ -324,66 +336,81 @@ export default function Index() {
               O ProvaX custa menos que um cafezinho por dia.
             </p>
           </motion.div>
-          <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3 mt-12">
-            {/* Free — Âncora */}
-            <motion.div {...stagger}>
-              <Card className="h-full">
-                <CardHeader className="text-center">
-                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <Zap className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle className="font-display text-xl">Gratuito</CardTitle>
-                  <p className="text-3xl font-bold mt-2">R$ 0<span className="text-sm font-normal text-muted-foreground"> /sempre</span></p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {[
-                      "10 questões por dia",
-                      "Simulados básicos",
-                      "Professor PX (chat IA)",
-                      "Sistema de XP e níveis",
-                    ].map(f => (
-                      <li key={f} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
-                      </li>
-                    ))}
-                    {[
-                      "Estatísticas avançadas",
-                      "Filtro por banca/estado",
-                      "Ranking",
-                    ].map(f => (
-                      <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60">
-                        <X className="h-4 w-4 shrink-0 text-muted-foreground/40" />{f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button className="w-full" variant="outline" asChild>
-                    <Link to="/register">Criar conta grátis</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
 
-            {/* Start — Chamariz */}
+          {/* Provax X — Hero Card */}
+          <motion.div {...fadeUp} className="mx-auto max-w-lg mt-12 mb-10">
+            <Card className="border-2 border-accent relative ring-4 ring-accent/20 shadow-2xl shadow-accent/10">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <Badge className="bg-accent text-accent-foreground gap-1 px-4 py-1.5 text-sm font-bold shadow-lg">
+                  <Zap className="h-4 w-4" /> Oferta Principal
+                </Badge>
+              </div>
+              <CardHeader className="text-center pt-10">
+                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
+                  <Zap className="h-8 w-8 text-accent" />
+                </div>
+                <CardTitle className="font-display text-2xl">Provax X</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Acesso completo ao ProvaX</p>
+                <div className="mt-4">
+                  <span className="text-5xl font-bold text-accent">R$ 14,90</span>
+                  <span className="text-lg text-muted-foreground"> /mês</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Apenas <strong className="text-foreground">R$ 0,49/dia</strong> — menos que um cafezinho
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-5 pb-8">
+                <ul className="space-y-2.5">
+                  {[
+                    "25 questões por dia",
+                    "Simulados para Concurso + ENEM",
+                    "Professor IA 24h (Professor PX)",
+                    "Redação corrigida por IA",
+                    "Estatísticas de desempenho",
+                    "Histórico completo de erros",
+                    "Sistema de XP e gamificação",
+                    "Acesso imediato após pagamento",
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  className="w-full h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/25" 
+                  onClick={() => handleCTA()}
+                >
+                  Assinar agora por R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Garantia 7 dias</span>
+                  <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Outros planos — secundários */}
+          <motion.div {...fadeUp} className="text-center mb-6">
+            <p className="text-sm text-muted-foreground">Quer mais recursos? Conheça nossos outros planos</p>
+          </motion.div>
+          <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2 mt-4">
+            {/* Start */}
             <motion.div {...stagger} transition={{ delay: 0.1 }}>
-              <Card className="h-full border-2 border-primary relative shadow-lg shadow-primary/10">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground">Mais Popular</div>
-                <CardHeader className="text-center pt-8">
+              <Card className="h-full border-2 border-primary/30">
+                <CardHeader className="text-center">
                   <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                     <Star className="h-6 w-6 text-primary" />
                   </div>
                   <CardTitle className="font-display text-xl">Start</CardTitle>
                   <p className="text-3xl font-bold mt-2">R$ 29,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
                   <p className="text-xs text-muted-foreground">ou R$ 149/semestre • R$ 297/ano</p>
-                  <Badge className="mt-2 bg-accent/10 text-accent border-accent/20">
-                    <Percent className="h-3 w-3 mr-1" /> Até 17% de economia no anual
-                  </Badge>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
                     {[
+                      "Tudo do Provax X",
                       "25 questões por dia",
-                      "Todas as disciplinas",
                       "Simulado personalizado",
                       "Estatísticas básicas",
                       "Histórico de erros",
@@ -392,25 +419,17 @@ export default function Index() {
                         <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
                       </li>
                     ))}
-                    {[
-                      "Filtro por banca/estado",
-                      "Ranking",
-                    ].map(f => (
-                      <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground/60">
-                        <X className="h-4 w-4 shrink-0 text-muted-foreground/40" />{f}
-                      </li>
-                    ))}
                   </ul>
                   <Button className="w-full" asChild>
-                    <Link to="/register">Começar agora</Link>
+                    <Link to="/planos">Ver detalhes</Link>
                   </Button>
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Pro — Melhor valor */}
+            {/* Pro */}
             <motion.div {...stagger} transition={{ delay: 0.2 }}>
-              <Card className="h-full border-2 border-accent relative ring-2 ring-accent/20">
+              <Card className="h-full border-2 border-accent/30 relative">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-accent text-accent-foreground gap-1">
                     <Crown className="h-3 w-3" /> Aprovação máxima
@@ -423,9 +442,6 @@ export default function Index() {
                   <CardTitle className="font-display text-xl">Pro</CardTitle>
                   <p className="text-3xl font-bold mt-2">R$ 49,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
                   <p className="text-xs text-muted-foreground">ou R$ 249/semestre • R$ 497/ano</p>
-                  <Badge className="mt-2 bg-accent/10 text-accent border-accent/20">
-                    <Percent className="h-3 w-3 mr-1" /> Até 17% de economia no anual
-                  </Badge>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
@@ -443,18 +459,18 @@ export default function Index() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                    <Link to="/register">Garantir minha vaga</Link>
+                  <Button className="w-full" variant="outline" asChild>
+                    <Link to="/planos">Ver detalhes</Link>
                   </Button>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
+
           <motion.div {...fadeUp} className="mt-8 text-center space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-4 py-2 text-sm text-accent">
               <Shield className="h-4 w-4" /> Garantia de 7 dias — não gostou, devolvemos seu dinheiro.
             </div>
-            <p className="text-xs text-muted-foreground">Planos semestral e anual com validade fixa. Veja detalhes em /planos.</p>
           </motion.div>
         </div>
       </section>
@@ -464,9 +480,9 @@ export default function Index() {
         <div className="container">
           <motion.div {...fadeUp} className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {[
-              { number: "10", label: "Questões grátis/dia", icon: Flame },
+              { number: "25", label: "Questões por dia", icon: Flame },
               { number: "24h", label: "Professor IA disponível", icon: MessageCircle },
-              { number: "1 XP", label: "Por questão acertada", icon: Trophy },
+              { number: "R$ 0,49", label: "Por dia", icon: Trophy },
               { number: "2 modos", label: "Concurso + ENEM", icon: Target },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.1 }} className="text-center">
@@ -487,12 +503,12 @@ export default function Index() {
           </motion.div>
           <div className="space-y-4">
             {[
-              { q: "Preciso pagar para começar?", a: "Não! Você ganha 10 questões por dia gratuitamente para sempre. Sem cartão de crédito. Comece a praticar agora." },
+              { q: "Como funciona o pagamento?", a: "Você assina por R$ 14,90/mês na Kiwify com pagamento recorrente seguro. Após a confirmação, seu acesso é liberado automaticamente." },
               { q: "Serve para ENEM também?", a: "Sim! O ProvaX tem 2 modos: Concurso Público e ENEM. Em cada um, as questões são adaptadas ao formato real da prova. E a redação tem correção por IA nas 5 competências!" },
               { q: "Como funciona o XP?", a: "Cada questão que você acerta vale 1 XP. Ao subir de nível, ganha 20 moedas de recompensa. Quanto mais pratica, mais rápido evolui!" },
               { q: "As questões são iguais às da prova?", a: "As questões são geradas por IA treinada no padrão exato de cada banca e vestibular. É o treino mais próximo da prova real que existe." },
-              { q: "Posso cancelar quando quiser?", a: "Sim! Cancele a qualquer momento. E ainda tem garantia de 7 dias nos planos pagos — não gostou, devolvemos seu dinheiro." },
-              { q: "Qual a diferença entre os planos?", a: "O Gratuito dá 10 questões/dia. O Start libera 25/dia + estatísticas + histórico de erros. O Pro dá 60/dia + filtro por banca/estado + ranking + simulado reverso." },
+              { q: "Posso cancelar quando quiser?", a: "Sim! Cancele a qualquer momento. E ainda tem garantia de 7 dias — não gostou, devolvemos seu dinheiro." },
+              { q: "Qual a diferença entre os planos?", a: "O Provax X dá 25 questões/dia + estatísticas + histórico de erros por R$ 14,90/mês. O Start é o mesmo acesso por R$ 29,90 com opção semestral/anual. O Pro dá 60/dia + filtro por banca/estado + ranking + simulado reverso." },
             ].map((item, i) => (
               <motion.div key={i} {...stagger} transition={{ delay: i * 0.05 }} className="rounded-xl border bg-background/50 p-5">
                 <p className="font-medium text-foreground mb-2">{item.q}</p>
@@ -517,8 +533,8 @@ export default function Index() {
             <p className="text-sm font-medium text-foreground mb-8">
               🕐 Enquanto você pensa, outros já estão praticando.
             </p>
-            <Button size="lg" asChild className="text-lg px-10 h-14 shadow-lg shadow-primary/25">
-              <Link to="/register">Começar meu Estudo Reverso agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            <Button size="lg" className="text-lg px-10 h-14 shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+              Assinar por R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
@@ -535,8 +551,8 @@ export default function Index() {
           initial={{ y: 100 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md p-3 md:hidden"
         >
-          <Button className="w-full h-12 text-base shadow-lg shadow-primary/25" asChild>
-            <Link to="/register">Começar grátis agora <ArrowRight className="ml-2 h-5 w-5" /></Link>
+          <Button className="w-full h-12 text-base shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+            Assinar R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </motion.div>
       )}
