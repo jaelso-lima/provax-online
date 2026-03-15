@@ -192,7 +192,7 @@ export default function Planos() {
                     )}
                     {periodo !== "mensal" && preco > 0 && (
                       <p className="text-xs text-muted-foreground">
-                        ≈ {formatPreco(preco / (periodo === "semestral" ? 6 : 12))}/mês
+                        ≈ {formatPreco(preco / (periodo === "trimestral" ? 3 : 12))}/mês
                       </p>
                     )}
                   </CardHeader>
