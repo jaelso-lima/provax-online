@@ -412,7 +412,7 @@ export default function AdminPlans() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Semestral (R$)</Label>
+                    <Label className="text-xs">Trimestral (R$)</Label>
                     <Input
                       type="number"
                       value={editingPlan.preco_semestral}
