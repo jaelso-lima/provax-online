@@ -28,6 +28,7 @@ const FEATURE_LABELS: Record<string, string> = {
 
 const SLUG_ICONS: Record<string, any> = {
   free: Zap,
+  "provax-x": Zap,
   start: Star,
   pro: Crown,
 };
