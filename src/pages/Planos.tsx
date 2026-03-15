@@ -140,7 +140,7 @@ export default function Planos() {
               ? calcDesconto(p.prices.mensal, preco, periodo === "semestral" ? 6 : 12)
               : 0;
             const Icon = p.icon;
-            const isDestaque = p.slug === "pro";
+            const isDestaque = p.slug === "provax-x" || p.slug === "pro";
             const stripeLink = p.stripeLinks[periodo];
 
             return (
