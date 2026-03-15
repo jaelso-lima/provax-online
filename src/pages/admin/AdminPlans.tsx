@@ -437,22 +437,22 @@ export default function AdminPlans() {
                   />
                 </div>
                 <div className="space-y-2 border-t border-border pt-4">
-                  <Label className="text-sm font-semibold">Links de Checkout (Kiwify)</Label>
+                  <Label className="text-sm font-semibold">Links de Checkout (Cakto)</Label>
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Link Mensal</Label>
                       <Input
                         value={editingPlan.stripe_link_mensal}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_mensal: e.target.value })}
-                        placeholder="https://pay.kiwify.com.br/..."
+                        placeholder="https://pay.cakto.com.br/..."
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">Link Semestral</Label>
+                      <Label className="text-xs">Link Trimestral</Label>
                       <Input
                         value={editingPlan.stripe_link_semestral}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_semestral: e.target.value })}
-                        placeholder="https://pay.kiwify.com.br/..."
+                        placeholder="https://pay.cakto.com.br/..."
                       />
                     </div>
                     <div className="space-y-1">
@@ -460,7 +460,7 @@ export default function AdminPlans() {
                       <Input
                         value={editingPlan.stripe_link_anual}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_anual: e.target.value })}
-                        placeholder="https://pay.kiwify.com.br/..."
+                        placeholder="https://pay.cakto.com.br/..."
                       />
                     </div>
                   </div>

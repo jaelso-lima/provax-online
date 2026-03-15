@@ -233,7 +233,7 @@ export default function Planos() {
             <Shield className="h-4 w-4" /> Garantia de 7 dias — não gostou, devolvemos seu dinheiro.
           </div>
           <p className="text-xs text-muted-foreground">
-            Planos semestral e anual com validade fixa a partir da data de contratação.
+            Planos trimestral e anual com validade fixa a partir da data de contratação.
           </p>
         </div>
 

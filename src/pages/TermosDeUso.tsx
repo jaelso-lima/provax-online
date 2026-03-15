@@ -66,7 +66,7 @@ export default function TermosDeUso() {
               </p>
               <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
                 <li><strong>Mensal:</strong> Vigência de 30 dias a partir da contratação.</li>
-                <li><strong>Semestral:</strong> Vigência de 180 dias (6 meses) a partir da contratação.</li>
+                <li><strong>Trimestral:</strong> Vigência de 90 dias (3 meses) a partir da contratação.</li>
                 <li><strong>Anual:</strong> Vigência de 365 dias (12 meses) a partir da contratação.</li>
               </ul>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">

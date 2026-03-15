@@ -228,7 +228,7 @@ export default function AdminDashboard() {
 
   const subsByPlanPeriod: { plan_name: string; periodo: string; count: number }[] = stats?.subs_by_plan_period ?? [];
   const subsPlanData = subsByPlanPeriod.map((s) => ({
-    name: `${s.plan_name} ${s.periodo === "mensal" ? "Mensal" : s.periodo === "semestral" ? "Semestral" : "Anual"}`,
+    name: `${s.plan_name} ${s.periodo === "mensal" ? "Mensal" : s.periodo === "semestral" ? "Trimestral" : "Anual"}`,
     value: s.count,
   }));
 
