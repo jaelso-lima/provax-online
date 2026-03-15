@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateFingerprint } from "@/lib/fingerprint";
 import { lovable } from "@/integrations/lovable/index";
 import { Separator } from "@/components/ui/separator";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 export default function Register() {
   const [searchParams] = useSearchParams();
