@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 type Periodo = "mensal" | "semestral" | "anual";
 
@@ -27,6 +28,7 @@ const FEATURE_LABELS: Record<string, string> = {
 
 const SLUG_ICONS: Record<string, any> = {
   free: Zap,
+  "provax-x": Zap,
   start: Star,
   pro: Crown,
 };
@@ -59,14 +61,15 @@ export default function Planos() {
     },
   });
 
-  const handleAssinar = (stripeLink: string | null) => {
+  const handleAssinar = (stripeLink: string | null, planName?: string) => {
     if (!stripeLink) {
       toast({ title: "Em breve!", description: "Link de pagamento ainda não configurado." });
       return;
     }
+    trackFBEvent("InitiateCheckout", { content_name: planName || "Plano", currency: "BRL" });
     const url = new URL(stripeLink);
     if (user?.email) {
-      url.searchParams.set("prefilled_email", user.email);
+      url.searchParams.set("email", user.email);
     }
     window.open(url.toString(), "_blank");
   };
@@ -138,7 +141,7 @@ export default function Planos() {
               ? calcDesconto(p.prices.mensal, preco, periodo === "semestral" ? 6 : 12)
               : 0;
             const Icon = p.icon;
-            const isDestaque = p.slug === "pro";
+            const isDestaque = p.slug === "provax-x" || p.slug === "pro";
             const stripeLink = p.stripeLinks[periodo];
 
             return (
@@ -158,7 +161,11 @@ export default function Planos() {
                   {isDestaque && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <Badge className="bg-accent text-accent-foreground gap-1">
-                        <Crown className="h-3 w-3" /> Aprovação máxima
+                        {p.slug === "provax-x" ? (
+                          <><Zap className="h-3 w-3" /> Mais popular</>
+                        ) : (
+                          <><Crown className="h-3 w-3" /> Aprovação máxima</>
+                        )}
                       </Badge>
                     </div>
                   )}
@@ -210,7 +217,7 @@ export default function Planos() {
                       className={`w-full ${isDestaque ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
                       variant={p.isCurrent ? "outline" : "default"}
                       disabled={p.isCurrent}
-                      onClick={() => !p.isCurrent && handleAssinar(stripeLink)}
+                      onClick={() => !p.isCurrent && handleAssinar(stripeLink, p.nome)}
                     >
                       {p.isCurrent ? "Seu plano atual" : "Assinar agora"}
                     </Button>
