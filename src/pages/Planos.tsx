@@ -86,12 +86,12 @@ export default function Planos() {
       features,
       prices: {
         mensal: Number(p.preco_mensal) || 0,
-        semestral: Number(p.preco_semestral) || 0,
+        trimestral: Number(p.preco_semestral) || 0,
         anual: Number(p.preco_anual) || 0,
       },
       stripeLinks: {
         mensal: p.stripe_link_mensal || null,
-        semestral: p.stripe_link_semestral || null,
+        trimestral: p.stripe_link_semestral || null,
         anual: p.stripe_link_anual || null,
       },
       isCurrent: profile?.plano === p.slug,
