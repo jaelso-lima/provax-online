@@ -489,8 +489,10 @@ export default function Index() {
                     ))}
                   </ul>
                   <Button className="w-full" variant="outline" onClick={() => {
+                    const link = getLink("pro");
+                    if (!link) return;
                     trackFBEvent("InitiateCheckout", { content_name: "Pro", value: 49.90, currency: "BRL" });
-                    window.open("https://pay.kiwify.com.br/3qht2r5", "_blank");
+                    window.open(link, "_blank");
                   }}>
                     Assinar Pro
                   </Button>
