@@ -622,9 +622,14 @@ export default function Index() {
           initial={{ y: 100 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md p-3 md:hidden"
         >
-          <Button className="w-full h-12 text-base shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-            Assinar R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button className="flex-1 h-12 text-base" asChild>
+              <Link to="/register">Criar conta grátis</Link>
+            </Button>
+            <Button variant="outline" className="h-12 text-sm bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+              Assinar
+            </Button>
+          </div>
         </motion.div>
       )}
 
