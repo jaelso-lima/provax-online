@@ -109,15 +109,15 @@ export default function Index() {
               e te faz praticar exatamente o que cai na prova — seja concurso público ou ENEM.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button size="lg" className="text-base px-10 h-14 text-lg shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-                Assinar por R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
+              <Button size="lg" className="text-base px-10 h-14 text-lg shadow-lg shadow-primary/25" asChild>
+                <Link to="/register">Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("metodo")?.scrollIntoView({ behavior: "smooth" })}>
-                Entender o método <ChevronDown className="ml-2 h-5 w-5" />
+              <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" })}>
+                Ver planos <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              ✅ Acesso imediato • Menos de R$ 0,50/dia • Cancele quando quiser
+              ✅ Comece grátis • Sem cartão de crédito • Faça upgrade quando quiser
             </p>
           </motion.div>
         </div>
