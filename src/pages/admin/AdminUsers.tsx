@@ -112,7 +112,7 @@ export default function AdminUsers() {
 
   const grantPlanMutation = useMutation({
     mutationFn: async ({ userId, planSlug, dias, motivo }: { userId: string; planSlug: string; dias: number; motivo: string }) => {
-      const periodo = dias <= 31 ? "mensal" : dias <= 92 ? "semestral" : "anual";
+      const periodo = dias <= 31 ? "mensal" : dias <= 92 ? "trimestral" : "anual";
       const { error } = await supabase.rpc("admin_grant_plan", {
         _target_user_id: userId, _plan_slug: planSlug, _periodo: periodo, _dias: dias, _motivo: motivo || null,
       } as any);

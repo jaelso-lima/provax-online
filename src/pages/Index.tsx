@@ -78,8 +78,8 @@ export default function Index() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/login">Entrar</Link></Button>
-                <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-                  Assinar R$ 14,90/mês
+                <Button size="sm" asChild>
+                  <Link to="/register">Criar conta grátis</Link>
                 </Button>
               </>
             )}
@@ -109,15 +109,15 @@ export default function Index() {
               e te faz praticar exatamente o que cai na prova — seja concurso público ou ENEM.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button size="lg" className="text-base px-10 h-14 text-lg shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-                Assinar por R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
+              <Button size="lg" className="text-base px-10 h-14 text-lg shadow-lg shadow-primary/25" asChild>
+                <Link to="/register">Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("metodo")?.scrollIntoView({ behavior: "smooth" })}>
-                Entender o método <ChevronDown className="ml-2 h-5 w-5" />
+              <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" })}>
+                Ver planos <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              ✅ Acesso imediato • Menos de R$ 0,50/dia • Cancele quando quiser
+              ✅ Comece grátis • Sem cartão de crédito • Faça upgrade quando quiser
             </p>
           </motion.div>
         </div>
@@ -348,6 +348,38 @@ export default function Index() {
         </div>
       </section>
 
+      {/* EXPERIMENTE GRÁTIS */}
+      <section className="py-20">
+        <div className="container max-w-3xl">
+          <motion.div {...fadeUp} className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Zap className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">
+              Experimente <span className="text-gradient">grátis</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
+              Crie sua conta gratuitamente e resolva suas primeiras questões dentro da plataforma Provax.
+            </p>
+            <div className="mx-auto grid max-w-md gap-3 text-left mb-8">
+              {[
+                "Acesso inicial à plataforma",
+                "Teste do método Estudo Reverso",
+                "Descubra suas falhas nos estudos",
+              ].map(item => (
+                <div key={item} className="flex items-center gap-3 rounded-lg border bg-background/50 p-3">
+                  <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
+                  <span className="text-sm font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
+            <Button size="lg" className="h-14 text-lg px-10" asChild>
+              <Link to="/register">Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
       {/* PLANO PROVAX X — Destaque principal */}
       <section id="planos" className="border-t bg-card py-20">
         <div className="container">
@@ -567,9 +599,14 @@ export default function Index() {
             <p className="text-sm font-medium text-foreground mb-8">
               🕐 Enquanto você pensa, outros já estão praticando.
             </p>
-            <Button size="lg" className="text-lg px-10 h-14 shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-              Assinar por R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" className="text-lg px-10 h-14" asChild>
+                <Link to="/register">Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+                Assinar agora <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
               <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Garantia 7 dias</span>
@@ -585,9 +622,14 @@ export default function Index() {
           initial={{ y: 100 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md p-3 md:hidden"
         >
-          <Button className="w-full h-12 text-base shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-            Assinar R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button className="flex-1 h-12 text-base" asChild>
+              <Link to="/register">Criar conta grátis</Link>
+            </Button>
+            <Button variant="outline" className="h-12 text-sm bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+              Assinar
+            </Button>
+          </div>
         </motion.div>
       )}
 
