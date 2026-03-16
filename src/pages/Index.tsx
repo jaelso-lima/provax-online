@@ -78,8 +78,8 @@ export default function Index() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/login">Entrar</Link></Button>
-                <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-                  Assinar R$ 14,90/mês
+                <Button size="sm" asChild>
+                  <Link to="/register">Criar conta grátis</Link>
                 </Button>
               </>
             )}
