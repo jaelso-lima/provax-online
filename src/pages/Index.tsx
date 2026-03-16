@@ -599,9 +599,14 @@ export default function Index() {
             <p className="text-sm font-medium text-foreground mb-8">
               🕐 Enquanto você pensa, outros já estão praticando.
             </p>
-            <Button size="lg" className="text-lg px-10 h-14 shadow-lg shadow-accent/25 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-              Assinar por R$ 14,90/mês <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" className="text-lg px-10 h-14" asChild>
+                <Link to="/register">Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
+                Assinar agora <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
               <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Garantia 7 dias</span>
