@@ -348,6 +348,38 @@ export default function Index() {
         </div>
       </section>
 
+      {/* EXPERIMENTE GRÁTIS */}
+      <section className="py-20">
+        <div className="container max-w-3xl">
+          <motion.div {...fadeUp} className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Zap className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">
+              Experimente <span className="text-gradient">grátis</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
+              Crie sua conta gratuitamente e resolva suas primeiras questões dentro da plataforma Provax.
+            </p>
+            <div className="mx-auto grid max-w-md gap-3 text-left mb-8">
+              {[
+                "Acesso inicial à plataforma",
+                "Teste do método Estudo Reverso",
+                "Descubra suas falhas nos estudos",
+              ].map(item => (
+                <div key={item} className="flex items-center gap-3 rounded-lg border bg-background/50 p-3">
+                  <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
+                  <span className="text-sm font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
+            <Button size="lg" className="h-14 text-lg px-10" asChild>
+              <Link to="/register">Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" /></Link>
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
       {/* PLANO PROVAX X — Destaque principal */}
       <section id="planos" className="border-t bg-card py-20">
         <div className="container">
