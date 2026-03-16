@@ -197,6 +197,11 @@ export default function AdminUsers() {
                         <Badge variant="outline" className="text-xs">{u.role || "user"}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                      {u.telefone && (
+                        <p className="text-sm text-muted-foreground">
+                          📱 <a href={`https://wa.me/55${u.telefone}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{u.telefone.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3')}</a>
+                        </p>
+                      )}
                       <div className="flex gap-4 mt-1 text-xs text-muted-foreground flex-wrap">
                         <span>Nível {u.nivel} • {u.xp} XP</span>
                         <span>{u.saldo_moedas} moedas</span>
