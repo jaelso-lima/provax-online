@@ -89,7 +89,7 @@ export default function Index() {
       </nav>
 
       {/* ═══════════════════════════════════════════════════════════════
-          HERO — Curiosidade + Desafio mental
+          1. HERO — Curiosidade + Desafio mental
       ═══════════════════════════════════════════════════════════════ */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-primary opacity-5" />
@@ -127,9 +127,36 @@ export default function Index() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          DOR — Identificação com o problema
+          2. IMPACTO RÁPIDO — Reduzir fricção imediata
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="border-t bg-card py-20">
+      <section className="border-t bg-accent/5 py-10">
+        <div className="container max-w-2xl text-center">
+          <motion.div {...fadeUp} className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
+                <Zap className="h-5 w-5 text-accent" />
+              </div>
+              <h2 className="font-display text-xl font-bold md:text-2xl">
+                Teste grátis em menos de <span className="text-accent">1 minuto</span>
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Crie sua conta, gere um simulado e descubra seu nível. Rápido, fácil e sem compromisso.
+            </p>
+            <Button size="lg" className="h-12 px-8 group" asChild>
+              <Link to="/register">
+                Começar agora
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          3. DOR — Identificação com o problema
+      ═══════════════════════════════════════════════════════════════ */}
+      <section className="bg-card py-20">
         <div className="container max-w-3xl">
           <motion.div {...fadeUp} className="text-center mb-12">
             <h2 className="font-display text-3xl font-bold md:text-4xl">
@@ -169,7 +196,7 @@ export default function Index() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SOLUÇÃO — O Método Estudo Reverso
+          4. SOLUÇÃO — O Método Estudo Reverso
       ═══════════════════════════════════════════════════════════════ */}
       <section id="metodo" className="py-20">
         <div className="container max-w-4xl">
@@ -184,7 +211,6 @@ export default function Index() {
             </p>
           </motion.div>
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Tradicional vs Reverso */}
             <motion.div {...stagger}>
               <Card className="border-destructive/20 bg-destructive/5 h-full">
                 <CardHeader className="pb-3">
@@ -232,11 +258,19 @@ export default function Index() {
               </Card>
             </motion.div>
           </div>
+          <motion.div {...fadeUp} className="text-center mt-10">
+            <Button size="lg" className="h-12 px-8 group" asChild>
+              <Link to="/register">
+                Testar o Estudo Reverso grátis
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+          </motion.div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          COMO FUNCIONA — 3 passos
+          5. COMO FUNCIONA — 3 passos
       ═══════════════════════════════════════════════════════════════ */}
       <section className="border-t bg-card py-20">
         <div className="container max-w-4xl">
@@ -279,67 +313,7 @@ export default function Index() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          BENEFÍCIOS — Blocos visuais
-      ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-20">
-        <div className="container">
-          <motion.div {...fadeUp} className="text-center mb-12">
-            <h2 className="font-display text-3xl font-bold md:text-4xl">Por que o ProvaX funciona</h2>
-            <p className="mt-3 text-muted-foreground">Tudo que você precisa para ser aprovado, em uma única plataforma</p>
-          </motion.div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto">
-            {[
-              { icon: Brain, title: "Questões de provas reais", desc: "IA treinada no padrão CESPE, FGV, VUNESP, FCC e ENEM." },
-              { icon: BarChart3, title: "Diagnóstico inteligente", desc: "Descubra exatamente qual matéria e assunto você mais erra." },
-              { icon: Target, title: "Estudo focado", desc: "Pare de perder tempo com o que já sabe. Treine só o necessário." },
-              { icon: TrendingUp, title: "Evolução visível", desc: "XP, níveis e estatísticas que mostram seu progresso real." },
-              { icon: Award, title: "Simulado adaptativo", desc: "Quanto mais pratica, mais inteligentes ficam as questões." },
-              { icon: BookOpen, title: "Redação corrigida por IA", desc: "Correção nas 5 competências do ENEM com nota estimada." },
-              { icon: MessageCircle, title: "Professor IA 24h", desc: "Tire dúvidas de qualquer matéria a qualquer hora." },
-              { icon: Shield, title: "Gabarito comentado", desc: "Explicação detalhada de cada questão para aprender com os erros." },
-            ].map((f, i) => (
-              <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.05 }}>
-                <Card className="border-0 bg-secondary/50 h-full transition-all hover:shadow-md hover:-translate-y-0.5">
-                  <CardHeader className="pb-2">
-                    <f.icon className="mb-1 h-7 w-7 text-primary" />
-                    <CardTitle className="font-display text-base">{f.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent><p className="text-sm text-muted-foreground">{f.desc}</p></CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          PROVOCAÇÃO — Seção de curiosidade
-      ═══════════════════════════════════════════════════════════════ */}
-      <section className="border-t bg-card py-16">
-        <div className="container max-w-2xl text-center">
-          <motion.div {...fadeUp}>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-            </div>
-            <h2 className="font-display text-2xl font-bold md:text-3xl mb-3">
-              Se a prova fosse hoje, você estaria preparado?
-            </h2>
-            <p className="text-muted-foreground mb-6 text-lg">
-              87% dos candidatos são reprovados por falta de método, não por falta de estudo. Descubra se você está no caminho certo.
-            </p>
-            <Button size="lg" className="h-14 text-lg px-10 group" asChild>
-              <Link to="/register">
-                Testar meu nível agora
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-            <p className="mt-3 text-xs text-muted-foreground">Resultado imediato • Grátis</p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          PROVA SOCIAL — Depoimentos + números
+          6. PROVA SOCIAL — Números + Depoimentos
       ═══════════════════════════════════════════════════════════════ */}
       <section className="py-20">
         <div className="container">
@@ -386,6 +360,75 @@ export default function Index() {
               </motion.div>
             ))}
           </div>
+
+          <motion.div {...fadeUp} className="text-center mt-10">
+            <Button size="lg" className="h-12 px-8 group" asChild>
+              <Link to="/register">
+                Fazer como eles — começar grátis
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          7. BENEFÍCIOS — Blocos visuais
+      ═══════════════════════════════════════════════════════════════ */}
+      <section className="border-t bg-card py-20">
+        <div className="container">
+          <motion.div {...fadeUp} className="text-center mb-12">
+            <h2 className="font-display text-3xl font-bold md:text-4xl">Por que o ProvaX funciona</h2>
+            <p className="mt-3 text-muted-foreground">Tudo que você precisa para ser aprovado, em uma única plataforma</p>
+          </motion.div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto">
+            {[
+              { icon: Brain, title: "Questões de provas reais", desc: "IA treinada no padrão CESPE, FGV, VUNESP, FCC e ENEM." },
+              { icon: BarChart3, title: "Diagnóstico inteligente", desc: "Descubra exatamente qual matéria e assunto você mais erra." },
+              { icon: Target, title: "Estudo focado", desc: "Pare de perder tempo com o que já sabe. Treine só o necessário." },
+              { icon: TrendingUp, title: "Evolução visível", desc: "XP, níveis e estatísticas que mostram seu progresso real." },
+              { icon: Award, title: "Simulado adaptativo", desc: "Quanto mais pratica, mais inteligentes ficam as questões." },
+              { icon: BookOpen, title: "Redação corrigida por IA", desc: "Correção nas 5 competências do ENEM com nota estimada." },
+              { icon: MessageCircle, title: "Professor IA 24h", desc: "Tire dúvidas de qualquer matéria a qualquer hora." },
+              { icon: Shield, title: "Gabarito comentado", desc: "Explicação detalhada de cada questão para aprender com os erros." },
+            ].map((f, i) => (
+              <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.05 }}>
+                <Card className="border-0 bg-secondary/50 h-full transition-all hover:shadow-md hover:-translate-y-0.5">
+                  <CardHeader className="pb-2">
+                    <f.icon className="mb-1 h-7 w-7 text-primary" />
+                    <CardTitle className="font-display text-base">{f.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent><p className="text-sm text-muted-foreground">{f.desc}</p></CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          8. PROVOCAÇÃO — Seção de curiosidade
+      ═══════════════════════════════════════════════════════════════ */}
+      <section className="py-16">
+        <div className="container max-w-2xl text-center">
+          <motion.div {...fadeUp}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+            <h2 className="font-display text-2xl font-bold md:text-3xl mb-3">
+              Se a prova fosse hoje, você estaria preparado?
+            </h2>
+            <p className="text-muted-foreground mb-6 text-lg">
+              87% dos candidatos são reprovados por falta de método, não por falta de estudo. Descubra se você está no caminho certo.
+            </p>
+            <Button size="lg" className="h-14 text-lg px-10 group" asChild>
+              <Link to="/register">
+                Testar meu nível agora
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+            <p className="mt-3 text-xs text-muted-foreground">Resultado imediato • Grátis</p>
+          </motion.div>
         </div>
       </section>
 
@@ -621,7 +664,7 @@ export default function Index() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          CTA FINAL — Aversão à perda
+          9. CTA FINAL — Aversão à perda
       ═══════════════════════════════════════════════════════════════ */}
       <section className="py-20">
         <div className="container text-center max-w-2xl">
