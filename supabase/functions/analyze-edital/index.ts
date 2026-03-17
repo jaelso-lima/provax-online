@@ -18,17 +18,32 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+function fixBadEscapes(str: string): string {
+  // Fix invalid JSON escape sequences: \a \e \o etc → remove the backslash
+  // Valid JSON escapes: \" \\ \/ \b \f \n \r \t \uXXXX
+  return str.replace(/\\([^"\\/bfnrtu])/g, (match, ch) => {
+    // If it's a unicode sequence like \uXXXX, keep it
+    if (ch === 'u') return match;
+    // Otherwise remove the bad backslash
+    return ch;
+  });
+}
+
 function extractJsonFromResponse(response: string): unknown {
   let cleaned = response
     .replace(/```json\s*/gi, "")
     .replace(/```\s*/g, "")
     .trim();
 
-  cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\r' || ch === '\t' ? ch : '');
+  // Remove control characters except newline/tab
+  cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   const jsonStart = cleaned.indexOf('{');
   if (jsonStart === -1) throw new Error("No JSON object found in response");
   cleaned = cleaned.substring(jsonStart);
+
+  // Fix bad escape sequences BEFORE parsing
+  cleaned = fixBadEscapes(cleaned);
 
   try {
     return JSON.parse(cleaned);
@@ -36,8 +51,10 @@ function extractJsonFromResponse(response: string): unknown {
     console.log("Direct JSON parse failed, attempting repair...");
   }
 
+  // Remove trailing commas
   cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
 
+  // Fix truncated JSON by balancing braces/brackets
   let braces = 0, brackets = 0;
   for (const char of cleaned) {
     if (char === '{') braces++;
@@ -48,10 +65,12 @@ function extractJsonFromResponse(response: string): unknown {
 
   if (braces > 0 || brackets > 0) {
     console.log(`JSON truncated: ${braces} unclosed braces, ${brackets} unclosed brackets. Repairing...`);
+    // Remove incomplete trailing entries
     cleaned = cleaned.replace(/,?\s*"[^"]*$/g, '');
     cleaned = cleaned.replace(/,?\s*"[^"]*"\s*:\s*$/g, '');
     cleaned = cleaned.replace(/,\s*$/, '');
 
+    // Recount and close
     braces = 0; brackets = 0;
     for (const char of cleaned) {
       if (char === '{') braces++;
@@ -63,11 +82,20 @@ function extractJsonFromResponse(response: string): unknown {
     while (braces > 0) { cleaned += '}'; braces--; }
   }
 
+  // Second attempt after repair
   try {
     return JSON.parse(cleaned);
-  } catch (repairErr) {
-    console.error("JSON repair failed:", (repairErr as Error).message);
-    throw new Error(`Failed to parse AI response: ${(repairErr as Error).message}`);
+  } catch (_e2) {
+    // Last resort: try to fix strings with unescaped newlines inside JSON strings
+    cleaned = cleaned.replace(/(?<=:\s*")([\s\S]*?)(?=")/g, (match) => {
+      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+    });
+    try {
+      return JSON.parse(cleaned);
+    } catch (repairErr) {
+      console.error("JSON repair failed:", (repairErr as Error).message);
+      throw new Error(`Failed to parse AI response: ${(repairErr as Error).message}`);
+    }
   }
 }
 
