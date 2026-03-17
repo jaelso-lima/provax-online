@@ -354,18 +354,26 @@ export default function Simulado() {
       // Fetch previously answered question enunciados to avoid repeats
       let excludeEnunciados: string[] = [];
       if (tipoMode === "disciplina" && materiaId && user) {
-        const { data: prevQuestoes } = await supabase
-          .from("respostas")
-          .select("questao_id, questoes!inner(enunciado, materia_id)")
-          .eq("questoes.materia_id", materiaId)
-          .in("simulado_id", 
-            (await supabase.from("simulados").select("id").eq("user_id", user.id).eq("status", "finalizado")).data?.map((s: any) => s.id) || []
-          )
-          .limit(200);
-        if (prevQuestoes && prevQuestoes.length > 0) {
-          excludeEnunciados = prevQuestoes
-            .map((r: any) => r.questoes?.enunciado?.slice(0, 100))
-            .filter(Boolean);
+        try {
+          const { data: finishedSims } = await supabase
+            .from("simulados").select("id")
+            .eq("user_id", user.id).eq("status", "finalizado");
+          const simIds = finishedSims?.map((s: any) => s.id) || [];
+          if (simIds.length > 0) {
+            const { data: prevQuestoes } = await supabase
+              .from("respostas")
+              .select("questao_id, questoes!inner(enunciado, materia_id)")
+              .eq("questoes.materia_id", materiaId)
+              .in("simulado_id", simIds)
+              .limit(200);
+            if (prevQuestoes && prevQuestoes.length > 0) {
+              excludeEnunciados = prevQuestoes
+                .map((r: any) => r.questoes?.enunciado?.slice(0, 100))
+                .filter(Boolean);
+            }
+          }
+        } catch (e) {
+          console.warn("Erro ao buscar questões anteriores:", e);
         }
       }
 
