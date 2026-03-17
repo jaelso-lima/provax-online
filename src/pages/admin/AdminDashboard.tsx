@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 
 const COLORS = [
   "hsl(245, 58%, 51%)",
