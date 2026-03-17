@@ -36,6 +36,7 @@ export default function Dashboard() {
   });
 
   const [dailyLimit, setDailyLimit] = useState<{ limite: number; usado: number; restante: number; pode_gerar: boolean } | null>(null);
+  const [radarVisivel, setRadarVisivel] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -65,6 +66,18 @@ export default function Dashboard() {
         if (limitData) setDailyLimit(limitData as any);
       } catch (e) {
         console.error("Daily limit check error:", e);
+      }
+
+      // Check radar visibility
+      try {
+        const { data: radarData } = await supabase
+          .from("site_content")
+          .select("valor")
+          .eq("chave", "radar_visivel")
+          .maybeSingle();
+        setRadarVisivel(radarData?.valor === "true");
+      } catch (e) {
+        console.error("Radar visibility check error:", e);
       }
     };
     load();
@@ -474,15 +487,17 @@ export default function Dashboard() {
                 <p className="text-xs font-medium">Moedas</p>
               </CardContent>
             </Card>
-            <Card 
-              className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
-              onClick={() => navigate("/concursos")}
-            >
-              <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
-                <Radar className="h-5 w-5 text-primary" />
-                <p className="text-xs font-medium">Concursos</p>
-              </CardContent>
-            </Card>
+            {radarVisivel && (
+              <Card 
+                className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
+                onClick={() => navigate("/concursos")}
+              >
+                <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
+                  <Radar className="h-5 w-5 text-primary" />
+                  <p className="text-xs font-medium">Concursos</p>
+                </CardContent>
+              </Card>
+            )}
             <Card 
               className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
               onClick={() => navigate("/planos")}
@@ -639,13 +654,13 @@ export default function Dashboard() {
         <h2 className="mb-4 font-display text-xl font-semibold hidden lg:block">Ações</h2>
         <div className="mb-8 hidden gap-4 lg:grid lg:grid-cols-3">
           {[
-            { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary" },
-            { icon: Radar, title: "Concursos Abertos", desc: "Radar de concursos em todo o Brasil", path: "/concursos", color: "text-accent" },
-            { icon: PenTool, title: "Redação com IA", desc: "Escreva e receba feedback", path: "/redacao", color: "text-accent" },
-            { icon: Coins, title: "Comprar Moedas", desc: "Adquira mais créditos", path: "/comprar-moedas", color: "text-coin" },
-            { icon: Trophy, title: "Ver Planos", desc: "Upgrade para mais recursos", path: "/planos", color: "text-warning" },
-            { icon: FileText, title: "Meu Perfil", desc: "Editar dados e ver histórico", path: "/perfil", color: "text-primary" },
-          ].map(a => (
+            { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary", visible: true },
+            { icon: Radar, title: "Concursos Abertos", desc: "Radar de concursos em todo o Brasil", path: "/concursos", color: "text-accent", visible: radarVisivel },
+            { icon: PenTool, title: "Redação com IA", desc: "Escreva e receba feedback", path: "/redacao", color: "text-accent", visible: true },
+            { icon: Coins, title: "Comprar Moedas", desc: "Adquira mais créditos", path: "/comprar-moedas", color: "text-coin", visible: true },
+            { icon: Trophy, title: "Ver Planos", desc: "Upgrade para mais recursos", path: "/planos", color: "text-warning", visible: true },
+            { icon: FileText, title: "Meu Perfil", desc: "Editar dados e ver histórico", path: "/perfil", color: "text-primary", visible: true },
+          ].filter(a => a.visible).map(a => (
             <Card key={a.title} className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate(a.path)}>
               <CardHeader><a.icon className={`mb-2 h-6 w-6 ${a.color}`} /><CardTitle className="text-base">{a.title}</CardTitle><CardDescription>{a.desc}</CardDescription></CardHeader>
             </Card>

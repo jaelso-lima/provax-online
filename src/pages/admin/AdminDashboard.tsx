@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign, Wallet } from "lucide-react";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign, Wallet, Radar } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
 import { generateContractPDF, getContractClauses } from "@/lib/contractPdf";
 import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 
 const COLORS = [
   "hsl(245, 58%, 51%)",
@@ -710,7 +711,8 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-
+        {/* Radar Visibility Toggle */}
+        <RadarToggle />
         {subsPlanData.length > 0 && (
           <Card>
             <CardHeader>
@@ -821,6 +823,61 @@ export default function AdminDashboard() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+function RadarToggle() {
+  const { data: radarVisivel, refetch } = useQuery({
+    queryKey: ["radar-visivel"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_content")
+        .select("valor")
+        .eq("chave", "radar_visivel")
+        .maybeSingle();
+      return data?.valor === "true";
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async () => {
+      const newVal = radarVisivel ? "false" : "true";
+      const { error } = await supabase
+        .from("site_content")
+        .update({ valor: newVal, updated_at: new Date().toISOString() })
+        .eq("chave", "radar_visivel");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetch();
+      toast.success(radarVisivel ? "Radar de Concursos ocultado" : "Radar de Concursos visível");
+    },
+    onError: () => toast.error("Erro ao alterar visibilidade"),
+  });
+
+  return (
+    <Card>
+      <CardContent className="py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Radar className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Radar de Concursos</p>
+              <p className="text-xs text-muted-foreground">
+                {radarVisivel ? "Visível para os usuários" : "Oculto para os usuários"}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={radarVisivel ?? false}
+            onCheckedChange={() => toggleMutation.mutate()}
+            disabled={toggleMutation.isPending}
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
