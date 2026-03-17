@@ -26,6 +26,7 @@ export default function Perfil() {
   const [saving, setSaving] = useState(false);
   const [transacoes, setTransacoes] = useState<any[]>([]);
   const [respostas, setRespostas] = useState<any[]>([]);
+  const [respostasPorMateria, setRespostasPorMateria] = useState<any[]>([]);
   const [simulados, setSimulados] = useState<any[]>([]);
 
   useEffect(() => { if (profile) setNome(profile.nome); }, [profile]);
