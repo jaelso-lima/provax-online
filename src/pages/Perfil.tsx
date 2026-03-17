@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen } from "lucide-react";
+import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
@@ -166,6 +166,29 @@ export default function Perfil() {
                 <Copy className="h-3 w-3" />{profile?.codigo_indicacao || "..."}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Comunidade WhatsApp */}
+        <Card className="mb-4">
+          <CardContent className="py-3">
+            <a
+              href="https://chat.whatsapp.com/CaQMyka3CMU4QBUcl6WQxr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
+                <div>
+                  <p className="text-sm font-medium group-hover:text-foreground transition-colors">Grupo WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">Entre na comunidade de concurseiros</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs text-green-600 dark:text-green-500 border-green-600/30">
+                Entrar
+              </Button>
+            </a>
           </CardContent>
         </Card>
 
