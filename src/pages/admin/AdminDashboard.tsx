@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign, Wallet } from "lucide-react";
+import { Users, BookOpen, PenTool, Percent, CreditCard, Crown, TrendingUp, Download, FileText, CheckCircle, Clock, XCircle, DollarSign, Wallet, Radar } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area } from "recharts";
 import { generateContractPDF, getContractClauses } from "@/lib/contractPdf";
 import { parseSignatureData, getSignatureStatus, isFullySigned } from "@/lib/contractSignature";
