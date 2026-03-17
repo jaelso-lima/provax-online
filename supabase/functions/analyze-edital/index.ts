@@ -206,62 +206,52 @@ ATENÇÃO CRÍTICA:
 
       // === Feed edital into question extraction pipeline (with dedup) ===
       try {
-        const { data: fileData, error: dlErr } = await supabaseAdmin.storage
-          .from("editais").download(analysis.storage_path);
-        
-        if (fileData && !dlErr) {
-          // Compute robust hash using full file content via crypto API
-          const hashBuffer = await fileData.arrayBuffer();
-          const hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", hashBuffer));
-          const hashStr = Array.from(hashBytes).map(b => b.toString(16).padStart(2, "0")).join("");
+        // Reuse already-downloaded PDF buffer (no second download)
+        const hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", pdfArrayBuffer));
+        const hashStr = Array.from(hashBytes).map(b => b.toString(16).padStart(2, "0")).join("");
 
-          // CHECK FOR DUPLICATES — skip if same file hash already exists
-          const { data: existingImport } = await supabaseAdmin
-            .from("pdf_imports")
-            .select("id")
-            .eq("hash_arquivo", hashStr)
-            .maybeSingle();
+        const { data: existingImport } = await supabaseAdmin
+          .from("pdf_imports")
+          .select("id")
+          .eq("hash_arquivo", hashStr)
+          .maybeSingle();
 
-          if (existingImport) {
-            console.log(`Duplicate PDF detected (hash: ${hashStr.slice(0, 12)}...), skipping pipeline feed.`);
-          } else {
-            const importPath = `edital_${analysis_id}_${Date.now()}.pdf`;
-            await supabaseAdmin.storage.from("pdf-imports").upload(importPath, fileData, {
-              contentType: "application/pdf",
-            });
+        if (existingImport) {
+          console.log(`Duplicate PDF detected (hash: ${hashStr.slice(0, 12)}...), skipping pipeline feed.`);
+        } else {
+          const importPath = `edital_${analysis_id}_${Date.now()}.pdf`;
+          await supabaseAdmin.storage.from("pdf-imports").upload(importPath, new Blob([pdfArrayBuffer], { type: "application/pdf" }), {
+            contentType: "application/pdf",
+          });
 
-            // Determine banca from AI result
-            const bancaNome = resultado?.info_concurso?.banca || null;
-            let bancaId = null;
-            if (bancaNome) {
-              const { data: banca } = await supabaseAdmin
-                .from("bancas").select("id").ilike("nome", bancaNome).maybeSingle();
-              bancaId = banca?.id || null;
-            }
+          const bancaNome = resultado?.info_concurso?.banca || null;
+          let bancaId = null;
+          if (bancaNome) {
+            const { data: banca } = await supabaseAdmin
+              .from("bancas").select("id").ilike("nome", bancaNome).maybeSingle();
+            bancaId = banca?.id || null;
+          }
 
-            // Create pdf_imports record
-            const { data: pdfImport } = await supabaseAdmin.from("pdf_imports").insert({
-              nome_arquivo: analysis.file_name || `edital_${analysis_id}.pdf`,
-              hash_arquivo: hashStr,
-              storage_path: importPath,
-              uploaded_by: user.id,
-              tipo: "concurso",
-              banca_id: bancaId,
-              cargo: resultado?.info_concurso?.cargo || null,
-              status_processamento: "pendente",
-            }).select("id").single();
+          const { data: pdfImport } = await supabaseAdmin.from("pdf_imports").insert({
+            nome_arquivo: analysis.file_name || `edital_${analysis_id}.pdf`,
+            hash_arquivo: hashStr,
+            storage_path: importPath,
+            uploaded_by: user.id,
+            tipo: "concurso",
+            banca_id: bancaId,
+            cargo: resultado?.info_concurso?.cargo || null,
+            status_processamento: "pendente",
+          }).select("id").single();
 
-            // Trigger process-pdf in background
-            if (pdfImport) {
-              fetch(`${supabaseUrl}/functions/v1/process-pdf`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-                },
-                body: JSON.stringify({ import_id: pdfImport.id }),
-              }).catch(e => console.error("Trigger process-pdf error:", e));
-            }
+          if (pdfImport) {
+            fetch(`${supabaseUrl}/functions/v1/process-pdf`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              },
+              body: JSON.stringify({ import_id: pdfImport.id }),
+            }).catch(e => console.error("Trigger process-pdf error:", e));
           }
         }
       } catch (pipelineErr: any) {
