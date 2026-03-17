@@ -169,6 +169,29 @@ export default function Perfil() {
           </CardContent>
         </Card>
 
+        {/* Comunidade WhatsApp */}
+        <Card className="mb-4">
+          <CardContent className="py-3">
+            <a
+              href="https://chat.whatsapp.com/CaQMyka3CMU4QBUcl6WQxr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-green-600 dark:text-green-500" />
+                <div>
+                  <p className="text-sm font-medium group-hover:text-foreground transition-colors">Grupo WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">Entre na comunidade de concurseiros</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs text-green-600 dark:text-green-500 border-green-600/30">
+                Entrar
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+
         {/* Gráfico de Desempenho */}
         {stats && (
           <Card className="mb-4">
