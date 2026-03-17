@@ -6,11 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function pdfToBase64(supabase: any, storagePath: string): Promise<string> {
-  const { data, error } = await supabase.storage.from("editais").download(storagePath);
-  if (error || !data) throw new Error("Erro ao baixar arquivo: " + (error?.message || "não encontrado"));
-  const arrayBuffer = await data.arrayBuffer();
-  const uint8 = new Uint8Array(arrayBuffer);
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const uint8 = new Uint8Array(buffer);
   let binary = "";
   const chunkSize = 8192;
   for (let i = 0; i < uint8.length; i += chunkSize) {
