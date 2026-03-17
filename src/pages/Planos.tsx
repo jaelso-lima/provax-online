@@ -45,7 +45,7 @@ function formatPreco(valor: number) {
 }
 
 export default function Planos() {
-  const [periodo, setPeriodo] = useState<Periodo>("anual");
+  const [periodo, setPeriodo] = useState<Periodo>("mensal");
   const { user, profile } = useAuth();
 
   const { data: dbPlans } = useQuery({
