@@ -18,7 +18,60 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-serve(async (req) => {
+function extractJsonFromResponse(response: string): unknown {
+  let cleaned = response
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (ch) => ch === '\n' || ch === '\r' || ch === '\t' ? ch : '');
+
+  const jsonStart = cleaned.indexOf('{');
+  if (jsonStart === -1) throw new Error("No JSON object found in response");
+  cleaned = cleaned.substring(jsonStart);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (_e) {
+    console.log("Direct JSON parse failed, attempting repair...");
+  }
+
+  cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+
+  let braces = 0, brackets = 0;
+  for (const char of cleaned) {
+    if (char === '{') braces++;
+    if (char === '}') braces--;
+    if (char === '[') brackets++;
+    if (char === ']') brackets--;
+  }
+
+  if (braces > 0 || brackets > 0) {
+    console.log(`JSON truncated: ${braces} unclosed braces, ${brackets} unclosed brackets. Repairing...`);
+    cleaned = cleaned.replace(/,?\s*"[^"]*$/g, '');
+    cleaned = cleaned.replace(/,?\s*"[^"]*"\s*:\s*$/g, '');
+    cleaned = cleaned.replace(/,\s*$/, '');
+
+    braces = 0; brackets = 0;
+    for (const char of cleaned) {
+      if (char === '{') braces++;
+      if (char === '}') braces--;
+      if (char === '[') brackets++;
+      if (char === ']') brackets--;
+    }
+    while (brackets > 0) { cleaned += ']'; brackets--; }
+    while (braces > 0) { cleaned += '}'; braces--; }
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (repairErr) {
+    console.error("JSON repair failed:", (repairErr as Error).message);
+    throw new Error(`Failed to parse AI response: ${(repairErr as Error).message}`);
+  }
+}
+
+
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
