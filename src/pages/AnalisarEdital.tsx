@@ -267,6 +267,60 @@ export default function AnalisarEdital() {
   );
 }
 
+function ProcessingProgress({ startedAt }: { startedAt: string }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const start = new Date(startedAt).getTime();
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [startedAt]);
+
+  const steps = [
+    { label: "Baixando edital", threshold: 0 },
+    { label: "Lendo conteúdo do PDF", threshold: 5 },
+    { label: "Identificando cargos e matérias", threshold: 15 },
+    { label: "Extraindo conteúdo programático", threshold: 30 },
+    { label: "Gerando estratégias de estudo", threshold: 60 },
+    { label: "Finalizando análise", threshold: 90 },
+  ];
+
+  const currentStep = [...steps].reverse().find(s => elapsed >= s.threshold) || steps[0];
+  const progressPct = Math.min(95, Math.round((elapsed / 120) * 100));
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  };
+
+  return (
+    <div className="px-5 py-8 space-y-4">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-foreground font-medium">{currentStep.label}...</p>
+        <p className="text-xs text-muted-foreground">Tempo decorrido: {formatTime(elapsed)}</p>
+      </div>
+      <Progress value={progressPct} className="max-w-xs mx-auto" />
+      <div className="flex justify-center gap-1">
+        {steps.map((step, i) => (
+          <div
+            key={i}
+            className={`h-1.5 w-1.5 rounded-full transition-colors ${
+              elapsed >= step.threshold ? "bg-primary" : "bg-muted"
+            }`}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-center text-muted-foreground">
+        Editais grandes podem levar até 2 minutos para uma análise completa
+      </p>
+    </div>
+  );
+}
+
 function AnalysisCard({
   analysis, isActive, onToggle, onDelete, onRetry, onNavigateSimulado, onDownloadPdf,
 }: {
@@ -372,11 +426,7 @@ function AnalysisCard({
       {isActive && (
         <div className="border-t">
           {analysis.status === "processando" && (
-            <div className="px-5 py-8 text-center space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground font-medium">Analisando edital… isso pode levar alguns segundos</p>
-              <Progress value={undefined} className="max-w-xs mx-auto" />
-            </div>
+            <ProcessingProgress startedAt={analysis.created_at} />
           )}
 
           {analysis.status === "erro" && (
