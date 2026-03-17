@@ -688,6 +688,8 @@ export default function Index() {
               { q: "O ProvaX é gratuito?", a: "Sim! Você pode criar uma conta gratuita com 10 questões por dia e fazer simulados sem pagar nada. Para acesso completo, temos planos a partir de R$ 14,90/mês." },
               { q: "Quanto tempo leva para fazer um simulado?", a: "Depende da quantidade de questões, mas a maioria dos simulados leva de 10 a 30 minutos. Você também pode pausar e continuar depois." },
               { q: "As questões são de concursos reais?", a: "Sim! As questões são geradas por IA treinada no padrão exato de cada banca: CESPE, FGV, VUNESP, FCC e vestibulares. É o treino mais próximo da prova real." },
+              { q: "O que é o Professor PX?", a: "É o nosso tutor inteligente disponível 24h. Ele analisa seus erros e te ajuda a entender cada questão, tirando dúvidas de qualquer matéria em tempo real." },
+              { q: "Como funciona a análise de edital?", a: "Envie o PDF do edital e nossa IA extrai todas as matérias, conteúdos programáticos e gera estratégias de estudo personalizadas para cada cargo." },
               { q: "Preciso pagar para usar?", a: "Não! O plano gratuito permite que você teste a plataforma sem pagar nada. Sem cartão de crédito. Faça upgrade apenas quando quiser." },
               { q: "Posso cancelar quando quiser?", a: "Sim! Cancele a qualquer momento. E ainda tem garantia de 7 dias — não gostou, devolvemos seu dinheiro." },
               { q: "Serve para ENEM também?", a: "Sim! O ProvaX tem modo ENEM com questões por área do conhecimento e correção de redação por IA nas 5 competências." },
