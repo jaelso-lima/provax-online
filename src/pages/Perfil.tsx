@@ -25,16 +25,27 @@ export default function Perfil() {
   const [nome, setNome] = useState(profile?.nome || "");
   const [saving, setSaving] = useState(false);
   const [transacoes, setTransacoes] = useState<any[]>([]);
+  const [respostas, setRespostas] = useState<any[]>([]);
   const [simulados, setSimulados] = useState<any[]>([]);
 
   useEffect(() => { if (profile) setNome(profile.nome); }, [profile]);
 
   useEffect(() => {
     if (!user) return;
+    // Transações de moedas
     supabase.from("moeda_transacoes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setTransacoes(data); });
-    supabase.from("simulados").select("acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
+    // Simulados finalizados
+    supabase.from("simulados").select("id, acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setSimulados(data); });
+    // Buscar respostas reais (apenas respondidas) via simulados do usuário
+    supabase.from("simulados").select("id").eq("user_id", user.id).eq("status", "finalizado")
+      .then(({ data: sims }) => {
+        if (!sims?.length) return;
+        const simIds = sims.map(s => s.id);
+        supabase.from("respostas").select("acertou").in("simulado_id", simIds).not("resposta_usuario", "is", null)
+          .then(({ data }) => { if (data) setRespostas(data); });
+      });
   }, [user]);
 
   const handleSave = async () => {
@@ -54,21 +65,24 @@ export default function Perfil() {
   };
 
   const stats = useMemo(() => {
-    if (!simulados.length) return null;
-    const totalAcertos = simulados.reduce((s, r) => s + (r.acertos || 0), 0);
-    const totalQuestoes = simulados.reduce((s, r) => s + (r.total_questoes || 0), 0);
-    const totalErros = totalQuestoes - totalAcertos;
-    const media = totalQuestoes > 0 ? Math.round((totalAcertos / totalQuestoes) * 100) : 0;
+    // Usar respostas reais para acertos/erros precisos
+    const respondidas = respostas.filter(r => r.acertou !== null);
+    const totalRespondidas = respondidas.length;
+    const totalAcertos = respondidas.filter(r => r.acertou === true).length;
+    const totalErros = respondidas.filter(r => r.acertou === false).length;
+    const media = totalRespondidas > 0 ? Math.round((totalAcertos / totalRespondidas) * 100) : 0;
 
-    // últimos 5 simulados para gráfico de barras (mais recente à direita)
+    if (totalRespondidas === 0 && !simulados.length) return null;
+
+    // últimos 5 simulados para gráfico de barras (usando acertos reais do simulado)
     const ultimos = simulados.slice(0, 5).reverse().map((s, i) => ({
       name: `#${i + 1}`,
       acertos: s.acertos || 0,
-      erros: (s.total_questoes || 0) - (s.acertos || 0),
+      erros: Math.max(0, (s.total_questoes || 0) - (s.acertos || 0)),
     }));
 
-    return { totalAcertos, totalErros, totalQuestoes, media, ultimos, total: simulados.length };
-  }, [simulados]);
+    return { totalAcertos, totalErros, totalQuestoes: totalRespondidas, media, ultimos, total: simulados.length };
+  }, [respostas, simulados]);
 
   const xp = profile?.xp ?? 0;
   const nivel = profile?.nivel ?? 1;
