@@ -78,55 +78,64 @@ serve(async (req) => {
     // Download and convert PDF
     const pdfBase64 = await pdfToBase64(supabaseAdmin, analysis.storage_path);
 
-    const systemPrompt = `Você é um especialista em concursos públicos e editais. Analise o edital enviado e extraia TODOS os cargos disponíveis e TODAS as matérias/disciplinas cobradas.
+    const systemPrompt = `Você é um especialista sênior em concursos públicos brasileiros com experiência em análise de editais. Sua tarefa é analisar o edital enviado com MÁXIMA PRECISÃO e COMPLETUDE.
 
-IMPORTANTE: Muitos editais possuem múltiplos cargos com matérias diferentes. Você DEVE identificar cada cargo separadamente e associar as matérias corretas a cada um.
+## ETAPA 1 - IDENTIFICAÇÃO DE CARGOS
+Leia o edital INTEGRALMENTE e identifique TODOS os cargos/funções disponíveis. Muitos editais agrupam cargos por nível (médio, superior) com disciplinas diferentes.
 
-Retorne um objeto JSON com a seguinte estrutura:
+## ETAPA 2 - EXTRAÇÃO EXAUSTIVA DE CONTEÚDO PROGRAMÁTICO
+Para CADA cargo, localize a seção de "CONTEÚDO PROGRAMÁTICO" ou "CONHECIMENTOS" no edital. Extraia ABSOLUTAMENTE TODOS os itens listados, sem omitir nenhum. O edital é o documento oficial — cada item listado pode cair na prova.
+
+ATENÇÃO CRÍTICA:
+- NÃO resuma nem agrupe tópicos — liste EXATAMENTE como está no edital
+- Se o edital lista "1. Compreensão e interpretação de textos. 2. Tipologia textual. 3. Ortografia oficial..." você DEVE listar CADA UM desses itens individualmente
+- Editais frequentemente têm seções como "CONHECIMENTOS BÁSICOS" (comuns a todos) e "CONHECIMENTOS ESPECÍFICOS" (por cargo) — capture AMBOS
+- Verifique se há legislação específica listada (leis, decretos, instruções normativas) — cada uma deve ser listada
+
+## FORMATO DE RESPOSTA
 
 {
-  "cargos": ["Cargo 1", "Cargo 2", "Cargo 3"],
+  "cargos": ["Cargo 1", "Cargo 2"],
   "materias": [
     {
-      "nome": "Nome da Matéria/Disciplina",
+      "nome": "Nome exato da Matéria/Disciplina como consta no edital",
       "cargos_aplicaveis": ["Cargo 1", "Cargo 2"],
-      "explicacao": "Explicação simples e direta sobre o que é essa matéria e sua importância no concurso",
-      "conteudos_principais": ["tópico 1", "tópico 2", "tópico 3"],
+      "explicacao": "O que essa matéria aborda e por que é importante neste concurso específico",
+      "conteudos_principais": [
+        "Item 1 EXATAMENTE como listado no edital",
+        "Item 2 EXATAMENTE como listado no edital",
+        "Item 3 EXATAMENTE como listado no edital"
+      ],
       "exemplos": [
         {
-          "topico": "Nome do tópico",
-          "exemplo": "Exemplo prático no estilo de prova"
+          "topico": "Tópico mais cobrado",
+          "exemplo": "Exemplo realista de questão no estilo desta banca"
         }
       ],
       "dicas_prova": [
-        "O que mais cai nessa matéria",
-        "Pegadinhas comuns",
-        "Estratégias para resolver questões"
+        "Dica específica baseada no perfil desta banca e cargo"
       ],
-      "estrategia_estudo": "Como estudar essa matéria com foco em aprovação, incluindo ordem de prioridade e tempo sugerido"
+      "estrategia_estudo": "Plano de estudo prático com prioridades baseadas no peso da matéria"
     }
   ],
   "info_concurso": {
-    "nome": "Nome do concurso/órgão",
-    "banca": "Nome da banca examinadora se identificada",
-    "cargo": "Todos os cargos separados por vírgula",
+    "nome": "Nome completo do concurso/órgão",
+    "banca": "Banca examinadora",
+    "cargo": "Lista de todos os cargos",
     "total_materias": 0
   }
 }
 
-REGRAS:
-- O campo "cargos" deve listar TODOS os cargos/funções encontrados no edital
-- Cada matéria deve ter "cargos_aplicaveis" indicando para quais cargos ela é cobrada
-- Se uma matéria é comum a todos os cargos (ex: Língua Portuguesa), liste todos os cargos em "cargos_aplicaveis"
-- Seja objetivo e prático
-- Use linguagem acessível
-- Foque no que realmente importa para aprovação
-- Dê 2 a 3 exemplos por tópico principal
-- As dicas devem ser específicas da matéria, não genéricas
-- Retorne APENAS o JSON válido, sem markdown`;
+## REGRAS INEGOCIÁVEIS:
+1. "conteudos_principais" deve conter TODOS os itens do conteúdo programático do edital para aquela matéria — 100% de cobertura. Se o edital lista 20 tópicos, retorne os 20. Não corte, não resuma.
+2. Cada matéria deve ter "cargos_aplicaveis" corretos — verifique o edital para saber quais cargos cobram aquela disciplina
+3. Se houver "Conhecimentos Básicos" e "Conhecimentos Específicos", trate como matérias separadas com os cargos corretos
+4. Legislação específica (ex: Lei 8.112/90, Constituição Federal arts. X a Y) deve aparecer como tópico individual em conteudos_principais
+5. Exemplos e dicas devem ser específicos da banca identificada, não genéricos
+6. Retorne APENAS JSON válido, sem markdown`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000);
+    const timeout = setTimeout(() => controller.abort(), 180000); // 3 min for thorough analysis
 
     try {
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -142,7 +151,7 @@ REGRAS:
             {
               role: "user",
               content: [
-                { type: "text", text: "Analise este edital e extraia todas as matérias com resumos completos:" },
+                { type: "text", text: "Analise este edital de forma EXAUSTIVA. Extraia 100% do conteúdo programático listado para cada cargo, sem omitir NENHUM item. Cada tópico do edital é importante para o candidato:" },
                 {
                   type: "image_url",
                   image_url: { url: `data:application/pdf;base64,${pdfBase64}` },
