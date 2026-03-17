@@ -666,7 +666,7 @@ export default function Simulado() {
         <div className="space-y-2"><Label>Dificuldade</Label><Select value={nivel} onValueChange={setNivel}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="facil">Fácil</SelectItem><SelectItem value="medio">Médio</SelectItem><SelectItem value="dificil">Difícil</SelectItem></SelectContent></Select></div>
         
         {tipoMode !== "prova_completa" && (
-          <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem></SelectContent></Select></div>
+          <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem><SelectItem value="30">30 questões</SelectItem><SelectItem value="50">50 questões</SelectItem><SelectItem value="100">100 questões</SelectItem></SelectContent></Select></div>
         )}
 
 
