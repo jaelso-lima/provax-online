@@ -569,20 +569,22 @@ export default function Simulado() {
           <Card className="border-primary/30">
             <CardContent className="pt-6 text-center space-y-4">
               <div className="text-4xl">🔒</div>
-              <h3 className="font-display text-xl font-bold">Para continuar a prova completa, assine o Plano Pro.</h3>
+              <h3 className="font-display text-xl font-bold">
+                {isProvaCompleta ? "Para continuar a prova completa, assine o Plano Pro." : "Você atingiu o limite do seu plano."}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Você respondeu <strong>{FREE_PROVA_COMPLETA_LIMIT} questões</strong> da Prova Completa.
-                Para desbloquear todas as <strong>{questoes.length} questões</strong>, assine o plano Pro.
+                Você respondeu <strong>{freeAnswerLimit} questões</strong>{isProvaCompleta ? " da Prova Completa" : " do simulado"}.
+                Para desbloquear todas as <strong>{questoes.length} questões</strong>, assine um plano.
               </p>
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-                💡 Com o plano Pro você tem acesso ilimitado a provas completas de todas as bancas!
+                💡 Com um plano pago você responde todas as {questoes.length} questões sem limite!
               </div>
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => setCurrentIdx(FREE_PROVA_COMPLETA_LIMIT - 1)}>Voltar às questões</Button>
-                <Button onClick={() => navigate("/planos")}>Assinar Plano Pro</Button>
+                <Button variant="outline" onClick={() => setCurrentIdx(freeAnswerLimit - 1)}>Voltar às questões</Button>
+                <Button onClick={() => navigate("/planos")}>Ver Planos</Button>
               </div>
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={handleFinalizar} disabled={finalizando}>
-                {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar com {Math.min(respondidas, FREE_PROVA_COMPLETA_LIMIT)} questões
+                {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar com {Math.min(respondidas, freeAnswerLimit)} questões
               </Button>
             </CardContent>
           </Card>
