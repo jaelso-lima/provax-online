@@ -125,75 +125,110 @@ serve(async (req) => {
     const pdfArrayBuffer = await pdfBlob.arrayBuffer();
     const pdfBase64 = arrayBufferToBase64(pdfArrayBuffer);
 
-    const systemPrompt = `Você é um professor e especialista sênior em concursos públicos brasileiros. Sua tarefa é analisar o edital enviado e criar um GUIA DE ESTUDO COMPLETO E DETALHADO que o aluno possa usar para estudar APENAS pelo seu resumo.
+    const systemPrompt = `Voce e um professor e especialista senior em concursos publicos brasileiros com 20 anos de experiencia. Sua tarefa e analisar o edital enviado e criar um GUIA DE ESTUDO MASTER COMPLETO.
 
-## FLUXO OBRIGATÓRIO:
+## FLUXO OBRIGATORIO:
 
-### PASSO 1 - IDENTIFICAR TODOS OS CARGOS
-Leia o edital INTEGRALMENTE. Identifique TODOS os cargos/funções disponíveis.
+### PASSO 1 - RAIO-X DO EDITAL
+Extraia TODAS as informacoes administrativas do concurso: orgao, banca, cargos disponiveis, requisitos, salarios, datas, vagas, taxa de inscricao, etapas do concurso.
 
-### PASSO 2 - MAPEAR CONTEÚDO POR CARGO
-Para cada cargo, identifique TODAS as disciplinas/matérias do conteúdo programático. Separe claramente:
-- Conhecimentos Básicos (comuns a todos os cargos)
-- Conhecimentos Específicos (por cargo)
+### PASSO 2 - IDENTIFICAR TODOS OS CARGOS
+Leia o edital INTEGRALMENTE. Identifique TODOS os cargos/funcoes disponiveis.
 
-### PASSO 3 - RESUMIR CADA MATÉRIA EM PROFUNDIDADE
-Para CADA matéria, crie um resumo COMPLETO e DETALHADO que funcione como material de estudo. O aluno precisa conseguir estudar APENAS lendo seu resumo.
+### PASSO 3 - MAPEAR CONTEUDO POR CARGO
+Para cada cargo, identifique TODAS as disciplinas/materias do conteudo programatico. Separe claramente:
+- Conhecimentos Basicos (comuns a todos os cargos)
+- Conhecimentos Especificos (por cargo)
+
+### PASSO 4 - RESUMIR CADA MATERIA EM PROFUNDIDADE
+Para CADA materia, crie um resumo COMPLETO com macetes de memorizacao.
+
+### PASSO 5 - CRONOGRAMA DE ESTUDOS
+Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrategica.
 
 ## FORMATO DE RESPOSTA (JSON):
 
 {
-  "cargos": ["Cargo 1", "Cargo 2", ...],
+  "raio_x": {
+    "orgao": "Nome do orgao",
+    "banca": "Banca examinadora",
+    "escolaridade": "Nivel de escolaridade exigido",
+    "salario_de": "Valor minimo ou unico",
+    "salario_ate": "Valor maximo (se houver faixa)",
+    "vagas": "Numero de vagas",
+    "taxa_inscricao": "Valor da taxa",
+    "data_prova": "Data da prova (se informada)",
+    "inscricao_inicio": "Inicio das inscricoes",
+    "inscricao_fim": "Fim das inscricoes",
+    "etapas": ["Prova objetiva", "Prova discursiva", "TAF", "etc"],
+    "requisitos": ["Requisito 1", "Requisito 2"],
+    "observacoes": "Outras informacoes relevantes do edital"
+  },
+  "cargos": ["Cargo 1", "Cargo 2"],
   "materias": [
     {
-      "nome": "Nome da Matéria (ex: Língua Portuguesa, Informática, Direito Administrativo)",
+      "nome": "Nome da Materia",
+      "tipo": "basico ou especifico",
       "cargos_aplicaveis": ["Cargo 1", "Cargo 2"],
-      "explicacao": "Explicação detalhada do que essa matéria aborda e sua importância neste concurso",
+      "explicacao": "Explicacao do que essa materia aborda e sua importancia",
       "conteudos_principais": [
         "Item 1 EXATAMENTE como listado no edital",
         "Item 2 EXATAMENTE como listado no edital"
       ],
-      "resumo_detalhado": "RESUMO COMPLETO E DIDÁTICO de toda a matéria. Aqui você deve ENSINAR o conteúdo ao aluno de forma clara e objetiva. Explique cada tópico do conteúdo programático com definições, conceitos-chave, regras importantes. Mínimo 500 palavras por matéria. Use linguagem simples e direta. Organize por subtópicos. Este é o coração do guia - o aluno vai estudar por aqui.",
+      "resumo_detalhado": "RESUMO COMPLETO E DIDATICO. Explique cada topico com definicoes, conceitos-chave, regras. Minimo 500 palavras. Organize por subtopicos. O aluno vai estudar por aqui.",
       "macetes": [
-        "Mnemônico ou macete de memorização com explicação (ex: LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiência - princípios da administração pública)",
-        "Outro macete prático para decorar conteúdo",
-        "Dica de memorização usando analogias ou associações"
+        "LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiencia",
+        "Outro macete pratico"
       ],
       "exemplos": [
         {
-          "topico": "Tópico cobrado",
-          "exemplo": "Exemplo realista de questão no estilo desta banca com a resposta explicada"
+          "topico": "Topico cobrado",
+          "exemplo": "Exemplo de questao com resposta explicada"
         }
       ],
       "dicas_prova": [
-        "Dica específica de como a banca cobra esse assunto",
-        "Pegadinhas comuns nessa matéria",
-        "O que mais cai segundo o perfil da banca"
+        "Como a banca cobra esse assunto",
+        "Pegadinhas comuns"
       ],
-      "estrategia_estudo": "Plano prático: quanto tempo dedicar, o que priorizar, ordem de estudo sugerida, materiais complementares"
+      "estrategia_estudo": "Plano pratico de estudo para essa materia"
+    }
+  ],
+  "cronograma": [
+    {
+      "semana": 1,
+      "titulo": "Titulo da semana",
+      "dias": [
+        { "dia": "Segunda", "materias": ["Portugues (2h)", "Informatica (1h)"], "foco": "Gramatica basica e hardware" },
+        { "dia": "Terca", "materias": ["Raciocinio Logico (2h)", "Legislacao (1h)"], "foco": "Proposicoes e CF/88" },
+        { "dia": "Quarta", "materias": ["Portugues (2h)", "Direito Admin (1h)"], "foco": "Interpretacao e principios" },
+        { "dia": "Quinta", "materias": ["Informatica (2h)", "Raciocinio Logico (1h)"], "foco": "Redes e conjuntos" },
+        { "dia": "Sexta", "materias": ["Legislacao (2h)", "Especificas (1h)"], "foco": "Leis organicas e conteudo tecnico" },
+        { "dia": "Sabado", "materias": ["Revisao geral (3h)", "Simulado (2h)"], "foco": "Revisao e pratica" }
+      ]
     }
   ],
   "info_concurso": {
-    "nome": "Nome completo do concurso/órgão",
+    "nome": "Nome completo do concurso",
     "banca": "Banca examinadora",
     "cargo": "Lista resumida dos cargos",
     "total_materias": 0
   }
 }
 
-## REGRAS INEGOCIÁVEIS:
+## REGRAS INEGOCIAVEIS:
 
-1. CADA matéria DEVE ter um "resumo_detalhado" extenso (mínimo 500 palavras) que ENSINE o conteúdo - não apenas liste tópicos
-2. "conteudos_principais" deve conter 100% dos itens do edital para aquela matéria
-3. "macetes" deve conter pelo menos 3 mnemônicos/truques de memorização PRÁTICOS por matéria
-4. Matérias como Informática, Direito, Português etc devem vir DESTRINCHADAS - cada subárea detalhada
-5. Se o edital tem Conhecimentos Básicos e Específicos, trate como matérias separadas com cargos corretos
-6. Legislação específica deve aparecer como tópico individual
-7. O resumo deve ser TÃO COMPLETO que o aluno consiga estudar APENAS por ele
-8. Retorne APENAS JSON válido, sem markdown`;
+1. CADA materia DEVE ter "resumo_detalhado" extenso (minimo 500 palavras) que ENSINE o conteudo
+2. "conteudos_principais" deve conter 100% dos itens do edital para aquela materia
+3. "macetes" deve conter pelo menos 3 mnemonicos/truques de memorizacao PRATICOS por materia
+4. Materias como Informatica, Direito, Portugues devem vir DESTRINCHADAS com cada subarea detalhada
+5. Separe Conhecimentos Basicos e Especificos com "tipo": "basico" ou "especifico"
+6. Legislacao especifica deve aparecer como topico individual
+7. O "raio_x" deve conter TODAS as informacoes administrativas encontradas no edital
+8. O "cronograma" deve ter EXATAMENTE 4 semanas com distribuicao inteligente das materias
+9. Retorne APENAS JSON valido, sem markdown, sem acentos nos valores de texto`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 240000); // 4 min for detailed analysis
+    const timeout = setTimeout(() => controller.abort(), 240000);
 
     try {
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -209,7 +244,7 @@ Para CADA matéria, crie um resumo COMPLETO e DETALHADO que funcione como materi
             {
               role: "user",
               content: [
-                { type: "text", text: "Analise este edital de forma EXAUSTIVA. Para cada matéria, crie um RESUMO DETALHADO que funcione como guia de estudo completo. Inclua macetes de memorização, dicas práticas e exemplos de questões. O aluno precisa conseguir estudar APENAS pelo seu resumo. DESTRINCHE cada matéria (Informática, Direito, Português, etc) com todos os subtópicos explicados em profundidade:" },
+                { type: "text", text: "Analise este edital de forma EXAUSTIVA. Extraia o raio-x completo, todas as materias com resumos detalhados e macetes, e gere o cronograma de 4 semanas. DESTRINCHE cada materia (Informatica, Direito, Portugues, etc) com todos os subtopicos. NAO PULE NENHUM TOPICO do conteudo especifico:" },
                 {
                   type: "image_url",
                   image_url: { url: `data:application/pdf;base64,${pdfBase64}` },
@@ -230,7 +265,7 @@ Para CADA matéria, crie um resumo COMPLETO e DETALHADO que funcione como materi
         
         if (aiResponse.status === 429) {
           await supabaseAdmin.from("edital_analyses").update({
-            status: "erro", erro_detalhes: "Limite de requisições atingido. Tente novamente em alguns minutos.",
+            status: "erro", erro_detalhes: "Limite de requisicoes atingido. Tente novamente em alguns minutos.",
             updated_at: new Date().toISOString(),
           }).eq("id", analysis_id);
           return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
@@ -273,7 +308,7 @@ Para CADA matéria, crie um resumo COMPLETO e DETALHADO que funcione como materi
             contentType: "application/pdf",
           });
 
-          const bancaNome = resultado?.info_concurso?.banca || null;
+          const bancaNome = (resultado as any)?.info_concurso?.banca || (resultado as any)?.raio_x?.banca || null;
           let bancaId = null;
           if (bancaNome) {
             const { data: banca } = await supabaseAdmin
@@ -288,7 +323,7 @@ Para CADA matéria, crie um resumo COMPLETO e DETALHADO que funcione como materi
             uploaded_by: user.id,
             tipo: "concurso",
             banca_id: bancaId,
-            cargo: resultado?.info_concurso?.cargo || null,
+            cargo: (resultado as any)?.info_concurso?.cargo || null,
             status_processamento: "pendente",
           }).select("id").single();
 
