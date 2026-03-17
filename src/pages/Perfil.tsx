@@ -24,7 +24,6 @@ export default function Perfil() {
   const navigate = useNavigate();
   const [nome, setNome] = useState(profile?.nome || "");
   const [saving, setSaving] = useState(false);
-  const [transacoes, setTransacoes] = useState<any[]>([]);
   const [respostas, setRespostas] = useState<any[]>([]);
   const [respostasPorMateria, setRespostasPorMateria] = useState<any[]>([]);
   const [simulados, setSimulados] = useState<any[]>([]);
@@ -33,9 +32,6 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!user) return;
-    // Transações de moedas
-    supabase.from("moeda_transacoes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20)
-      .then(({ data }) => { if (data) setTransacoes(data); });
     // Simulados finalizados
     supabase.from("simulados").select("id, acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setSimulados(data); });
@@ -273,29 +269,6 @@ export default function Perfil() {
                     </div>
                   );
                 })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {transacoes.length > 0 && (
-          <Card className="mb-4">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold">Histórico de Transações</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <div className="ml-3 space-y-0 divide-y divide-border">
-                {transacoes.map(t => (
-                  <div key={t.id} className="flex items-center justify-between py-2.5 pl-3 border-l-2 border-muted">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm truncate">{t.descricao}</p>
-                      <p className="text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleDateString("pt-BR")}</p>
-                    </div>
-                    <span className={`ml-3 shrink-0 text-sm font-bold ${t.tipo === "credito" ? "text-primary" : "text-destructive"}`}>
-                      {t.tipo === "credito" ? "+" : "-"}{t.valor}
-                    </span>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
