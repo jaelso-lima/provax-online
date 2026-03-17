@@ -12,3 +12,8 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /funcionario
+
+Sitemap: https://provax-online.lovable.app/sitemap.xml
