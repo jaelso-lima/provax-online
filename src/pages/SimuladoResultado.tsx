@@ -154,7 +154,6 @@ export default function SimuladoResultado() {
             />
           </Suspense>
         )}
-        </Card>
 
         {/* Detalhamento das questões */}
         {respostas.length > 0 && questoes.length > 0 && (
