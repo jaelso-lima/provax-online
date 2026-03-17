@@ -454,7 +454,10 @@ function AnalysisCard({
               </Accordion>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button size="sm" variant="outline" onClick={onDownloadPdf} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" /> Baixar resumo em PDF
+                </Button>
                 <Button size="sm" variant="ghost" onClick={onDelete} className="gap-1.5 text-destructive">
                   <Trash2 className="h-3.5 w-3.5" /> Remover análise
                 </Button>
