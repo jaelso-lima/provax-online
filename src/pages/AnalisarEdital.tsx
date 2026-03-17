@@ -425,9 +425,16 @@ function AnalysisCard({
 
       {isActive && (
         <div className="border-t">
-          {analysis.status === "processando" && (
-            <ProcessingProgress startedAt={analysis.created_at} />
-          )}
+          {(analysis.status === "processando" || analysis.status === "pendente") && (
+            <div className="space-y-0">
+              <ProcessingProgress startedAt={analysis.created_at} />
+              <div className="flex justify-center gap-2 px-5 pb-5">
+                <Button size="sm" variant="outline" onClick={onDelete} className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <StopCircle className="h-3.5 w-3.5" /> Cancelar e excluir
+                </Button>
+              </div>
+            </div>
+          )
 
           {analysis.status === "erro" && (
             <div className="px-5 py-6 space-y-3">
