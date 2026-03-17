@@ -43,6 +43,7 @@ interface AnalysisResult {
 interface EditalAnalysis {
   id: string;
   file_name: string;
+  storage_path: string;
   status: string;
   resultado: AnalysisResult | null;
   erro_detalhes: string | null;
