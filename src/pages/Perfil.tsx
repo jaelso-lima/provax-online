@@ -245,7 +245,39 @@ export default function Perfil() {
           </Card>
         )}
 
-        {/* Histórico de Transações */}
+        {/* Desempenho por Matéria */}
+        {materiaStats.length > 0 && (
+          <Card className="mb-4">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <BookOpen className="h-4 w-4 text-primary" />
+                Desempenho por Matéria
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="space-y-3">
+                {materiaStats.map(m => {
+                  const pct = m.total > 0 ? Math.round((m.acertos / m.total) * 100) : 0;
+                  return (
+                    <div key={m.nome}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium truncate flex-1">{m.nome}</span>
+                        <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{m.total} questões</span>
+                      </div>
+                      <Progress value={pct} className="h-1.5 mb-1" />
+                      <div className="flex gap-3 text-[10px] text-muted-foreground">
+                        <span className="text-primary font-medium">{m.acertos} acertos</span>
+                        <span className="text-destructive font-medium">{m.erros} erros</span>
+                        <span>{pct}% aproveitamento</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {transacoes.length > 0 && (
           <Card className="mb-4">
             <CardHeader className="pb-2 pt-4 px-4">
