@@ -552,10 +552,13 @@ export default function Simulado() {
   if (simuladoId && questoes.length > 0) {
     const q = questoes[currentIdx]; const respondidas = Object.keys(respostas).length; const progresso = Math.round((respondidas / questoes.length) * 100);
     const isProvaCompleta = tipoMode === "prova_completa";
-    const isLockedQuestion = isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT;
-    const allAnswered = respondidas === questoes.length;
-    const isLastQuestion = currentIdx === questoes.length - 1;
-    const effectiveLimit = isProvaCompleta && isFreePlan ? FREE_PROVA_COMPLETA_LIMIT : questoes.length;
+    const isDisciplina = tipoMode === "disciplina";
+    // Free users: limited to FREE_PROVA_COMPLETA_LIMIT for prova_completa, FREE_DAILY_LIMIT for disciplina
+    const freeAnswerLimit = isProvaCompleta ? FREE_PROVA_COMPLETA_LIMIT : (isDisciplina ? FREE_DAILY_LIMIT : questoes.length);
+    const isLockedQuestion = isFreePlan && currentIdx >= freeAnswerLimit;
+    const effectiveLimit = isFreePlan ? freeAnswerLimit : questoes.length;
+    const allAnswered = Object.keys(respostas).filter(k => parseInt(k) < effectiveLimit).length >= effectiveLimit;
+    const isLastQuestion = currentIdx === effectiveLimit - 1;
 
     return (
       <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
