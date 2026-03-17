@@ -7,7 +7,7 @@ import {
   ArrowRight, CheckCircle, X, Zap, Shield, Brain, Target, BarChart3,
   Users, Star, Clock, TrendingUp, BookOpen, Award, Lock, ChevronDown,
   Flame, Trophy, MessageCircle, GraduationCap, Mail, Instagram, Crown,
-  AlertTriangle, Percent, Play, Eye, HelpCircle
+  AlertTriangle, Percent, Play, Eye, HelpCircle, Heart
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -97,8 +97,8 @@ export default function Index() {
         <div className="container relative py-20 md:py-32 text-center">
           <motion.div {...fadeUp}>
             <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-4 py-1.5 text-sm font-medium text-accent">
-              <Users className="h-4 w-4" />
-              +5.000 simulados já realizados na plataforma
+              <Flame className="h-4 w-4" />
+              🔥 Mais de 1.200 usuários já testaram o ProvaX
             </div>
             <h1 className="mx-auto max-w-4xl font-display text-4xl font-bold leading-[1.1] md:text-6xl lg:text-7xl">
               Você passaria em um{" "}
@@ -115,12 +115,9 @@ export default function Index() {
                   <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-14 text-lg" onClick={() => document.getElementById("planos")?.scrollIntoView({ behavior: "smooth" })}>
-                Ver planos <ChevronDown className="ml-2 h-5 w-5" />
-              </Button>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
-              Leva menos de 1 minuto • Sem cartão de crédito • 100% gratuito
+              Resultado em menos de 1 minuto • Sem cartão de crédito • 100% gratuito
             </p>
           </motion.div>
         </div>
@@ -145,10 +142,11 @@ export default function Index() {
             </p>
             <Button size="lg" className="h-12 px-8 group" asChild>
               <Link to="/register">
-                Começar agora
+                Descobrir meu nível agora
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
+            <p className="text-xs text-muted-foreground">Resultado em menos de 1 minuto</p>
           </motion.div>
         </div>
       </section>
@@ -265,6 +263,7 @@ export default function Index() {
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
+            <p className="mt-3 text-xs text-muted-foreground">Resultado em menos de 1 minuto</p>
           </motion.div>
         </div>
       </section>
@@ -303,7 +302,7 @@ export default function Index() {
           <motion.div {...fadeUp} className="text-center mt-10">
             <Button size="lg" className="h-14 text-lg px-10 group" asChild>
               <Link to="/register">
-                Criar conta gratuita
+                Descobrir meu nível agora
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -403,13 +402,50 @@ export default function Index() {
               </motion.div>
             ))}
           </div>
+          <motion.div {...fadeUp} className="text-center mt-10">
+            <Button size="lg" className="h-12 px-8 group" asChild>
+              <Link to="/register">
+                Descobrir meu nível agora
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+          </motion.div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          8. PROVOCAÇÃO — Seção de curiosidade
+          8. GATILHO EMOCIONAL — Antes dos planos
       ═══════════════════════════════════════════════════════════════ */}
       <section className="py-16">
+        <div className="container max-w-2xl text-center">
+          <motion.div {...fadeUp}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Heart className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="font-display text-2xl font-bold md:text-3xl mb-4">
+              Imagine ter estabilidade, salário fixo e segurança financeira através de um concurso público.
+            </h2>
+            <p className="text-lg text-muted-foreground mb-2">
+              Agora imagine chegar na prova <strong className="text-destructive">sem saber se está preparado.</strong>
+            </p>
+            <p className="text-xl font-semibold text-foreground mb-8">
+              É isso que o ProvaX resolve.
+            </p>
+            <Button size="lg" className="h-14 text-lg px-10 group" asChild>
+              <Link to="/register">
+                Descobrir meu nível agora
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
+            <p className="mt-3 text-xs text-muted-foreground">Resultado em menos de 1 minuto • Grátis</p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          8b. PROVOCAÇÃO — Seção de curiosidade
+      ═══════════════════════════════════════════════════════════════ */}
+      <section className="border-t bg-card py-16">
         <div className="container max-w-2xl text-center">
           <motion.div {...fadeUp}>
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
@@ -435,7 +471,7 @@ export default function Index() {
       {/* ═══════════════════════════════════════════════════════════════
           TESTE RÁPIDO — Reduzir fricção
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="border-t bg-card py-20">
+      <section className="py-20">
         <div className="container max-w-3xl">
           <motion.div {...fadeUp} className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
@@ -462,7 +498,7 @@ export default function Index() {
             </div>
             <Button size="lg" className="h-14 text-lg px-10 group" asChild>
               <Link to="/register">
-                Começar simulado grátis
+                Descobrir meu nível agora
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -474,7 +510,7 @@ export default function Index() {
       {/* ═══════════════════════════════════════════════════════════════
           PLANOS
       ═══════════════════════════════════════════════════════════════ */}
-      <section id="planos" className="py-20">
+      <section id="planos" className="border-t bg-card py-20">
         <div className="container">
           <motion.div {...fadeUp} className="text-center mb-4">
             <h2 className="font-display text-3xl font-bold md:text-4xl">
@@ -494,7 +530,7 @@ export default function Index() {
                 <p className="text-3xl font-bold text-primary mb-1">R$ 0</p>
                 <p className="text-sm text-muted-foreground mb-4">Para sempre • Sem cartão</p>
                 <ul className="space-y-2 text-left max-w-xs mx-auto mb-6">
-                  {["5 questões por dia", "Simulados básicos", "Histórico de desempenho", "Acesso ao método Estudo Reverso"].map(f => (
+                  {["10 questões por dia", "Simulados básicos", "Histórico de desempenho", "Acesso ao método Estudo Reverso"].map(f => (
                     <li key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="h-4 w-4 text-primary shrink-0" />{f}
                     </li>
@@ -502,7 +538,7 @@ export default function Index() {
                 </ul>
                 <Button className="w-full h-12 text-base group" asChild>
                   <Link to="/register">
-                    Criar conta gratuita
+                    Descobrir meu nível agora
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </Button>
@@ -638,7 +674,7 @@ export default function Index() {
       {/* ═══════════════════════════════════════════════════════════════
           FAQ
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="border-t bg-card py-20">
+      <section className="py-20">
         <div className="container max-w-3xl">
           <motion.div {...fadeUp} className="text-center mb-10">
             <h2 className="font-display text-3xl font-bold md:text-4xl">Perguntas Frequentes</h2>
@@ -646,7 +682,7 @@ export default function Index() {
           </motion.div>
           <Accordion type="single" collapsible className="space-y-2">
             {[
-              { q: "O ProvaX é gratuito?", a: "Sim! Você pode criar uma conta gratuita e fazer simulados com limite diário. Para acesso completo, temos planos a partir de R$ 14,90/mês." },
+              { q: "O ProvaX é gratuito?", a: "Sim! Você pode criar uma conta gratuita com 10 questões por dia e fazer simulados sem pagar nada. Para acesso completo, temos planos a partir de R$ 14,90/mês." },
               { q: "Quanto tempo leva para fazer um simulado?", a: "Depende da quantidade de questões, mas a maioria dos simulados leva de 10 a 30 minutos. Você também pode pausar e continuar depois." },
               { q: "As questões são de concursos reais?", a: "Sim! As questões são geradas por IA treinada no padrão exato de cada banca: CESPE, FGV, VUNESP, FCC e vestibulares. É o treino mais próximo da prova real." },
               { q: "Preciso pagar para usar?", a: "Não! O plano gratuito permite que você teste a plataforma sem pagar nada. Sem cartão de crédito. Faça upgrade apenas quando quiser." },
@@ -666,7 +702,7 @@ export default function Index() {
       {/* ═══════════════════════════════════════════════════════════════
           9. CTA FINAL — Aversão à perda
       ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-20">
+      <section className="border-t bg-card py-20">
         <div className="container text-center max-w-2xl">
           <motion.div {...fadeUp}>
             <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">
@@ -677,19 +713,14 @@ export default function Index() {
               Cada dia sem prática é um dia a mais longe da sua aprovação. Quem começa hoje, já sai na frente amanhã.
             </p>
             <p className="text-sm font-medium text-foreground mb-8">
-              🕐 Enquanto você pensa, outros já estão praticando.
+              🔥 Enquanto você pensa, outros já estão praticando e saindo na frente.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" className="text-lg px-10 h-14 shadow-lg shadow-primary/25 group" asChild>
-                <Link to="/register">
-                  Criar conta gratuita
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => handleCTA()}>
-                Assinar agora <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
+            <Button size="lg" className="text-lg px-10 h-14 shadow-lg shadow-primary/25 group" asChild>
+              <Link to="/register">
+                Começar agora grátis
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </Button>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
               <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Garantia 7 dias</span>
@@ -715,7 +746,7 @@ export default function Index() {
       )}
 
       {/* CONTATO */}
-      <section className="border-t bg-card py-16">
+      <section className="border-t py-16">
         <div className="container max-w-2xl text-center">
           <motion.div {...fadeUp}>
             <h2 className="font-display text-2xl font-bold md:text-3xl mb-4">Dúvidas? Fale conosco</h2>
