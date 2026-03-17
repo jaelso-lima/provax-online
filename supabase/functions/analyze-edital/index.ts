@@ -245,7 +245,7 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
 
 ## REGRAS INEGOCIAVEIS:
 
-1. CADA materia DEVE ter "resumo_detalhado" extenso (minimo 500 palavras) que ENSINE o conteudo
+1. CADA materia DEVE ter "resumo_detalhado" extenso (minimo 300 palavras) que ENSINE o conteudo
 2. "conteudos_principais" deve conter 100% dos itens do edital para aquela materia
 3. "macetes" deve conter pelo menos 3 mnemonicos/truques de memorizacao PRATICOS por materia
 4. Materias como Informatica, Direito, Portugues devem vir DESTRINCHADAS com cada subarea detalhada
@@ -253,7 +253,10 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
 6. Legislacao especifica deve aparecer como topico individual
 7. O "raio_x" deve conter TODAS as informacoes administrativas encontradas no edital
 8. O "cronograma" deve ter EXATAMENTE 4 semanas com distribuicao inteligente das materias
-9. Retorne APENAS JSON valido, sem markdown, sem acentos nos valores de texto`;
+9. Retorne APENAS JSON valido, sem markdown
+10. NAO use acentos, cedilhas ou caracteres especiais nos textos (use "a" em vez de "ã", "c" em vez de "ç", "e" em vez de "é", etc)
+11. NAO use barras invertidas (\\) dentro dos textos exceto para sequencias JSON validas
+12. Mantenha os textos simples e sem formatacao especial`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 240000);
