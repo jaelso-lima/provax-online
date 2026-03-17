@@ -72,8 +72,11 @@ serve(async (req) => {
       status: "processando", updated_at: new Date().toISOString(),
     }).eq("id", analysis_id);
 
-    // Download and convert PDF
-    const pdfBase64 = await pdfToBase64(supabaseAdmin, analysis.storage_path);
+    // Download PDF once (reuse for both AI and pipeline)
+    const { data: pdfBlob, error: dlError } = await supabaseAdmin.storage.from("editais").download(analysis.storage_path);
+    if (dlError || !pdfBlob) throw new Error("Erro ao baixar arquivo: " + (dlError?.message || "não encontrado"));
+    const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+    const pdfBase64 = arrayBufferToBase64(pdfArrayBuffer);
 
     const systemPrompt = `Você é um especialista sênior em concursos públicos brasileiros com experiência em análise de editais. Sua tarefa é analisar o edital enviado com MÁXIMA PRECISÃO e COMPLETUDE.
 
