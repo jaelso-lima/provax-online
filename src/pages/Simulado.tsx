@@ -614,7 +614,7 @@ export default function Simulado() {
           )}
         </div>
         <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => {
-          const locked = isProvaCompleta && isFreePlan && i >= FREE_PROVA_COMPLETA_LIMIT;
+          const locked = isFreePlan && i >= freeAnswerLimit;
           return (<button key={i} onClick={() => !locked && setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${locked ? "bg-muted text-muted-foreground/50 cursor-not-allowed" : i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{locked ? "🔒" : i+1}</button>);
         })}</div>
         {!(allAnswered && isLastQuestion) && (
