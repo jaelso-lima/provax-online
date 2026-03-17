@@ -573,6 +573,35 @@ function AnalysisCard({
                 </Accordion>
               )}
 
+              {/* Pipeline indicator */}
+              {pipelineStatus !== "none" && pipelineStatus !== "checking" && (
+                <div className={`rounded-lg p-3 flex items-center gap-3 text-sm ${
+                  pipelineStatus === "done" 
+                    ? "bg-green-500/10 text-green-700 dark:text-green-400" 
+                    : "bg-blue-500/10 text-blue-700 dark:text-blue-400"
+                }`}>
+                  {pipelineStatus === "processing" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                      <div>
+                        <p className="font-medium">Extraindo questões do edital...</p>
+                        <p className="text-xs opacity-80">O edital está sendo processado para alimentar o banco de questões automaticamente.</p>
+                      </div>
+                      <Database className="h-5 w-5 shrink-0 opacity-60" />
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <div>
+                        <p className="font-medium">Questões extraídas com sucesso!</p>
+                        <p className="text-xs opacity-80">As questões deste edital já foram adicionadas ao banco de questões.</p>
+                      </div>
+                      <Database className="h-5 w-5 shrink-0 opacity-60" />
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={() => onDownloadPdf(filteredResult)} className="gap-1.5">
