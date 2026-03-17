@@ -141,6 +141,21 @@ export default function SimuladoResultado() {
           )}
         </Card>
 
+        {/* Share Card */}
+        {isFinished && (
+          <Suspense fallback={null}>
+            <ShareResultCard
+              pontuacao={simulado.pontuacao || 0}
+              acertos={simulado.acertos || 0}
+              total={simulado.total_questoes || 0}
+              materia={metaNames.materia}
+              area={metaNames.area}
+              userName={user?.user_metadata?.nome || ""}
+            />
+          </Suspense>
+        )}
+        </Card>
+
         {/* Detalhamento das questões */}
         {respostas.length > 0 && questoes.length > 0 && (
           <>
