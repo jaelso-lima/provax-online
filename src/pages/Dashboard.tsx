@@ -35,6 +35,8 @@ export default function Dashboard() {
     return null;
   });
 
+  const [dailyLimit, setDailyLimit] = useState<{ limite: number; usado: number; restante: number; pode_gerar: boolean } | null>(null);
+
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -56,6 +58,14 @@ export default function Dashboard() {
       if (reds) setRedacoes(reds);
       if (refs) setReferrals(refs);
       if (xpTx) setXpTransactions(xpTx);
+
+      // Check daily limit
+      try {
+        const { data: limitData } = await supabase.rpc("check_daily_limit", { _user_id: user.id });
+        if (limitData) setDailyLimit(limitData as any);
+      } catch (e) {
+        console.error("Daily limit check error:", e);
+      }
     };
     load();
   }, [user]);
