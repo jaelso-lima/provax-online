@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import logoSrc from "@/assets/provax-logo.png";
 
 interface MateriaResult {
   nome: string;
@@ -18,7 +19,17 @@ interface AnalysisResult {
   };
 }
 
-export function generateEditalPdf(resultado: AnalysisResult, fileName: string) {
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+export async function generateEditalPdf(resultado: AnalysisResult, fileName: string) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 18;
@@ -44,22 +55,40 @@ export function generateEditalPdf(resultado: AnalysisResult, fileName: string) {
   };
 
   // === COVER ===
-  doc.setFillColor(37, 99, 235); // primary blue
+  doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, pageW, 55, "F");
+
+  // Add logo
+  try {
+    const img = await loadImage(logoSrc);
+    // Draw logo trimmed horizontally — 50x14mm at top-left
+    doc.addImage(img, "PNG", margin, 10, 50, 14);
+    y = 32;
+  } catch {
+    // Fallback text if logo fails
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("ProvaX", margin, 30);
+  }
+
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("ProvaX — Resumo do Edital", margin, 30);
+  doc.text("Resumo do Edital", margin, y + 2);
+  y = 40;
+
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   if (resultado.info_concurso?.nome) {
-    doc.text(resultado.info_concurso.nome, margin, 40);
+    doc.text(resultado.info_concurso.nome, margin, y);
+    y += 6;
   }
   const meta: string[] = [];
   if (resultado.info_concurso?.banca) meta.push(`Banca: ${resultado.info_concurso.banca}`);
   if (resultado.info_concurso?.cargo) meta.push(`Cargo: ${resultado.info_concurso.cargo}`);
-  if (resultado.materias?.length) meta.push(`${resultado.materias.length} matérias`);
-  if (meta.length) doc.text(meta.join("  •  "), margin, 48);
+  if (resultado.materias?.length) meta.push(`${resultado.materias.length} materias`);
+  if (meta.length) doc.text(meta.join("  |  "), margin, y);
 
   y = 65;
   doc.setTextColor(0, 0, 0);
@@ -77,24 +106,24 @@ export function generateEditalPdf(resultado: AnalysisResult, fileName: string) {
     doc.text(`${idx + 1}. ${mat.nome}`, margin, y + 2);
     y += 14;
 
-    // Explicação
+    // Explicacao
     doc.setFont("helvetica", "bold");
-    addWrappedText("📖 Sobre a matéria", margin, 10, [30, 30, 30]);
+    addWrappedText("Sobre a materia", margin, 10, [30, 30, 30]);
     y += 1;
     doc.setFont("helvetica", "normal");
     addWrappedText(mat.explicacao, margin, 9);
     y += 4;
 
-    // Conteúdos
+    // Conteudos
     if (mat.conteudos_principais?.length) {
       checkPage(10);
       doc.setFont("helvetica", "bold");
-      addWrappedText("📌 Conteúdos Principais", margin, 10, [30, 30, 30]);
+      addWrappedText("Conteudos Principais", margin, 10, [30, 30, 30]);
       y += 1;
       doc.setFont("helvetica", "normal");
       mat.conteudos_principais.forEach((c) => {
         checkPage(6);
-        addWrappedText(`• ${c}`, margin + 3, 9);
+        addWrappedText(`- ${c}`, margin + 3, 9);
       });
       y += 3;
     }
@@ -103,7 +132,7 @@ export function generateEditalPdf(resultado: AnalysisResult, fileName: string) {
     if (mat.exemplos?.length) {
       checkPage(10);
       doc.setFont("helvetica", "bold");
-      addWrappedText("🧪 Exemplos Práticos", margin, 10, [30, 30, 30]);
+      addWrappedText("Exemplos Praticos", margin, 10, [30, 30, 30]);
       y += 1;
       doc.setFont("helvetica", "normal");
       mat.exemplos.forEach((ex) => {
@@ -121,21 +150,21 @@ export function generateEditalPdf(resultado: AnalysisResult, fileName: string) {
     if (mat.dicas_prova?.length) {
       checkPage(10);
       doc.setFont("helvetica", "bold");
-      addWrappedText("🎯 Dicas de Prova", margin, 10, [180, 120, 0]);
+      addWrappedText("Dicas de Prova", margin, 10, [180, 120, 0]);
       y += 1;
       doc.setFont("helvetica", "normal");
       mat.dicas_prova.forEach((d) => {
         checkPage(6);
-        addWrappedText(`💡 ${d}`, margin + 3, 9, [80, 60, 0]);
+        addWrappedText(`> ${d}`, margin + 3, 9, [80, 60, 0]);
       });
       y += 3;
     }
 
-    // Estratégia
+    // Estrategia
     if (mat.estrategia_estudo) {
       checkPage(10);
       doc.setFont("helvetica", "bold");
-      addWrappedText("🧠 Estratégia de Estudo", margin, 10, [22, 130, 70]);
+      addWrappedText("Estrategia de Estudo", margin, 10, [22, 130, 70]);
       y += 1;
       doc.setFont("helvetica", "normal");
       addWrappedText(mat.estrategia_estudo, margin, 9, [30, 100, 50]);
