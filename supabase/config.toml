@@ -15,3 +15,5 @@ project_id = "tibyzcduahvsdybpjwuu"
     verify_jwt = false
   [functions.validate-checkout-links]
     verify_jwt = false
+  [functions.analyze-edital]
+    verify_jwt = false

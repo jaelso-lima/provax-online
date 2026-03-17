@@ -666,6 +666,42 @@ export type Database = {
           },
         ]
       }
+      edital_analyses: {
+        Row: {
+          created_at: string
+          erro_detalhes: string | null
+          file_name: string
+          id: string
+          resultado: Json | null
+          status: string
+          storage_path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          erro_detalhes?: string | null
+          file_name: string
+          id?: string
+          resultado?: Json | null
+          status?: string
+          storage_path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          erro_detalhes?: string | null
+          file_name?: string
+          id?: string
+          resultado?: Json | null
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       employee_payments: {
         Row: {
           created_at: string
