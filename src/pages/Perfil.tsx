@@ -39,13 +39,17 @@ export default function Perfil() {
     // Simulados finalizados
     supabase.from("simulados").select("id, acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setSimulados(data); });
-    // Buscar respostas reais (apenas respondidas) via simulados do usuário
+    // Buscar respostas reais com matéria via simulados do usuário
     supabase.from("simulados").select("id").eq("user_id", user.id).eq("status", "finalizado")
       .then(({ data: sims }) => {
         if (!sims?.length) return;
         const simIds = sims.map(s => s.id);
+        // Respostas simples para stats gerais
         supabase.from("respostas").select("acertou").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostas(data); });
+        // Respostas com matéria para breakdown
+        supabase.from("respostas").select("acertou, questoes!inner(materia_id, materias!inner(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
+          .then(({ data }) => { if (data) setRespostasPorMateria(data); });
       });
   }, [user]);
 
