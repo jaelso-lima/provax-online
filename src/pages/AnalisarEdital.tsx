@@ -12,8 +12,9 @@ import { Progress } from "@/components/ui/progress";
 import {
   Upload, FileText, Lock, Crown, Loader2, BookOpen, Target,
   Lightbulb, GraduationCap, AlertTriangle, ChevronDown, ChevronUp,
-  Play, RefreshCw, Trash2, Clock
+  Play, RefreshCw, Trash2, Clock, Download
 } from "lucide-react";
+import { generateEditalPdf } from "@/lib/editalPdf";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
@@ -42,6 +43,7 @@ interface AnalysisResult {
 interface EditalAnalysis {
   id: string;
   file_name: string;
+  storage_path: string;
   status: string;
   resultado: AnalysisResult | null;
   erro_detalhes: string | null;
@@ -254,6 +256,12 @@ export default function AnalisarEdital() {
                   toast({ title: "Reprocessando edital..." });
                 }}
                 onNavigateSimulado={navigateToSimulado}
+                onDownloadPdf={() => {
+                  if (analysis.resultado) {
+                    generateEditalPdf(analysis.resultado as AnalysisResult, analysis.file_name);
+                    toast({ title: "PDF gerado!", description: "O download começará automaticamente." });
+                  }
+                }}
               />
             ))}
           </div>
@@ -265,7 +273,7 @@ export default function AnalisarEdital() {
 }
 
 function AnalysisCard({
-  analysis, isActive, onToggle, onDelete, onRetry, onNavigateSimulado,
+  analysis, isActive, onToggle, onDelete, onRetry, onNavigateSimulado, onDownloadPdf,
 }: {
   analysis: EditalAnalysis;
   isActive: boolean;
@@ -273,6 +281,7 @@ function AnalysisCard({
   onDelete: () => void;
   onRetry: () => void;
   onNavigateSimulado: (nome: string) => void;
+  onDownloadPdf: () => void;
 }) {
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     pendente: { label: "Aguardando", color: "bg-muted text-muted-foreground", icon: <Clock className="h-3.5 w-3.5" /> },
@@ -445,7 +454,10 @@ function AnalysisCard({
               </Accordion>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button size="sm" variant="outline" onClick={onDownloadPdf} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" /> Baixar resumo em PDF
+                </Button>
                 <Button size="sm" variant="ghost" onClick={onDelete} className="gap-1.5 text-destructive">
                   <Trash2 className="h-3.5 w-3.5" /> Remover análise
                 </Button>
