@@ -12,7 +12,8 @@ import { Progress } from "@/components/ui/progress";
 import {
   Upload, FileText, Lock, Crown, Loader2, BookOpen, Target,
   Lightbulb, GraduationCap, AlertTriangle, ChevronDown, ChevronUp,
-  Play, RefreshCw, Trash2, Clock, Download, Briefcase, Filter
+  Play, RefreshCw, Trash2, Clock, Download, Briefcase, Filter,
+  Database, CheckCircle2
 } from "lucide-react";
 import { generateEditalPdf } from "@/lib/editalPdf";
 import {
