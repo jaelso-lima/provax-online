@@ -577,10 +577,11 @@ export default function Index() {
               <CardContent className="space-y-5 pb-8">
                 <ul className="space-y-2.5">
                   {[
-                    "25 questões por dia",
+                    "20 questões por dia",
                     "Simulados para Concurso + ENEM",
                     "Professor IA 24h (Professor PX)",
                     "Redação corrigida por IA",
+                    "Radar de concursos abertos",
                     "Estatísticas de desempenho",
                     "Histórico completo de erros",
                     "Sistema de XP e gamificação",
