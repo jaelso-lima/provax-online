@@ -13,7 +13,7 @@ import {
   Upload, FileText, Lock, Crown, Loader2, BookOpen, Target,
   Lightbulb, GraduationCap, AlertTriangle, ChevronDown, ChevronUp,
   Play, RefreshCw, Trash2, Clock, Download, Briefcase, Filter,
-  Database, CheckCircle2, XCircle, StopCircle
+  Database, CheckCircle2, StopCircle, Brain, Sparkles, ScrollText
 } from "lucide-react";
 import { generateEditalPdf } from "@/lib/editalPdf";
 import {
@@ -26,6 +26,8 @@ interface MateriaResult {
   nome: string;
   explicacao: string;
   conteudos_principais: string[];
+  resumo_detalhado?: string;
+  macetes?: string[];
   exemplos: { topico: string; exemplo: string }[];
   dicas_prova: string[];
   estrategia_estudo: string;
@@ -123,7 +125,7 @@ export default function AnalisarEdital() {
         .single();
       if (insertErr) throw insertErr;
 
-      toast({ title: "Edital enviado!", description: "A análise será iniciada em instantes." });
+      toast({ title: "Edital enviado!", description: "A análise detalhada será iniciada em instantes." });
       fetchAnalyses();
 
       supabase.functions.invoke("analyze-edital", {
@@ -143,11 +145,7 @@ export default function AnalisarEdital() {
   const handleDelete = async (id: string) => {
     const analysis = analyses.find(a => a.id === id);
     if (!analysis) return;
-    
-    // Remove from UI immediately for responsiveness
     setAnalyses(prev => prev.filter(a => a.id !== id));
-    
-    // Delete storage file using correct path
     await supabase.storage.from("editais").remove([analysis.storage_path]);
     await supabase.from("edital_analyses").delete().eq("id", id);
     toast({ title: "Análise cancelada e removida" });
@@ -170,7 +168,7 @@ export default function AnalisarEdital() {
               <div>
                 <h2 className="text-2xl font-bold mb-2">Analisar Edital com IA</h2>
                 <p className="text-muted-foreground max-w-md">
-                  Essa função está disponível apenas para planos pagos. Envie seu edital e receba um resumo completo com matérias, dicas e estratégias de estudo.
+                  Essa função está disponível apenas para planos pagos. Envie seu edital e receba um guia de estudo completo com resumos detalhados, macetes e estratégias.
                 </p>
               </div>
               <Button size="lg" className="gap-2" onClick={() => navigate("/planos")}>
@@ -195,8 +193,26 @@ export default function AnalisarEdital() {
             Analisar Edital com IA
           </h1>
           <p className="text-muted-foreground mt-1">
-            Envie o PDF do edital e receba um resumo inteligente com matérias, dicas e estratégias.
+            Envie o PDF do edital e receba um guia de estudo completo com resumos detalhados, macetes de memorização e estratégias por cargo.
           </p>
+        </div>
+
+        {/* How it works */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          {[
+            { icon: Upload, label: "1. Envie o PDF", desc: "Upload do edital" },
+            { icon: Briefcase, label: "2. Cargos", desc: "IA identifica os cargos" },
+            { icon: ScrollText, label: "3. Resumo", desc: "Conteúdo destrinchado" },
+            { icon: Brain, label: "4. Macetes", desc: "Dicas de memorização" },
+          ].map((step, i) => (
+            <div key={i} className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2">
+              <step.icon className="h-4 w-4 text-primary shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-foreground">{step.label}</p>
+                <p className="text-[10px] text-muted-foreground">{step.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         <Card>
@@ -286,12 +302,14 @@ function ProcessingProgress({ startedAt }: { startedAt: string }) {
     { label: "Lendo conteúdo do PDF", threshold: 5 },
     { label: "Identificando cargos e matérias", threshold: 15 },
     { label: "Extraindo conteúdo programático", threshold: 30 },
-    { label: "Gerando estratégias de estudo", threshold: 60 },
-    { label: "Finalizando análise", threshold: 90 },
+    { label: "Resumindo cada matéria em detalhes", threshold: 50 },
+    { label: "Gerando macetes e dicas de memorização", threshold: 80 },
+    { label: "Criando estratégias de estudo", threshold: 110 },
+    { label: "Finalizando guia de estudo", threshold: 140 },
   ];
 
   const currentStep = [...steps].reverse().find(s => elapsed >= s.threshold) || steps[0];
-  const progressPct = Math.min(95, Math.round((elapsed / 120) * 100));
+  const progressPct = Math.min(95, Math.round((elapsed / 180) * 100));
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -318,7 +336,7 @@ function ProcessingProgress({ startedAt }: { startedAt: string }) {
         ))}
       </div>
       <p className="text-xs text-center text-muted-foreground">
-        Editais grandes podem levar até 2 minutos para uma análise completa
+        Análises detalhadas podem levar até 3 minutos — estamos resumindo cada matéria em profundidade
       </p>
     </div>
   );
@@ -352,7 +370,6 @@ function AnalysisCard({
         .ilike("nome_arquivo", `%edital%${analysis.id.slice(0, 8)}%`)
         .limit(1);
       
-      // Also check by storage path pattern
       const { data: data2 } = await supabase
         .from("pdf_imports")
         .select("id, status_processamento")
@@ -385,11 +402,9 @@ function AnalysisCard({
   const status = statusConfig[analysis.status] || statusConfig.pendente;
   const resultado = analysis.resultado as AnalysisResult | null;
 
-  // Extract cargos list
   const cargos = resultado?.cargos || [];
   const hasCargos = cargos.length > 1;
 
-  // Filter materias by selected cargo
   const filteredMaterias = resultado?.materias?.filter(mat => {
     if (!selectedCargo) return true;
     if (!mat.cargos_aplicaveis || mat.cargos_aplicaveis.length === 0) return true;
@@ -480,7 +495,7 @@ function AnalysisCard({
                     <h3 className="font-semibold text-sm text-foreground">Selecione o cargo desejado</h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Filtre as matérias pelo cargo que você vai prestar. Se não selecionar, todas as matérias serão exibidas.
+                    Filtre as matérias pelo cargo que você vai prestar. O PDF gerado conterá apenas as matérias do cargo selecionado.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -563,7 +578,7 @@ function AnalysisCard({
                         {materia.conteudos_principais?.length > 0 && (
                           <div className="space-y-1.5">
                             <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
-                              <Target className="h-3.5 w-3.5" /> Conteúdos Principais
+                              <Target className="h-3.5 w-3.5" /> Conteúdos do Edital ({materia.conteudos_principais.length} itens)
                             </h4>
                             <ul className="grid gap-1 text-sm">
                               {materia.conteudos_principais.map((c, i) => (
@@ -575,11 +590,40 @@ function AnalysisCard({
                           </div>
                         )}
 
+                        {/* Resumo Detalhado */}
+                        {materia.resumo_detalhado && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                              <ScrollText className="h-3.5 w-3.5" /> Resumo Completo para Estudo
+                            </h4>
+                            <div className="rounded-lg bg-primary/5 border border-primary/10 p-4 text-sm text-foreground leading-relaxed whitespace-pre-line">
+                              {materia.resumo_detalhado}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Macetes */}
+                        {materia.macetes && materia.macetes.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold flex items-center gap-1.5 text-purple-500">
+                              <Brain className="h-3.5 w-3.5" /> Macetes de Memorização
+                            </h4>
+                            <div className="space-y-2">
+                              {materia.macetes.map((macete, i) => (
+                                <div key={i} className="rounded-md bg-purple-500/5 border border-purple-500/10 p-3 text-sm flex items-start gap-2">
+                                  <Sparkles className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                                  <span className="text-foreground">{macete}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Exemplos */}
                         {materia.exemplos?.length > 0 && (
                           <div className="space-y-2">
                             <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
-                              <GraduationCap className="h-3.5 w-3.5" /> Exemplos Práticos
+                              <GraduationCap className="h-3.5 w-3.5" /> Exemplos de Questões
                             </h4>
                             <div className="space-y-2">
                               {materia.exemplos.map((ex, i) => (
@@ -665,7 +709,7 @@ function AnalysisCard({
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={() => onDownloadPdf(filteredResult)} className="gap-1.5">
-                  <Download className="h-3.5 w-3.5" /> Baixar resumo em PDF{selectedCargo ? ` (${selectedCargo})` : ""}
+                  <Download className="h-3.5 w-3.5" /> Baixar guia de estudo em PDF{selectedCargo ? ` (${selectedCargo})` : ""}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={onDelete} className="gap-1.5 text-destructive">
                   <Trash2 className="h-3.5 w-3.5" /> Remover análise
