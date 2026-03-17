@@ -711,7 +711,8 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-
+        {/* Radar Visibility Toggle */}
+        <RadarToggle />
         {subsPlanData.length > 0 && (
           <Card>
             <CardHeader>
