@@ -256,9 +256,9 @@ export default function AnalisarEdital() {
                   toast({ title: "Reprocessando edital..." });
                 }}
                 onNavigateSimulado={navigateToSimulado}
-                onDownloadPdf={() => {
+                onDownloadPdf={async () => {
                   if (analysis.resultado) {
-                    generateEditalPdf(analysis.resultado as AnalysisResult, analysis.file_name);
+                    await generateEditalPdf(analysis.resultado as AnalysisResult, analysis.file_name);
                     toast({ title: "PDF gerado!", description: "O download começará automaticamente." });
                   }
                 }}
