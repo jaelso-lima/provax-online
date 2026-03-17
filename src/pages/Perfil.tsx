@@ -219,9 +219,9 @@ export default function Perfil() {
               <CardTitle className="text-sm font-semibold">Histórico de Transações</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="space-y-0 divide-y divide-border">
+              <div className="ml-3 space-y-0 divide-y divide-border">
                 {transacoes.map(t => (
-                  <div key={t.id} className="flex items-center justify-between py-2.5">
+                  <div key={t.id} className="flex items-center justify-between py-2.5 pl-3 border-l-2 border-muted">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm truncate">{t.descricao}</p>
                       <p className="text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleDateString("pt-BR")}</p>
