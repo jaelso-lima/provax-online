@@ -651,7 +651,7 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {["60 questões por dia", "Filtro por banca e estado", "Concursos anteriores reais", "Ranking completo", "Estatísticas avançadas", "Simulado reverso inteligente", "Tudo do Start incluso"].map(f => (
+                    {["60 questões por dia", "Filtro por banca e estado", "Concursos anteriores reais", "Análise de edital por IA", "Ranking completo", "Estatísticas avançadas", "Simulado reverso inteligente", "Tudo do Start incluso"].map(f => (
                       <li key={f} className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}</li>
                     ))}
                   </ul>
