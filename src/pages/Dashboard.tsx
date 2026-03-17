@@ -392,6 +392,23 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Analisar Edital CTA */}
+        <Card
+          className="mb-6 cursor-pointer border-primary/20 bg-primary/5 transition-all hover:shadow-md active:scale-[0.99]"
+          onClick={() => navigate("/analisar-edital")}
+        >
+          <CardContent className="flex items-center gap-4 py-4 px-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <FileSearch className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">Analisar Edital com IA</p>
+              <p className="text-xs text-muted-foreground">Envie o PDF e receba resumos, dicas e estratégias</p>
+            </div>
+            {isFreePlan && <Badge variant="secondary" className="shrink-0 text-xs gap-1"><Crown className="h-3 w-3" /> PRO</Badge>}
+          </CardContent>
+        </Card>
+
         {/* Stats — compact row */}
         <div className="mb-6 grid grid-cols-3 gap-2.5">
           <Card>
