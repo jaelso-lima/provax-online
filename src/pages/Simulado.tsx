@@ -724,3 +724,92 @@ export default function Simulado() {
     </div>
   );
 }
+
+// Discrete question card with "ver resposta" toggle
+function QuestionCard({
+  question, currentIdx, selectedAnswer, onAnswer, simuladoMeta,
+}: {
+  question: Questao;
+  currentIdx: number;
+  selectedAnswer?: string;
+  onAnswer: (letra: string) => void;
+  simuladoMeta: SimuladoMeta;
+}) {
+  const [showAnswer, setShowAnswer] = useState(false);
+  const isCorrect = selectedAnswer === question.resposta_correta;
+
+  // Reset showAnswer when question changes
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [currentIdx]);
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        {/* Metadata badges */}
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {question.materia_nome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {question.materia_nome}</span>}
+          {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
+          {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
+          {simuladoMeta.area_nome && !question.materia_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
+          {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
+        </div>
+        <p className="mb-6 text-sm leading-relaxed">{question.enunciado}</p>
+        <div className="space-y-2">
+          {question.alternativas.map(o => {
+            let classes = "w-full rounded-lg border p-3 text-left text-sm transition-colors ";
+            if (showAnswer && selectedAnswer) {
+              if (o.letra === question.resposta_correta) {
+                classes += "border-green-500 bg-green-500/10 font-medium text-green-700 dark:text-green-400";
+              } else if (o.letra === selectedAnswer && !isCorrect) {
+                classes += "border-destructive bg-destructive/10 font-medium text-destructive";
+              } else {
+                classes += "opacity-50";
+              }
+            } else if (selectedAnswer === o.letra) {
+              classes += "border-primary bg-primary/10 font-medium";
+            } else {
+              classes += "hover:bg-secondary";
+            }
+            return (
+              <button
+                key={o.letra}
+                className={classes}
+                onClick={() => !showAnswer && onAnswer(o.letra)}
+                disabled={showAnswer}
+              >
+                <span className="mr-2 font-semibold">{o.letra})</span>{o.texto}
+                {showAnswer && o.letra === question.resposta_correta && (
+                  <CheckCircle2 className="inline ml-2 h-4 w-4 text-green-600" />
+                )}
+                {showAnswer && o.letra === selectedAnswer && !isCorrect && o.letra !== question.resposta_correta && (
+                  <XCircle className="inline ml-2 h-4 w-4 text-destructive" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Discrete "ver resposta" toggle */}
+        {selectedAnswer && (
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={() => setShowAnswer(!showAnswer)}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              <Eye className="h-3 w-3" />
+              {showAnswer ? "Ocultar resposta" : "Ver resposta"}
+            </button>
+          </div>
+        )}
+
+        {/* Show explanation when answer is revealed */}
+        {showAnswer && question.explicacao && (
+          <div className="mt-3 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground leading-relaxed border-l-2 border-primary/30">
+            <span className="font-medium text-foreground">Explicação:</span> {question.explicacao}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
