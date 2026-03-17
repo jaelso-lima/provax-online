@@ -7,7 +7,7 @@ import {
   ArrowRight, CheckCircle, X, Zap, Shield, Brain, Target, BarChart3,
   Users, Star, Clock, TrendingUp, BookOpen, Award, Lock, ChevronDown,
   Flame, Trophy, MessageCircle, GraduationCap, Mail, Instagram, Crown,
-  AlertTriangle, Percent, Play, Eye, HelpCircle, Heart
+  AlertTriangle, Percent, Play, Eye, HelpCircle, Heart, FileText, Radar
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -388,8 +388,10 @@ export default function Index() {
               { icon: TrendingUp, title: "Evolução visível", desc: "XP, níveis e estatísticas que mostram seu progresso real." },
               { icon: Award, title: "Simulado adaptativo", desc: "Quanto mais pratica, mais inteligentes ficam as questões." },
               { icon: BookOpen, title: "Redação corrigida por IA", desc: "Correção nas 5 competências do ENEM com nota estimada." },
-              { icon: MessageCircle, title: "Professor IA 24h", desc: "Tire dúvidas de qualquer matéria a qualquer hora." },
+              { icon: MessageCircle, title: "Professor IA 24h", desc: "Tire dúvidas de qualquer matéria a qualquer hora com o Professor PX." },
               { icon: Shield, title: "Gabarito comentado", desc: "Explicação detalhada de cada questão para aprender com os erros." },
+              { icon: FileText, title: "Análise de edital por IA", desc: "Envie o edital e receba matérias, estratégias e conteúdo programático." },
+              { icon: Eye, title: "Radar de concursos", desc: "Acompanhe concursos abertos com datas, vagas e salários." },
             ].map((f, i) => (
               <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.05 }}>
                 <Card className="border-0 bg-secondary/50 h-full transition-all hover:shadow-md hover:-translate-y-0.5">
@@ -530,7 +532,7 @@ export default function Index() {
                 <p className="text-3xl font-bold text-primary mb-1">R$ 0</p>
                 <p className="text-sm text-muted-foreground mb-4">Para sempre • Sem cartão</p>
                 <ul className="space-y-2 text-left max-w-xs mx-auto mb-6">
-                  {["10 questões por dia", "Simulados básicos", "Histórico de desempenho", "Acesso ao método Estudo Reverso"].map(f => (
+                  {["10 questões por dia", "Simulados básicos", "Radar de concursos abertos", "Histórico de desempenho", "Acesso ao método Estudo Reverso"].map(f => (
                     <li key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="h-4 w-4 text-primary shrink-0" />{f}
                     </li>
@@ -575,10 +577,11 @@ export default function Index() {
               <CardContent className="space-y-5 pb-8">
                 <ul className="space-y-2.5">
                   {[
-                    "25 questões por dia",
+                    "20 questões por dia",
                     "Simulados para Concurso + ENEM",
                     "Professor IA 24h (Professor PX)",
                     "Redação corrigida por IA",
+                    "Radar de concursos abertos",
                     "Estatísticas de desempenho",
                     "Histórico completo de erros",
                     "Sistema de XP e gamificação",
@@ -620,7 +623,7 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {["Tudo do Provax X", "25 questões por dia", "Simulado personalizado", "Estatísticas básicas", "Histórico de erros"].map(f => (
+                    {["Tudo do Provax X", "30 questões por dia", "Análise de edital por IA", "Simulado personalizado", "Estatísticas básicas", "Histórico de erros"].map(f => (
                       <li key={f} className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}</li>
                     ))}
                   </ul>
@@ -648,7 +651,7 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {["60 questões por dia", "Filtro por banca e estado", "Concursos anteriores reais", "Ranking completo", "Estatísticas avançadas", "Simulado reverso inteligente", "Tudo do Start incluso"].map(f => (
+                    {["60 questões por dia", "Filtro por banca e estado", "Concursos anteriores reais", "Análise de edital por IA", "Ranking completo", "Estatísticas avançadas", "Simulado reverso inteligente", "Tudo do Start incluso"].map(f => (
                       <li key={f} className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}</li>
                     ))}
                   </ul>
@@ -685,6 +688,8 @@ export default function Index() {
               { q: "O ProvaX é gratuito?", a: "Sim! Você pode criar uma conta gratuita com 10 questões por dia e fazer simulados sem pagar nada. Para acesso completo, temos planos a partir de R$ 14,90/mês." },
               { q: "Quanto tempo leva para fazer um simulado?", a: "Depende da quantidade de questões, mas a maioria dos simulados leva de 10 a 30 minutos. Você também pode pausar e continuar depois." },
               { q: "As questões são de concursos reais?", a: "Sim! As questões são geradas por IA treinada no padrão exato de cada banca: CESPE, FGV, VUNESP, FCC e vestibulares. É o treino mais próximo da prova real." },
+              { q: "O que é o Professor PX?", a: "É o nosso tutor inteligente disponível 24h. Ele analisa seus erros e te ajuda a entender cada questão, tirando dúvidas de qualquer matéria em tempo real." },
+              { q: "Como funciona a análise de edital?", a: "Envie o PDF do edital e nossa IA extrai todas as matérias, conteúdos programáticos e gera estratégias de estudo personalizadas para cada cargo." },
               { q: "Preciso pagar para usar?", a: "Não! O plano gratuito permite que você teste a plataforma sem pagar nada. Sem cartão de crédito. Faça upgrade apenas quando quiser." },
               { q: "Posso cancelar quando quiser?", a: "Sim! Cancele a qualquer momento. E ainda tem garantia de 7 dias — não gostou, devolvemos seu dinheiro." },
               { q: "Serve para ENEM também?", a: "Sim! O ProvaX tem modo ENEM com questões por área do conhecimento e correção de redação por IA nas 5 competências." },
@@ -756,6 +761,9 @@ export default function Index() {
               </Button>
               <Button variant="outline" className="h-12 text-base gap-2" asChild>
                 <a href="https://www.instagram.com/provax_online/" target="_blank" rel="noopener noreferrer"><Instagram className="h-5 w-5" /> Instagram</a>
+              </Button>
+              <Button variant="outline" className="h-12 text-base gap-2 text-green-600 dark:text-green-500 border-green-600/30" asChild>
+                <a href="https://chat.whatsapp.com/CaQMyka3CMU4QBUcl6WQxr" target="_blank" rel="noopener noreferrer"><MessageCircle className="h-5 w-5" /> WhatsApp</a>
               </Button>
             </div>
           </motion.div>
