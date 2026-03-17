@@ -532,7 +532,7 @@ export default function Index() {
                 <p className="text-3xl font-bold text-primary mb-1">R$ 0</p>
                 <p className="text-sm text-muted-foreground mb-4">Para sempre • Sem cartão</p>
                 <ul className="space-y-2 text-left max-w-xs mx-auto mb-6">
-                  {["10 questões por dia", "Simulados básicos", "Histórico de desempenho", "Acesso ao método Estudo Reverso"].map(f => (
+                  {["10 questões por dia", "Simulados básicos", "Radar de concursos abertos", "Histórico de desempenho", "Acesso ao método Estudo Reverso"].map(f => (
                     <li key={f} className="flex items-center gap-2 text-sm">
                       <CheckCircle className="h-4 w-4 text-primary shrink-0" />{f}
                     </li>
