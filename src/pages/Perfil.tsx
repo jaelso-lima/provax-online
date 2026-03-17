@@ -24,7 +24,6 @@ export default function Perfil() {
   const navigate = useNavigate();
   const [nome, setNome] = useState(profile?.nome || "");
   const [saving, setSaving] = useState(false);
-  const [respostasPorMateria, setRespostasPorMateria] = useState<any[]>([]);
   const [respostas, setRespostas] = useState<any[]>([]);
   const [respostasPorMateria, setRespostasPorMateria] = useState<any[]>([]);
   const [simulados, setSimulados] = useState<any[]>([]);
@@ -33,9 +32,6 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!user) return;
-    // Transações de moedas
-    supabase.from("moeda_transacoes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20)
-      .then(({ data }) => { if (data) setTransacoes(data); });
     // Simulados finalizados
     supabase.from("simulados").select("id, acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setSimulados(data); });
