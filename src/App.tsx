@@ -27,6 +27,7 @@ const Ranking = lazy(() => import("./pages/Ranking"));
 const Perfil = lazy(() => import("./pages/Perfil"));
 const ConcursosAbertos = lazy(() => import("./pages/ConcursosAbertos"));
 const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
+const AnalisarEdital = lazy(() => import("./pages/AnalisarEdital"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TermosDeUso = lazy(() => import("./pages/TermosDeUso"));
