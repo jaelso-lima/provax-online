@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Download, Share2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
