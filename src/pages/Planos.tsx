@@ -45,7 +45,7 @@ function formatPreco(valor: number) {
 }
 
 export default function Planos() {
-  const [periodo, setPeriodo] = useState<Periodo>("anual");
+  const [periodo, setPeriodo] = useState<Periodo>("mensal");
   const { user, profile } = useAuth();
 
   const { data: dbPlans } = useQuery({
@@ -135,7 +135,10 @@ export default function Planos() {
         </div>
 
         <div className={`grid gap-6 ${gridCols}`}>
-          {planos.map((p, i) => {
+          {planos.filter((p) => {
+            if (periodo !== "mensal" && p.slug === "provax-x") return false;
+            return true;
+          }).map((p, i) => {
             const preco = p.prices[periodo];
             const desconto = periodo !== "mensal"
               ? calcDesconto(p.prices.mensal, preco, periodo === "trimestral" ? 3 : 12)
