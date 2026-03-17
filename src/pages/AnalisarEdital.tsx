@@ -372,11 +372,7 @@ function AnalysisCard({
       {isActive && (
         <div className="border-t">
           {analysis.status === "processando" && (
-            <div className="px-5 py-8 text-center space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground font-medium">Analisando edital… isso pode levar alguns segundos</p>
-              <Progress value={undefined} className="max-w-xs mx-auto" />
-            </div>
+            <ProcessingProgress startedAt={analysis.created_at} />
           )}
 
           {analysis.status === "erro" && (
