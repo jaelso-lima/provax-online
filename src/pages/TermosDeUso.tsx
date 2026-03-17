@@ -19,16 +19,17 @@ export default function TermosDeUso() {
         <Card>
           <CardHeader>
             <CardTitle className="font-display text-2xl">Termos de Uso e Política de Privacidade</CardTitle>
-            <p className="text-sm text-muted-foreground">Última atualização: 28 de fevereiro de 2026</p>
+            <p className="text-sm text-muted-foreground">Última atualização: 17 de março de 2026</p>
           </CardHeader>
           <CardContent className="prose prose-sm dark:prose-invert max-w-none space-y-6">
 
             <section>
               <h3 className="font-display text-lg font-semibold">1. Sobre a Plataforma</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                A ProvaX é uma plataforma de simulados e geração de provas personalizadas voltada à preparação para
-                concursos públicos, ENEM e provas universitárias. Nosso objetivo é oferecer ferramentas inteligentes de estudo que auxiliem
-                o candidato na sua jornada de preparação e aprovação.
+                A ProvaX é uma plataforma inteligente de preparação para concursos públicos, ENEM e provas universitárias. 
+                Oferecemos simulados baseados em provas reais, correção de redação por IA, tutor inteligente (Professor PX), 
+                análise de editais por IA, radar de concursos abertos e ferramentas de diagnóstico de desempenho para 
+                auxiliar o candidato na sua jornada de aprovação.
               </p>
             </section>
 
@@ -46,13 +47,14 @@ export default function TermosDeUso() {
             <section>
               <h3 className="font-display text-lg font-semibold">3. Planos e Limites de Uso</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                A ProvaX oferece três planos de acesso: <strong>Gratuito</strong>, <strong>Start</strong> e <strong>Pro</strong>.
+                A ProvaX oferece quatro planos de acesso: <strong>Gratuito</strong>, <strong>Provax X</strong>, <strong>Start</strong> e <strong>Pro</strong>.
                 Cada plano possui um limite diário de questões que pode ser gerado, renovado automaticamente a cada dia (00h00 UTC-3).
               </p>
               <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
-                <li><strong>Gratuito:</strong> 10 questões por dia, acesso às funcionalidades básicas.</li>
-                <li><strong>Start (R$ 29,90/mês):</strong> 25 questões por dia, todas as disciplinas liberadas, estatísticas básicas e histórico de erros.</li>
-                <li><strong>Pro (R$ 49,90/mês):</strong> 60 questões por dia, filtros avançados por banca/estado/concurso, ranking, estatísticas avançadas e simulado reverso inteligente.</li>
+                <li><strong>Gratuito:</strong> 10 questões por dia, simulados básicos e radar de concursos abertos.</li>
+                <li><strong>Provax X (R$ 14,90/mês):</strong> 20 questões por dia, Professor IA 24h, correção de redação por IA, estatísticas básicas e histórico de erros.</li>
+                <li><strong>Start (R$ 29,90/mês):</strong> 30 questões por dia, tudo do Provax X + análise de edital por IA e simulados personalizados.</li>
+                <li><strong>Pro (R$ 49,90/mês):</strong> 60 questões por dia, tudo do Start + filtros avançados (banca, estado, concurso real), ranking, estatísticas avançadas e simulado reverso inteligente.</li>
               </ul>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 <strong>Política de uso justo:</strong> Os limites diários são individuais e intransferíveis. Questões não utilizadas em um dia não acumulam para o dia seguinte.
@@ -62,7 +64,7 @@ export default function TermosDeUso() {
             <section>
               <h3 className="font-display text-lg font-semibold">4. Períodos de Assinatura</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Os planos pagos (Start e Pro) podem ser contratados nos seguintes períodos:
+                Os planos pagos podem ser contratados nos seguintes períodos:
               </p>
               <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
                 <li><strong>Mensal:</strong> Vigência de 30 dias a partir da contratação.</li>
@@ -75,7 +77,23 @@ export default function TermosDeUso() {
             </section>
 
             <section>
-              <h3 className="font-display text-lg font-semibold">5. Propriedade Intelectual</h3>
+              <h3 className="font-display text-lg font-semibold">5. Funcionalidades com Inteligência Artificial</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                A ProvaX utiliza inteligência artificial em diversas funcionalidades:
+              </p>
+              <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
+                <li><strong>Geração de questões:</strong> Questões são geradas com base em padrões de bancas reais (CESPE, FGV, FCC, VUNESP) e ENEM.</li>
+                <li><strong>Professor PX:</strong> Tutor inteligente disponível 24h que analisa o histórico de erros do aluno para personalizar explicações e dicas.</li>
+                <li><strong>Correção de redação:</strong> Avaliação automática nas 5 competências do ENEM com nota estimada, pontos fortes e sugestões de melhoria.</li>
+                <li><strong>Análise de edital:</strong> Extração automática de conteúdo programático, matérias, cargos e estratégias de estudo a partir do PDF do edital.</li>
+              </ul>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+                As respostas geradas por IA são ferramentas de apoio e não substituem orientação profissional ou material didático oficial.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-display text-lg font-semibold">6. Propriedade Intelectual</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Todo o conteúdo da plataforma, incluindo questões geradas por inteligência artificial, design,
                 textos, marcas e logotipos, é de propriedade exclusiva da ProvaX ou licenciado para uso na plataforma.
@@ -85,7 +103,7 @@ export default function TermosDeUso() {
             </section>
 
             <section>
-              <h3 className="font-display text-lg font-semibold">6. Cancelamento e Reembolso</h3>
+              <h3 className="font-display text-lg font-semibold">7. Cancelamento e Reembolso</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 O usuário pode solicitar o cancelamento de sua assinatura a qualquer momento. Oferecemos garantia
                 de reembolso integral em até 7 dias corridos após a contratação do plano pago, desde que solicitado
@@ -94,7 +112,7 @@ export default function TermosDeUso() {
             </section>
 
             <section>
-              <h3 className="font-display text-lg font-semibold">7. Limitação de Responsabilidade</h3>
+              <h3 className="font-display text-lg font-semibold">8. Limitação de Responsabilidade</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 A ProvaX é uma ferramenta de apoio ao estudo e não garante aprovação em concursos públicos, ENEM ou provas universitárias.
                 Os resultados dependem do empenho, dedicação e estratégia individual de cada candidato. A plataforma
@@ -104,7 +122,7 @@ export default function TermosDeUso() {
             </section>
 
             <section>
-              <h3 className="font-display text-lg font-semibold">8. Proteção de Dados</h3>
+              <h3 className="font-display text-lg font-semibold">9. Proteção de Dados</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 A ProvaX trata os dados pessoais dos usuários de acordo com a Lei Geral de Proteção de Dados (LGPD).
                 Os dados coletados são utilizados exclusivamente para operação da plataforma, personalização da
@@ -114,7 +132,7 @@ export default function TermosDeUso() {
             </section>
 
             <section>
-              <h3 className="font-display text-lg font-semibold">9. Programa de Indicação</h3>
+              <h3 className="font-display text-lg font-semibold">10. Programa de Indicação</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 A ProvaX oferece um Programa de Indicação que recompensa usuários com XP (pontos de experiência) e moedas
                 ao convidarem novos usuários para a plataforma. O programa funciona da seguinte forma:
@@ -133,7 +151,7 @@ export default function TermosDeUso() {
             </section>
 
             <section>
-              <h3 className="font-display text-lg font-semibold">10. Disposições Gerais</h3>
+              <h3 className="font-display text-lg font-semibold">11. Disposições Gerais</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 A ProvaX reserva-se o direito de atualizar estes Termos de Uso a qualquer momento, notificando os
                 usuários sobre alterações relevantes. O uso continuado da plataforma após a publicação de alterações

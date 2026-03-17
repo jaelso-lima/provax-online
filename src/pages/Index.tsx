@@ -762,6 +762,9 @@ export default function Index() {
               <Button variant="outline" className="h-12 text-base gap-2" asChild>
                 <a href="https://www.instagram.com/provax_online/" target="_blank" rel="noopener noreferrer"><Instagram className="h-5 w-5" /> Instagram</a>
               </Button>
+              <Button variant="outline" className="h-12 text-base gap-2 text-green-600 dark:text-green-500 border-green-600/30" asChild>
+                <a href="https://chat.whatsapp.com/CaQMyka3CMU4QBUcl6WQxr" target="_blank" rel="noopener noreferrer"><MessageCircle className="h-5 w-5" /> WhatsApp</a>
+              </Button>
             </div>
           </motion.div>
         </div>
