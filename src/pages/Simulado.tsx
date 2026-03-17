@@ -354,18 +354,26 @@ export default function Simulado() {
       // Fetch previously answered question enunciados to avoid repeats
       let excludeEnunciados: string[] = [];
       if (tipoMode === "disciplina" && materiaId && user) {
-        const { data: prevQuestoes } = await supabase
-          .from("respostas")
-          .select("questao_id, questoes!inner(enunciado, materia_id)")
-          .eq("questoes.materia_id", materiaId)
-          .in("simulado_id", 
-            (await supabase.from("simulados").select("id").eq("user_id", user.id).eq("status", "finalizado")).data?.map((s: any) => s.id) || []
-          )
-          .limit(200);
-        if (prevQuestoes && prevQuestoes.length > 0) {
-          excludeEnunciados = prevQuestoes
-            .map((r: any) => r.questoes?.enunciado?.slice(0, 100))
-            .filter(Boolean);
+        try {
+          const { data: finishedSims } = await supabase
+            .from("simulados").select("id")
+            .eq("user_id", user.id).eq("status", "finalizado");
+          const simIds = finishedSims?.map((s: any) => s.id) || [];
+          if (simIds.length > 0) {
+            const { data: prevQuestoes } = await supabase
+              .from("respostas")
+              .select("questao_id, questoes!inner(enunciado, materia_id)")
+              .eq("questoes.materia_id", materiaId)
+              .in("simulado_id", simIds)
+              .limit(200);
+            if (prevQuestoes && prevQuestoes.length > 0) {
+              excludeEnunciados = prevQuestoes
+                .map((r: any) => r.questoes?.enunciado?.slice(0, 100))
+                .filter(Boolean);
+            }
+          }
+        } catch (e) {
+          console.warn("Erro ao buscar questões anteriores:", e);
         }
       }
 
@@ -544,10 +552,13 @@ export default function Simulado() {
   if (simuladoId && questoes.length > 0) {
     const q = questoes[currentIdx]; const respondidas = Object.keys(respostas).length; const progresso = Math.round((respondidas / questoes.length) * 100);
     const isProvaCompleta = tipoMode === "prova_completa";
-    const isLockedQuestion = isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT;
-    const allAnswered = respondidas === questoes.length;
-    const isLastQuestion = currentIdx === questoes.length - 1;
-    const effectiveLimit = isProvaCompleta && isFreePlan ? FREE_PROVA_COMPLETA_LIMIT : questoes.length;
+    const isDisciplina = tipoMode === "disciplina";
+    // Free users: limited to FREE_PROVA_COMPLETA_LIMIT for prova_completa, FREE_DAILY_LIMIT for disciplina
+    const freeAnswerLimit = isProvaCompleta ? FREE_PROVA_COMPLETA_LIMIT : (isDisciplina ? FREE_DAILY_LIMIT : questoes.length);
+    const isLockedQuestion = isFreePlan && currentIdx >= freeAnswerLimit;
+    const effectiveLimit = isFreePlan ? freeAnswerLimit : questoes.length;
+    const allAnswered = Object.keys(respostas).filter(k => parseInt(k) < effectiveLimit).length >= effectiveLimit;
+    const isLastQuestion = currentIdx === effectiveLimit - 1;
 
     return (
       <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
@@ -558,20 +569,22 @@ export default function Simulado() {
           <Card className="border-primary/30">
             <CardContent className="pt-6 text-center space-y-4">
               <div className="text-4xl">🔒</div>
-              <h3 className="font-display text-xl font-bold">Para continuar a prova completa, assine o Plano Pro.</h3>
+              <h3 className="font-display text-xl font-bold">
+                {isProvaCompleta ? "Para continuar a prova completa, assine o Plano Pro." : "Você atingiu o limite do seu plano."}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Você respondeu <strong>{FREE_PROVA_COMPLETA_LIMIT} questões</strong> da Prova Completa.
-                Para desbloquear todas as <strong>{questoes.length} questões</strong>, assine o plano Pro.
+                Você respondeu <strong>{freeAnswerLimit} questões</strong>{isProvaCompleta ? " da Prova Completa" : " do simulado"}.
+                Para desbloquear todas as <strong>{questoes.length} questões</strong>, assine um plano.
               </p>
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-                💡 Com o plano Pro você tem acesso ilimitado a provas completas de todas as bancas!
+                💡 Com um plano pago você responde todas as {questoes.length} questões sem limite!
               </div>
               <div className="flex gap-3 justify-center">
-                <Button variant="outline" onClick={() => setCurrentIdx(FREE_PROVA_COMPLETA_LIMIT - 1)}>Voltar às questões</Button>
-                <Button onClick={() => navigate("/planos")}>Assinar Plano Pro</Button>
+                <Button variant="outline" onClick={() => setCurrentIdx(freeAnswerLimit - 1)}>Voltar às questões</Button>
+                <Button onClick={() => navigate("/planos")}>Ver Planos</Button>
               </div>
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={handleFinalizar} disabled={finalizando}>
-                {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar com {Math.min(respondidas, FREE_PROVA_COMPLETA_LIMIT)} questões
+                {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar com {Math.min(respondidas, freeAnswerLimit)} questões
               </Button>
             </CardContent>
           </Card>
@@ -595,13 +608,13 @@ export default function Simulado() {
               Finalizar Simulado
             </Button>
           ) : (
-            <Button disabled={isLastQuestion || (isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT - 1)} onClick={() => setCurrentIdx(i => i+1)}>
+            <Button disabled={isLastQuestion || (isFreePlan && currentIdx >= freeAnswerLimit - 1)} onClick={() => setCurrentIdx(i => i+1)}>
               Próxima<ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           )}
         </div>
         <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => {
-          const locked = isProvaCompleta && isFreePlan && i >= FREE_PROVA_COMPLETA_LIMIT;
+          const locked = isFreePlan && i >= freeAnswerLimit;
           return (<button key={i} onClick={() => !locked && setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${locked ? "bg-muted text-muted-foreground/50 cursor-not-allowed" : i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{locked ? "🔒" : i+1}</button>);
         })}</div>
         {!(allAnswered && isLastQuestion) && (
@@ -717,7 +730,7 @@ export default function Simulado() {
         )}
       </CardContent></Card>
     </main>
-    <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>{tipoMode === "prova_completa" ? "Será gerada uma prova completa com distribuição realista." : `Serão geradas ${quantidade} questões.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
+    <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>{tipoMode === "prova_completa" ? "Será gerada uma prova completa com distribuição realista." : tipoMode === "disciplina" ? "Serão geradas 100 questões focadas na matéria selecionada. Você poderá responder conforme o limite do seu plano." : `Serão geradas ${quantidade} questões.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
     <Dialog open={showInsuficiente} onOpenChange={setShowInsuficiente}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" />Limite diário atingido</DialogTitle><DialogDescription>Você atingiu o limite de {FREE_DAILY_LIMIT} questões grátis por dia. Use moedas para continuar (1 moeda = 1 questão) ou assine um plano.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowInsuficiente(false)}>Fechar</Button><Button variant="outline" onClick={() => { setShowInsuficiente(false); navigate("/comprar-moedas"); }}>Comprar Moedas</Button><Button onClick={() => { setShowInsuficiente(false); navigate("/planos"); }}>Ver Planos</Button></DialogFooter></DialogContent></Dialog>
     <Dialog open={showConfirmSair} onOpenChange={setShowConfirmSair}><DialogContent><DialogHeader><DialogTitle>Sair do Simulado?</DialogTitle><DialogDescription>Seu progresso será salvo automaticamente. Você poderá continuar de onde parou no Dashboard.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirmSair(false)}>Continuar respondendo</Button><Button onClick={handleSairSalvando}>Salvar e sair</Button></DialogFooter></DialogContent></Dialog>
     <AppFooter />
