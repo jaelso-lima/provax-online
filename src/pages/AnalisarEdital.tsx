@@ -12,7 +12,8 @@ import { Progress } from "@/components/ui/progress";
 import {
   Upload, FileText, Lock, Crown, Loader2, BookOpen, Target,
   Lightbulb, GraduationCap, AlertTriangle, ChevronDown, ChevronUp,
-  Play, RefreshCw, Trash2, Clock, Download, Briefcase, Filter
+  Play, RefreshCw, Trash2, Clock, Download, Briefcase, Filter,
+  Database, CheckCircle2
 } from "lucide-react";
 import { generateEditalPdf } from "@/lib/editalPdf";
 import {
@@ -44,6 +45,7 @@ interface AnalysisResult {
 
 interface EditalAnalysis {
   id: string;
+  user_id: string;
   file_name: string;
   storage_path: string;
   status: string;
@@ -277,6 +279,44 @@ function AnalysisCard({
   onDownloadPdf: (filteredResult: AnalysisResult) => void;
 }) {
   const [selectedCargo, setSelectedCargo] = useState<string | null>(null);
+  const [pipelineStatus, setPipelineStatus] = useState<"checking" | "processing" | "done" | "none">("checking");
+
+  useEffect(() => {
+    if (analysis.status !== "concluido") {
+      setPipelineStatus("none");
+      return;
+    }
+    let cancelled = false;
+    const checkPipeline = async () => {
+      const { data } = await supabase
+        .from("pdf_imports")
+        .select("id, status_processamento")
+        .eq("uploaded_by", analysis.user_id || "")
+        .ilike("nome_arquivo", `%edital%${analysis.id.slice(0, 8)}%`)
+        .limit(1);
+      
+      // Also check by storage path pattern
+      const { data: data2 } = await supabase
+        .from("pdf_imports")
+        .select("id, status_processamento")
+        .ilike("storage_path", `%edital_${analysis.id}%`)
+        .limit(1);
+      
+      const record = data?.[0] || data2?.[0];
+      if (cancelled) return;
+      
+      if (!record) {
+        setPipelineStatus("none");
+      } else if (record.status_processamento === "concluido") {
+        setPipelineStatus("done");
+      } else {
+        setPipelineStatus("processing");
+      }
+    };
+    checkPipeline();
+    const interval = setInterval(checkPipeline, 8000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [analysis.id, analysis.status]);
 
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     pendente: { label: "Aguardando", color: "bg-muted text-muted-foreground", icon: <Clock className="h-3.5 w-3.5" /> },
@@ -531,6 +571,35 @@ function AnalysisCard({
                     </AccordionItem>
                   ))}
                 </Accordion>
+              )}
+
+              {/* Pipeline indicator */}
+              {pipelineStatus !== "none" && pipelineStatus !== "checking" && (
+                <div className={`rounded-lg p-3 flex items-center gap-3 text-sm ${
+                  pipelineStatus === "done" 
+                    ? "bg-green-500/10 text-green-700 dark:text-green-400" 
+                    : "bg-blue-500/10 text-blue-700 dark:text-blue-400"
+                }`}>
+                  {pipelineStatus === "processing" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                      <div>
+                        <p className="font-medium">Extraindo questões do edital...</p>
+                        <p className="text-xs opacity-80">O edital está sendo processado para alimentar o banco de questões automaticamente.</p>
+                      </div>
+                      <Database className="h-5 w-5 shrink-0 opacity-60" />
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
+                      <div>
+                        <p className="font-medium">Questões extraídas com sucesso!</p>
+                        <p className="text-xs opacity-80">As questões deste edital já foram adicionadas ao banco de questões.</p>
+                      </div>
+                      <Database className="h-5 w-5 shrink-0 opacity-60" />
+                    </>
+                  )}
+                </div>
               )}
 
               {/* Actions */}
