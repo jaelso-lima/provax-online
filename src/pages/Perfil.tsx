@@ -151,7 +151,11 @@ export default function Perfil() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               {/* Resumo rápido */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                <div className="rounded-lg bg-muted p-2.5 text-center">
+                  <p className="text-lg font-bold text-foreground">{stats.totalQuestoes}</p>
+                  <p className="text-[10px] text-muted-foreground">Questões</p>
+                </div>
                 <div className="rounded-lg bg-primary/10 p-2.5 text-center">
                   <p className="text-lg font-bold text-primary">{stats.media}%</p>
                   <p className="text-[10px] text-muted-foreground">Média</p>
