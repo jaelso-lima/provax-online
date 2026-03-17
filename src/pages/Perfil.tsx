@@ -89,6 +89,20 @@ export default function Perfil() {
     return { totalAcertos, totalErros, totalQuestoes: totalRespondidas, media, ultimos, total: simulados.length };
   }, [respostas, simulados]);
 
+  const materiaStats = useMemo(() => {
+    if (!respostasPorMateria.length) return [];
+    const map: Record<string, { nome: string; acertos: number; erros: number; total: number }> = {};
+    for (const r of respostasPorMateria) {
+      const matNome = (r as any).questoes?.materias?.nome;
+      if (!matNome) continue;
+      if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0 };
+      map[matNome].total++;
+      if (r.acertou === true) map[matNome].acertos++;
+      else if (r.acertou === false) map[matNome].erros++;
+    }
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }, [respostasPorMateria]);
+
   const xp = profile?.xp ?? 0;
   const nivel = profile?.nivel ?? 1;
 
