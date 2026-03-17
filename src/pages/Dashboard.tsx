@@ -67,6 +67,18 @@ export default function Dashboard() {
       } catch (e) {
         console.error("Daily limit check error:", e);
       }
+
+      // Check radar visibility
+      try {
+        const { data: radarData } = await supabase
+          .from("site_content")
+          .select("valor")
+          .eq("chave", "radar_visivel")
+          .maybeSingle();
+        setRadarVisivel(radarData?.valor === "true");
+      } catch (e) {
+        console.error("Radar visibility check error:", e);
+      }
     };
     load();
   }, [user]);
