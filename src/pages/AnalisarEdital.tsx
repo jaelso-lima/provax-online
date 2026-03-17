@@ -12,8 +12,9 @@ import { Progress } from "@/components/ui/progress";
 import {
   Upload, FileText, Lock, Crown, Loader2, BookOpen, Target,
   Lightbulb, GraduationCap, AlertTriangle, ChevronDown, ChevronUp,
-  Play, RefreshCw, Trash2, Clock
+  Play, RefreshCw, Trash2, Clock, Download
 } from "lucide-react";
+import { generateEditalPdf } from "@/lib/editalPdf";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
