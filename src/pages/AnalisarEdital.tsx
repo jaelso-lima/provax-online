@@ -144,10 +144,13 @@ export default function AnalisarEdital() {
     const analysis = analyses.find(a => a.id === id);
     if (!analysis) return;
     
-    await supabase.storage.from("editais").remove([analysis.file_name]);
-    await supabase.from("edital_analyses").delete().eq("id", id);
+    // Remove from UI immediately for responsiveness
     setAnalyses(prev => prev.filter(a => a.id !== id));
-    toast({ title: "Análise removida" });
+    
+    // Delete storage file using correct path
+    await supabase.storage.from("editais").remove([analysis.storage_path]);
+    await supabase.from("edital_analyses").delete().eq("id", id);
+    toast({ title: "Análise cancelada e removida" });
   };
 
   const navigateToSimulado = (materiaNome: string) => {
