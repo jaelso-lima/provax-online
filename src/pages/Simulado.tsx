@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -544,8 +544,10 @@ export default function Simulado() {
   if (simuladoId && questoes.length > 0) {
     const q = questoes[currentIdx]; const respondidas = Object.keys(respostas).length; const progresso = Math.round((respondidas / questoes.length) * 100);
     const isProvaCompleta = tipoMode === "prova_completa";
-    // Gate at question 12 (index 11) for free users in prova completa
     const isLockedQuestion = isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT;
+    const allAnswered = respondidas === questoes.length;
+    const isLastQuestion = currentIdx === questoes.length - 1;
+    const effectiveLimit = isProvaCompleta && isFreePlan ? FREE_PROVA_COMPLETA_LIMIT : questoes.length;
 
     return (
       <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
@@ -574,28 +576,41 @@ export default function Simulado() {
             </CardContent>
           </Card>
         ) : (
-          <Card><CardContent className="pt-6">
-            {/* Metadata badges */}
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {q.materia_nome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {q.materia_nome}</span>}
-              {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
-              {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
-              {simuladoMeta.area_nome && !q.materia_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
-              {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
-            </div>
-            <p className="mb-6 text-sm leading-relaxed">{q.enunciado}</p><div className="space-y-2">{q.alternativas.map(o => (<button key={o.letra} className={`w-full rounded-lg border p-3 text-left text-sm transition-colors ${respostas[currentIdx] === o.letra ? "border-primary bg-primary/10 font-medium" : "hover:bg-secondary"}`} onClick={() => handleAnswer(o.letra)}><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</button>))}</div></CardContent></Card>
+          <QuestionCard
+            question={q}
+            currentIdx={currentIdx}
+            selectedAnswer={respostas[currentIdx]}
+            onAnswer={handleAnswer}
+            simuladoMeta={simuladoMeta}
+          />
         )}
 
-        <div className="mt-4 flex justify-between"><Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}><ChevronLeft className="mr-1 h-4 w-4" />Anterior</Button><Button disabled={currentIdx === questoes.length-1 || (isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT - 1)} onClick={() => setCurrentIdx(i => i+1)}>Próxima<ChevronRight className="ml-1 h-4 w-4" /></Button></div>
+        <div className="mt-4 flex justify-between">
+          <Button variant="outline" disabled={currentIdx === 0} onClick={() => setCurrentIdx(i => i-1)}>
+            <ChevronLeft className="mr-1 h-4 w-4" />Anterior
+          </Button>
+          {allAnswered && isLastQuestion ? (
+            <Button onClick={handleFinalizar} disabled={finalizando} className="bg-green-600 hover:bg-green-700 text-white gap-1.5">
+              {finalizando ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Finalizar Simulado
+            </Button>
+          ) : (
+            <Button disabled={isLastQuestion || (isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT - 1)} onClick={() => setCurrentIdx(i => i+1)}>
+              Próxima<ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          )}
+        </div>
         <div className="mt-4 flex flex-wrap gap-1 justify-center">{questoes.map((_, i) => {
           const locked = isProvaCompleta && isFreePlan && i >= FREE_PROVA_COMPLETA_LIMIT;
           return (<button key={i} onClick={() => !locked && setCurrentIdx(i)} className={`h-8 w-8 rounded text-xs font-medium transition-colors ${locked ? "bg-muted text-muted-foreground/50 cursor-not-allowed" : i === currentIdx ? "bg-primary text-primary-foreground" : respostas[i] ? "bg-accent/20 text-accent" : "bg-secondary text-muted-foreground"}`}>{locked ? "🔒" : i+1}</button>);
         })}</div>
-        <div ref={finalizarRef} className="mt-6 flex justify-center">
-          <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10 text-sm" onClick={handleFinalizar} disabled={finalizando}>
-            {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar ({respondidas}/{isProvaCompleta && isFreePlan ? FREE_PROVA_COMPLETA_LIMIT : questoes.length})
-          </Button>
-        </div>
+        {!(allAnswered && isLastQuestion) && (
+          <div ref={finalizarRef} className="mt-6 flex justify-center">
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10 text-sm" onClick={handleFinalizar} disabled={finalizando}>
+              {finalizando && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}Finalizar ({respondidas}/{effectiveLimit})
+            </Button>
+          </div>
+        )}
       </main><AppFooter /></div>
     );
   }
@@ -707,5 +722,94 @@ export default function Simulado() {
     <Dialog open={showConfirmSair} onOpenChange={setShowConfirmSair}><DialogContent><DialogHeader><DialogTitle>Sair do Simulado?</DialogTitle><DialogDescription>Seu progresso será salvo automaticamente. Você poderá continuar de onde parou no Dashboard.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirmSair(false)}>Continuar respondendo</Button><Button onClick={handleSairSalvando}>Salvar e sair</Button></DialogFooter></DialogContent></Dialog>
     <AppFooter />
     </div>
+  );
+}
+
+// Discrete question card with "ver resposta" toggle
+function QuestionCard({
+  question, currentIdx, selectedAnswer, onAnswer, simuladoMeta,
+}: {
+  question: Questao;
+  currentIdx: number;
+  selectedAnswer?: string;
+  onAnswer: (letra: string) => void;
+  simuladoMeta: SimuladoMeta;
+}) {
+  const [showAnswer, setShowAnswer] = useState(false);
+  const isCorrect = selectedAnswer === question.resposta_correta;
+
+  // Reset showAnswer when question changes
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [currentIdx]);
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        {/* Metadata badges */}
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {question.materia_nome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {question.materia_nome}</span>}
+          {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
+          {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
+          {simuladoMeta.area_nome && !question.materia_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
+          {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
+        </div>
+        <p className="mb-6 text-sm leading-relaxed">{question.enunciado}</p>
+        <div className="space-y-2">
+          {question.alternativas.map(o => {
+            let classes = "w-full rounded-lg border p-3 text-left text-sm transition-colors ";
+            if (showAnswer && selectedAnswer) {
+              if (o.letra === question.resposta_correta) {
+                classes += "border-green-500 bg-green-500/10 font-medium text-green-700 dark:text-green-400";
+              } else if (o.letra === selectedAnswer && !isCorrect) {
+                classes += "border-destructive bg-destructive/10 font-medium text-destructive";
+              } else {
+                classes += "opacity-50";
+              }
+            } else if (selectedAnswer === o.letra) {
+              classes += "border-primary bg-primary/10 font-medium";
+            } else {
+              classes += "hover:bg-secondary";
+            }
+            return (
+              <button
+                key={o.letra}
+                className={classes}
+                onClick={() => !showAnswer && onAnswer(o.letra)}
+                disabled={showAnswer}
+              >
+                <span className="mr-2 font-semibold">{o.letra})</span>{o.texto}
+                {showAnswer && o.letra === question.resposta_correta && (
+                  <CheckCircle2 className="inline ml-2 h-4 w-4 text-green-600" />
+                )}
+                {showAnswer && o.letra === selectedAnswer && !isCorrect && o.letra !== question.resposta_correta && (
+                  <XCircle className="inline ml-2 h-4 w-4 text-destructive" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Discrete "ver resposta" toggle */}
+        {selectedAnswer && (
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={() => setShowAnswer(!showAnswer)}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              <Eye className="h-3 w-3" />
+              {showAnswer ? "Ocultar resposta" : "Ver resposta"}
+            </button>
+          </div>
+        )}
+
+        {/* Show explanation when answer is revealed */}
+        {showAnswer && question.explicacao && (
+          <div className="mt-3 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground leading-relaxed border-l-2 border-primary/30">
+            <span className="font-medium text-foreground">Explicação:</span> {question.explicacao}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
