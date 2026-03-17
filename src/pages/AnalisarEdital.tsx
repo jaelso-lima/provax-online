@@ -434,7 +434,7 @@ function AnalysisCard({
                 </Button>
               </div>
             </div>
-          )
+          )}
 
           {analysis.status === "erro" && (
             <div className="px-5 py-6 space-y-3">
