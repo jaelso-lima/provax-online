@@ -273,7 +273,7 @@ export default function AnalisarEdital() {
 }
 
 function AnalysisCard({
-  analysis, isActive, onToggle, onDelete, onRetry, onNavigateSimulado,
+  analysis, isActive, onToggle, onDelete, onRetry, onNavigateSimulado, onDownloadPdf,
 }: {
   analysis: EditalAnalysis;
   isActive: boolean;
@@ -281,6 +281,7 @@ function AnalysisCard({
   onDelete: () => void;
   onRetry: () => void;
   onNavigateSimulado: (nome: string) => void;
+  onDownloadPdf: () => void;
 }) {
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     pendente: { label: "Aguardando", color: "bg-muted text-muted-foreground", icon: <Clock className="h-3.5 w-3.5" /> },
