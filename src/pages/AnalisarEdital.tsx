@@ -278,6 +278,44 @@ function AnalysisCard({
   onDownloadPdf: (filteredResult: AnalysisResult) => void;
 }) {
   const [selectedCargo, setSelectedCargo] = useState<string | null>(null);
+  const [pipelineStatus, setPipelineStatus] = useState<"checking" | "processing" | "done" | "none">("checking");
+
+  useEffect(() => {
+    if (analysis.status !== "concluido") {
+      setPipelineStatus("none");
+      return;
+    }
+    let cancelled = false;
+    const checkPipeline = async () => {
+      const { data } = await supabase
+        .from("pdf_imports")
+        .select("id, status_processamento")
+        .eq("uploaded_by", analysis.user_id || "")
+        .ilike("nome_arquivo", `%edital%${analysis.id.slice(0, 8)}%`)
+        .limit(1);
+      
+      // Also check by storage path pattern
+      const { data: data2 } = await supabase
+        .from("pdf_imports")
+        .select("id, status_processamento")
+        .ilike("storage_path", `%edital_${analysis.id}%`)
+        .limit(1);
+      
+      const record = data?.[0] || data2?.[0];
+      if (cancelled) return;
+      
+      if (!record) {
+        setPipelineStatus("none");
+      } else if (record.status_processamento === "concluido") {
+        setPipelineStatus("done");
+      } else {
+        setPipelineStatus("processing");
+      }
+    };
+    checkPipeline();
+    const interval = setInterval(checkPipeline, 8000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [analysis.id, analysis.status]);
 
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     pendente: { label: "Aguardando", color: "bg-muted text-muted-foreground", icon: <Clock className="h-3.5 w-3.5" /> },
