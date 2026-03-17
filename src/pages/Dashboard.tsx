@@ -487,15 +487,17 @@ export default function Dashboard() {
                 <p className="text-xs font-medium">Moedas</p>
               </CardContent>
             </Card>
-            <Card 
-              className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
-              onClick={() => navigate("/concursos")}
-            >
-              <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
-                <Radar className="h-5 w-5 text-primary" />
-                <p className="text-xs font-medium">Concursos</p>
-              </CardContent>
-            </Card>
+            {radarVisivel && (
+              <Card 
+                className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
+                onClick={() => navigate("/concursos")}
+              >
+                <CardContent className="flex flex-col items-center gap-2 py-3 px-3 text-center">
+                  <Radar className="h-5 w-5 text-primary" />
+                  <p className="text-xs font-medium">Concursos</p>
+                </CardContent>
+              </Card>
+            )}
             <Card 
               className="cursor-pointer transition-all hover:shadow-md active:scale-[0.98]" 
               onClick={() => navigate("/planos")}
