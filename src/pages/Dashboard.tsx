@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift, PlayCircle, Eye, Radar, Crown } from "lucide-react";
+import { BookOpen, PenTool, Coins, History, Trophy, FileText, Share2, Copy, GraduationCap, BookMarked, Users, CheckCircle, Clock, XCircle, Link as LinkIcon, Sparkles, Gift, PlayCircle, Eye, Radar, Crown, Flame, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -35,6 +35,8 @@ export default function Dashboard() {
     return null;
   });
 
+  const [dailyLimit, setDailyLimit] = useState<{ limite: number; usado: number; restante: number; pode_gerar: boolean } | null>(null);
+
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -56,6 +58,14 @@ export default function Dashboard() {
       if (reds) setRedacoes(reds);
       if (refs) setReferrals(refs);
       if (xpTx) setXpTransactions(xpTx);
+
+      // Check daily limit
+      try {
+        const { data: limitData } = await supabase.rpc("check_daily_limit", { _user_id: user.id });
+        if (limitData) setDailyLimit(limitData as any);
+      } catch (e) {
+        console.error("Daily limit check error:", e);
+      }
     };
     load();
   }, [user]);
@@ -350,19 +360,19 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Viés de consistência — streak diário */}
+        {/* Missão diária */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="mb-6 border-primary/20 bg-primary/5">
             <CardContent className="py-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                    <Target className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">1 acerto = 1 XP 🎯</p>
+                    <p className="text-sm font-semibold">🎯 Meta do dia: resolver {dailyLimit?.limite ?? 10} questões</p>
                     <p className="text-xs text-muted-foreground">
-                      {xpParaProximo - xp} XP para o nível {nivel + 1} — ganhe 20 moedas ao subir!
+                      {dailyLimit ? `${dailyLimit.usado}/${dailyLimit.limite} questões hoje` : "Carregando..."} — cada acerto vale 1 XP!
                     </p>
                   </div>
                 </div>
@@ -370,9 +380,53 @@ export default function Dashboard() {
                   Praticar agora
                 </Button>
               </div>
+              {dailyLimit && (
+                <div className="mt-3">
+                  <Progress value={(dailyLimit.usado / dailyLimit.limite) * 100} className="h-2" />
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Streak XP */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card className="mb-6 border-accent/20 bg-accent/5">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10">
+                  <Sparkles className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">1 acerto = 1 XP 🎯</p>
+                  <p className="text-xs text-muted-foreground">
+                    {xpParaProximo - xp} XP para o nível {nivel + 1} — ganhe 20 moedas ao subir!
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Paywall — limite atingido */}
+        {dailyLimit && !dailyLimit.pode_gerar && isFreePlan && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="mb-6 border-destructive/30 bg-destructive/5">
+              <CardContent className="py-5">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <Flame className="h-8 w-8 text-destructive" />
+                  <div>
+                    <p className="text-base font-bold">Você atingiu o limite diário de {dailyLimit.limite} questões</p>
+                    <p className="text-sm text-muted-foreground mt-1">Continue evoluindo agora. Quem treina mais, passa antes.</p>
+                  </div>
+                  <Button className="mt-1" onClick={() => navigate("/planos")}>
+                    Desbloquear acesso ilimitado
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* AÇÕES RÁPIDAS — Mobile First */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 lg:hidden">

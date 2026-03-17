@@ -10,8 +10,6 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateFingerprint } from "@/lib/fingerprint";
-import { lovable } from "@/integrations/lovable/index";
-import { Separator } from "@/components/ui/separator";
 import { trackFBEvent } from "@/lib/fbPixel";
 
 export default function Register() {
@@ -24,24 +22,8 @@ export default function Register() {
   const [codigoIndicacao, setCodigoIndicacao] = useState(refCode);
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { signUp, signIn } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
-
-  const handleGoogleSignUp = async () => {
-    if (!aceitouTermos) {
-      toast({ title: "É necessário aceitar os Termos de Uso para prosseguir.", variant: "destructive" });
-      return;
-    }
-    setGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
-    });
-    if (error) {
-      toast({ title: "Erro ao entrar com Google", description: String(error), variant: "destructive" });
-      setGoogleLoading(false);
-    }
-  };
 
   // Phone mask and validation
   const formatPhone = (value: string) => {
@@ -60,8 +42,8 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !email || !password || !telefone) { toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" }); return; }
-    if (!phoneValid) { toast({ title: "Informe um número de telefone válido com DDD.", variant: "destructive" }); return; }
+    if (!nome || !email || !password) { toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" }); return; }
+    if (telefone && !phoneValid) { toast({ title: "Informe um número de telefone válido com DDD.", variant: "destructive" }); return; }
     if (!passwordValid) { toast({ title: "A senha deve ter no mínimo 6 caracteres, incluindo pelo menos 1 letra e 1 número.", variant: "destructive" }); return; }
     if (!aceitouTermos) { toast({ title: "É necessário aceitar os Termos de Uso para prosseguir.", variant: "destructive" }); return; }
     setLoading(true);
@@ -82,7 +64,7 @@ export default function Register() {
         return;
       }
 
-      const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined, phoneDigits);
+      const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined, phoneDigits || undefined);
       if (error) {
         const msg = error.message.toLowerCase();
         if (msg.includes("already registered") || msg.includes("already been registered")) {
@@ -107,7 +89,12 @@ export default function Register() {
   };
 
   return (<div className="flex min-h-screen items-center justify-center bg-background px-4"><Card className="w-full max-w-md">
-    <CardHeader className="text-center"><Link to="/" className="mb-2 inline-block font-display text-2xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span> <span className="text-foreground">ProvaX</span></Link><CardTitle className="font-display text-2xl">Criar Conta</CardTitle><CardDescription>Comece a estudar com simulados inteligentes</CardDescription></CardHeader>
+    <CardHeader className="text-center">
+      <Link to="/" className="mb-2 inline-block font-display text-2xl font-bold"><span className="text-primary">P</span><span className="text-accent">X</span> <span className="text-foreground">ProvaX</span></Link>
+      <CardTitle className="font-display text-2xl">Criar Conta</CardTitle>
+      <CardDescription>Você está a menos de 30 segundos de descobrir seu nível em concursos.</CardDescription>
+      <p className="text-xs text-muted-foreground mt-1">Cadastro rápido • Sem cartão de crédito • Comece imediatamente</p>
+    </CardHeader>
     <form onSubmit={handleSubmit}><CardContent className="space-y-4">
       <div className="space-y-2"><Label htmlFor="nome">Nome</Label><Input id="nome" placeholder="Seu nome completo" value={nome} onChange={e => setNome(e.target.value)} required /></div>
       <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
@@ -127,8 +114,9 @@ export default function Register() {
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor="telefone">Telefone (com DDD)</Label>
-        <Input id="telefone" type="tel" placeholder="(11) 99999-9999" value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} required />
+        <Label htmlFor="telefone">Telefone / WhatsApp (opcional)</Label>
+        <Input id="telefone" type="tel" placeholder="(11) 99999-9999" value={telefone} onChange={e => setTelefone(formatPhone(e.target.value))} />
+        <p className="text-[11px] text-muted-foreground">Usamos seu número apenas para suporte e avisos importantes. Sem spam.</p>
         {telefone.length > 0 && !phoneValid && (
           <p className="text-xs text-destructive">Informe um número de telefone válido com DDD.</p>
         )}
@@ -142,20 +130,9 @@ export default function Register() {
       </div>
     </CardContent>
     <CardFooter className="flex-col gap-3">
-      <Button type="submit" className="w-full" disabled={loading || googleLoading || !aceitouTermos}>
+      <Button type="submit" className="w-full" disabled={loading || !aceitouTermos}>
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Criar Conta
-      </Button>
-      <div className="flex w-full items-center gap-3">
-        <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">ou</span>
-        <Separator className="flex-1" />
-      </div>
-      <Button type="button" variant="outline" className="w-full" disabled={loading || googleLoading || !aceitouTermos} onClick={handleGoogleSignUp}>
-        {googleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (
-          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-        )}
-        Continuar com Google
+        Descobrir meu nível agora
       </Button>
       <p className="text-sm text-muted-foreground">Já tem conta? <Link to="/login" className="text-primary hover:underline">Entrar</Link></p>
     </CardFooter></form>
