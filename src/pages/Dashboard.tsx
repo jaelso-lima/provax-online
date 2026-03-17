@@ -36,6 +36,7 @@ export default function Dashboard() {
   });
 
   const [dailyLimit, setDailyLimit] = useState<{ limite: number; usado: number; restante: number; pode_gerar: boolean } | null>(null);
+  const [radarVisivel, setRadarVisivel] = useState(false);
 
   useEffect(() => {
     if (!user) return;
