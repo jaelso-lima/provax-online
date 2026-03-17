@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3 } from "lucide-react";
+import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
@@ -26,6 +26,7 @@ export default function Perfil() {
   const [saving, setSaving] = useState(false);
   const [transacoes, setTransacoes] = useState<any[]>([]);
   const [respostas, setRespostas] = useState<any[]>([]);
+  const [respostasPorMateria, setRespostasPorMateria] = useState<any[]>([]);
   const [simulados, setSimulados] = useState<any[]>([]);
 
   useEffect(() => { if (profile) setNome(profile.nome); }, [profile]);
@@ -38,13 +39,17 @@ export default function Perfil() {
     // Simulados finalizados
     supabase.from("simulados").select("id, acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setSimulados(data); });
-    // Buscar respostas reais (apenas respondidas) via simulados do usuário
+    // Buscar respostas reais com matéria via simulados do usuário
     supabase.from("simulados").select("id").eq("user_id", user.id).eq("status", "finalizado")
       .then(({ data: sims }) => {
         if (!sims?.length) return;
         const simIds = sims.map(s => s.id);
+        // Respostas simples para stats gerais
         supabase.from("respostas").select("acertou").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostas(data); });
+        // Respostas com matéria para breakdown
+        supabase.from("respostas").select("acertou, questoes!inner(materia_id, materias!inner(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
+          .then(({ data }) => { if (data) setRespostasPorMateria(data); });
       });
   }, [user]);
 
@@ -83,6 +88,20 @@ export default function Perfil() {
 
     return { totalAcertos, totalErros, totalQuestoes: totalRespondidas, media, ultimos, total: simulados.length };
   }, [respostas, simulados]);
+
+  const materiaStats = useMemo(() => {
+    if (!respostasPorMateria.length) return [];
+    const map: Record<string, { nome: string; acertos: number; erros: number; total: number }> = {};
+    for (const r of respostasPorMateria) {
+      const matNome = (r as any).questoes?.materias?.nome;
+      if (!matNome) continue;
+      if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0 };
+      map[matNome].total++;
+      if (r.acertou === true) map[matNome].acertos++;
+      else if (r.acertou === false) map[matNome].erros++;
+    }
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }, [respostasPorMateria]);
 
   const xp = profile?.xp ?? 0;
   const nivel = profile?.nivel ?? 1;
@@ -226,7 +245,39 @@ export default function Perfil() {
           </Card>
         )}
 
-        {/* Histórico de Transações */}
+        {/* Desempenho por Matéria */}
+        {materiaStats.length > 0 && (
+          <Card className="mb-4">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                <BookOpen className="h-4 w-4 text-primary" />
+                Desempenho por Matéria
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="space-y-3">
+                {materiaStats.map(m => {
+                  const pct = m.total > 0 ? Math.round((m.acertos / m.total) * 100) : 0;
+                  return (
+                    <div key={m.nome}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium truncate flex-1">{m.nome}</span>
+                        <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{m.total} questões</span>
+                      </div>
+                      <Progress value={pct} className="h-1.5 mb-1" />
+                      <div className="flex gap-3 text-[10px] text-muted-foreground">
+                        <span className="text-primary font-medium">{m.acertos} acertos</span>
+                        <span className="text-destructive font-medium">{m.erros} erros</span>
+                        <span>{pct}% aproveitamento</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {transacoes.length > 0 && (
           <Card className="mb-4">
             <CardHeader className="pb-2 pt-4 px-4">
