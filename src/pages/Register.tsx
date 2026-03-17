@@ -22,24 +22,8 @@ export default function Register() {
   const [codigoIndicacao, setCodigoIndicacao] = useState(refCode);
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const { signUp, signIn } = useAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
-
-  const handleGoogleSignUp = async () => {
-    if (!aceitouTermos) {
-      toast({ title: "É necessário aceitar os Termos de Uso para prosseguir.", variant: "destructive" });
-      return;
-    }
-    setGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
-    });
-    if (error) {
-      toast({ title: "Erro ao entrar com Google", description: String(error), variant: "destructive" });
-      setGoogleLoading(false);
-    }
-  };
 
   // Phone mask and validation
   const formatPhone = (value: string) => {
