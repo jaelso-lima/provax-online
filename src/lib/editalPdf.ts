@@ -8,9 +8,11 @@ interface MateriaResult {
   exemplos: { topico: string; exemplo: string }[];
   dicas_prova: string[];
   estrategia_estudo: string;
+  cargos_aplicaveis?: string[];
 }
 
 interface AnalysisResult {
+  cargos?: string[];
   materias: MateriaResult[];
   info_concurso?: {
     nome?: string;
