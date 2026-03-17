@@ -149,6 +149,12 @@ serve(async (req) => {
       filterParts.push(distribuicao);
     }
 
+    // Add exclusion context to avoid repeating questions
+    let excludeContext = "";
+    if (excludeEnunciados.length > 0) {
+      excludeContext = `\n\nIMPORTANTE: NÃO repita questões similares a estas já respondidas pelo aluno (primeiros 100 caracteres de cada):\n${excludeEnunciados.map((e, i) => `${i + 1}. "${e}"`).join("\n")}\n\nGere questões DIFERENTES e ORIGINAIS sobre o mesmo tema.`;
+    }
+
     // --- Build prompt universal ---
     const systemPrompt = buildPrompt({
       modo,
@@ -156,7 +162,7 @@ serve(async (req) => {
       nivel,
       filterContext: filterParts.join(". "),
       ano,
-    });
+    }) + excludeContext;
 
     // --- AI Gateway com tool calling ---
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
