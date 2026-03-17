@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,8 +17,6 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   }
   return btoa(binary);
 }
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -37,7 +36,6 @@ serve(async (req) => {
 
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-    // Auth check - pass token explicitly for Lovable Cloud compatibility
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -48,7 +46,6 @@ serve(async (req) => {
       });
     }
 
-    // Check paid plan
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const { data: profileData } = await supabaseAdmin
       .from("profiles").select("plano").eq("id", user.id).single();
@@ -62,80 +59,88 @@ serve(async (req) => {
     const { analysis_id } = await req.json();
     if (!analysis_id) throw new Error("analysis_id é obrigatório");
 
-    // Get analysis record
     const { data: analysis, error: analysisError } = await supabaseAdmin
       .from("edital_analyses").select("*").eq("id", analysis_id).single();
     if (analysisError || !analysis) throw new Error("Análise não encontrada");
 
-    // Update status to processing
     await supabaseAdmin.from("edital_analyses").update({
       status: "processando", updated_at: new Date().toISOString(),
     }).eq("id", analysis_id);
 
-    // Download PDF once (reuse for both AI and pipeline)
     const { data: pdfBlob, error: dlError } = await supabaseAdmin.storage.from("editais").download(analysis.storage_path);
     if (dlError || !pdfBlob) throw new Error("Erro ao baixar arquivo: " + (dlError?.message || "não encontrado"));
     const pdfArrayBuffer = await pdfBlob.arrayBuffer();
     const pdfBase64 = arrayBufferToBase64(pdfArrayBuffer);
 
-    const systemPrompt = `Você é um especialista sênior em concursos públicos brasileiros com experiência em análise de editais. Sua tarefa é analisar o edital enviado com MÁXIMA PRECISÃO e COMPLETUDE.
+    const systemPrompt = `Você é um professor e especialista sênior em concursos públicos brasileiros. Sua tarefa é analisar o edital enviado e criar um GUIA DE ESTUDO COMPLETO E DETALHADO que o aluno possa usar para estudar APENAS pelo seu resumo.
 
-## ETAPA 1 - IDENTIFICAÇÃO DE CARGOS
-Leia o edital INTEGRALMENTE e identifique TODOS os cargos/funções disponíveis. Muitos editais agrupam cargos por nível (médio, superior) com disciplinas diferentes.
+## FLUXO OBRIGATÓRIO:
 
-## ETAPA 2 - EXTRAÇÃO EXAUSTIVA DE CONTEÚDO PROGRAMÁTICO
-Para CADA cargo, localize a seção de "CONTEÚDO PROGRAMÁTICO" ou "CONHECIMENTOS" no edital. Extraia ABSOLUTAMENTE TODOS os itens listados, sem omitir nenhum. O edital é o documento oficial — cada item listado pode cair na prova.
+### PASSO 1 - IDENTIFICAR TODOS OS CARGOS
+Leia o edital INTEGRALMENTE. Identifique TODOS os cargos/funções disponíveis.
 
-ATENÇÃO CRÍTICA:
-- NÃO resuma nem agrupe tópicos — liste EXATAMENTE como está no edital
-- Se o edital lista "1. Compreensão e interpretação de textos. 2. Tipologia textual. 3. Ortografia oficial..." você DEVE listar CADA UM desses itens individualmente
-- Editais frequentemente têm seções como "CONHECIMENTOS BÁSICOS" (comuns a todos) e "CONHECIMENTOS ESPECÍFICOS" (por cargo) — capture AMBOS
-- Verifique se há legislação específica listada (leis, decretos, instruções normativas) — cada uma deve ser listada
+### PASSO 2 - MAPEAR CONTEÚDO POR CARGO
+Para cada cargo, identifique TODAS as disciplinas/matérias do conteúdo programático. Separe claramente:
+- Conhecimentos Básicos (comuns a todos os cargos)
+- Conhecimentos Específicos (por cargo)
 
-## FORMATO DE RESPOSTA
+### PASSO 3 - RESUMIR CADA MATÉRIA EM PROFUNDIDADE
+Para CADA matéria, crie um resumo COMPLETO e DETALHADO que funcione como material de estudo. O aluno precisa conseguir estudar APENAS lendo seu resumo.
+
+## FORMATO DE RESPOSTA (JSON):
 
 {
-  "cargos": ["Cargo 1", "Cargo 2"],
+  "cargos": ["Cargo 1", "Cargo 2", ...],
   "materias": [
     {
-      "nome": "Nome exato da Matéria/Disciplina como consta no edital",
+      "nome": "Nome da Matéria (ex: Língua Portuguesa, Informática, Direito Administrativo)",
       "cargos_aplicaveis": ["Cargo 1", "Cargo 2"],
-      "explicacao": "O que essa matéria aborda e por que é importante neste concurso específico",
+      "explicacao": "Explicação detalhada do que essa matéria aborda e sua importância neste concurso",
       "conteudos_principais": [
         "Item 1 EXATAMENTE como listado no edital",
-        "Item 2 EXATAMENTE como listado no edital",
-        "Item 3 EXATAMENTE como listado no edital"
+        "Item 2 EXATAMENTE como listado no edital"
+      ],
+      "resumo_detalhado": "RESUMO COMPLETO E DIDÁTICO de toda a matéria. Aqui você deve ENSINAR o conteúdo ao aluno de forma clara e objetiva. Explique cada tópico do conteúdo programático com definições, conceitos-chave, regras importantes. Mínimo 500 palavras por matéria. Use linguagem simples e direta. Organize por subtópicos. Este é o coração do guia - o aluno vai estudar por aqui.",
+      "macetes": [
+        "Mnemônico ou macete de memorização com explicação (ex: LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiência - princípios da administração pública)",
+        "Outro macete prático para decorar conteúdo",
+        "Dica de memorização usando analogias ou associações"
       ],
       "exemplos": [
         {
-          "topico": "Tópico mais cobrado",
-          "exemplo": "Exemplo realista de questão no estilo desta banca"
+          "topico": "Tópico cobrado",
+          "exemplo": "Exemplo realista de questão no estilo desta banca com a resposta explicada"
         }
       ],
       "dicas_prova": [
-        "Dica específica baseada no perfil desta banca e cargo"
+        "Dica específica de como a banca cobra esse assunto",
+        "Pegadinhas comuns nessa matéria",
+        "O que mais cai segundo o perfil da banca"
       ],
-      "estrategia_estudo": "Plano de estudo prático com prioridades baseadas no peso da matéria"
+      "estrategia_estudo": "Plano prático: quanto tempo dedicar, o que priorizar, ordem de estudo sugerida, materiais complementares"
     }
   ],
   "info_concurso": {
     "nome": "Nome completo do concurso/órgão",
     "banca": "Banca examinadora",
-    "cargo": "Lista de todos os cargos",
+    "cargo": "Lista resumida dos cargos",
     "total_materias": 0
   }
 }
 
 ## REGRAS INEGOCIÁVEIS:
-1. "conteudos_principais" deve conter TODOS os itens do conteúdo programático do edital para aquela matéria — 100% de cobertura. Se o edital lista 20 tópicos, retorne os 20. Não corte, não resuma.
-2. Cada matéria deve ter "cargos_aplicaveis" corretos — verifique o edital para saber quais cargos cobram aquela disciplina
-3. Se houver "Conhecimentos Básicos" e "Conhecimentos Específicos", trate como matérias separadas com os cargos corretos
-4. Legislação específica (ex: Lei 8.112/90, Constituição Federal arts. X a Y) deve aparecer como tópico individual em conteudos_principais
-5. Exemplos e dicas devem ser específicos da banca identificada, não genéricos
-6. Retorne APENAS JSON válido, sem markdown`;
+
+1. CADA matéria DEVE ter um "resumo_detalhado" extenso (mínimo 500 palavras) que ENSINE o conteúdo - não apenas liste tópicos
+2. "conteudos_principais" deve conter 100% dos itens do edital para aquela matéria
+3. "macetes" deve conter pelo menos 3 mnemônicos/truques de memorização PRÁTICOS por matéria
+4. Matérias como Informática, Direito, Português etc devem vir DESTRINCHADAS - cada subárea detalhada
+5. Se o edital tem Conhecimentos Básicos e Específicos, trate como matérias separadas com cargos corretos
+6. Legislação específica deve aparecer como tópico individual
+7. O resumo deve ser TÃO COMPLETO que o aluno consiga estudar APENAS por ele
+8. Retorne APENAS JSON válido, sem markdown`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 180000); // 3 min for thorough analysis
+    const timeout = setTimeout(() => controller.abort(), 240000); // 4 min for detailed analysis
 
     try {
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -151,7 +156,7 @@ ATENÇÃO CRÍTICA:
             {
               role: "user",
               content: [
-                { type: "text", text: "Analise este edital de forma EXAUSTIVA. Extraia 100% do conteúdo programático listado para cada cargo, sem omitir NENHUM item. Cada tópico do edital é importante para o candidato:" },
+                { type: "text", text: "Analise este edital de forma EXAUSTIVA. Para cada matéria, crie um RESUMO DETALHADO que funcione como guia de estudo completo. Inclua macetes de memorização, dicas práticas e exemplos de questões. O aluno precisa conseguir estudar APENAS pelo seu resumo. DESTRINCHE cada matéria (Informática, Direito, Português, etc) com todos os subtópicos explicados em profundidade:" },
                 {
                   type: "image_url",
                   image_url: { url: `data:application/pdf;base64,${pdfBase64}` },
@@ -191,7 +196,6 @@ ATENÇÃO CRÍTICA:
       try {
         resultado = JSON.parse(content);
       } catch {
-        // Try extracting JSON from markdown
         const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
         if (jsonMatch) resultado = JSON.parse(jsonMatch[1]);
         else resultado = JSON.parse(content.replace(/^[^{]*/, "").replace(/[^}]*$/, ""));
@@ -206,7 +210,6 @@ ATENÇÃO CRÍTICA:
 
       // === Feed edital into question extraction pipeline (with dedup) ===
       try {
-        // Reuse already-downloaded PDF buffer (no second download)
         const hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", pdfArrayBuffer));
         const hashStr = Array.from(hashBytes).map(b => b.toString(16).padStart(2, "0")).join("");
 
