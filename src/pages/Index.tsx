@@ -388,8 +388,10 @@ export default function Index() {
               { icon: TrendingUp, title: "Evolução visível", desc: "XP, níveis e estatísticas que mostram seu progresso real." },
               { icon: Award, title: "Simulado adaptativo", desc: "Quanto mais pratica, mais inteligentes ficam as questões." },
               { icon: BookOpen, title: "Redação corrigida por IA", desc: "Correção nas 5 competências do ENEM com nota estimada." },
-              { icon: MessageCircle, title: "Professor IA 24h", desc: "Tire dúvidas de qualquer matéria a qualquer hora." },
+              { icon: MessageCircle, title: "Professor IA 24h", desc: "Tire dúvidas de qualquer matéria a qualquer hora com o Professor PX." },
               { icon: Shield, title: "Gabarito comentado", desc: "Explicação detalhada de cada questão para aprender com os erros." },
+              { icon: FileText, title: "Análise de edital por IA", desc: "Envie o edital e receba matérias, estratégias e conteúdo programático." },
+              { icon: Eye, title: "Radar de concursos", desc: "Acompanhe concursos abertos com datas, vagas e salários." },
             ].map((f, i) => (
               <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.05 }}>
                 <Card className="border-0 bg-secondary/50 h-full transition-all hover:shadow-md hover:-translate-y-0.5">
