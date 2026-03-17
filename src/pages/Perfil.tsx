@@ -35,14 +35,15 @@ export default function Perfil() {
     // Transações de moedas
     supabase.from("moeda_transacoes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setTransacoes(data); });
-    // Simulados finalizados (para gráfico de barras por simulado)
+    // Simulados finalizados
     supabase.from("simulados").select("id, acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setSimulados(data); });
-    // Respostas reais do usuário (apenas questões efetivamente respondidas)
-    supabase.from("respostas").select("acertou, simulado_id").eq("simulado_id.user_id", user.id)
-      .then(() => {
-        // Query via simulados join
-        supabase.from("respostas").select("acertou, simulados!inner(user_id)").eq("simulados.user_id", user.id)
+    // Buscar respostas reais (apenas respondidas) via simulados do usuário
+    supabase.from("simulados").select("id").eq("user_id", user.id).eq("status", "finalizado")
+      .then(({ data: sims }) => {
+        if (!sims?.length) return;
+        const simIds = sims.map(s => s.id);
+        supabase.from("respostas").select("acertou").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostas(data); });
       });
   }, [user]);
