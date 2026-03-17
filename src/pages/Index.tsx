@@ -623,7 +623,7 @@ export default function Index() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-2">
-                    {["Tudo do Provax X", "25 questões por dia", "Simulado personalizado", "Estatísticas básicas", "Histórico de erros"].map(f => (
+                    {["Tudo do Provax X", "30 questões por dia", "Análise de edital por IA", "Simulado personalizado", "Estatísticas básicas", "Histórico de erros"].map(f => (
                       <li key={f} className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}</li>
                     ))}
                   </ul>
