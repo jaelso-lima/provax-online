@@ -42,8 +42,8 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !email || !password || !telefone) { toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" }); return; }
-    if (!phoneValid) { toast({ title: "Informe um número de telefone válido com DDD.", variant: "destructive" }); return; }
+    if (!nome || !email || !password) { toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" }); return; }
+    if (telefone && !phoneValid) { toast({ title: "Informe um número de telefone válido com DDD.", variant: "destructive" }); return; }
     if (!passwordValid) { toast({ title: "A senha deve ter no mínimo 6 caracteres, incluindo pelo menos 1 letra e 1 número.", variant: "destructive" }); return; }
     if (!aceitouTermos) { toast({ title: "É necessário aceitar os Termos de Uso para prosseguir.", variant: "destructive" }); return; }
     setLoading(true);
