@@ -826,6 +826,61 @@ export default function AdminDashboard() {
   );
 }
 
+function RadarToggle() {
+  const { data: radarVisivel, refetch } = useQuery({
+    queryKey: ["radar-visivel"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_content")
+        .select("valor")
+        .eq("chave", "radar_visivel")
+        .maybeSingle();
+      return data?.valor === "true";
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async () => {
+      const newVal = radarVisivel ? "false" : "true";
+      const { error } = await supabase
+        .from("site_content")
+        .update({ valor: newVal, updated_at: new Date().toISOString() })
+        .eq("chave", "radar_visivel");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetch();
+      toast.success(radarVisivel ? "Radar de Concursos ocultado" : "Radar de Concursos visível");
+    },
+    onError: () => toast.error("Erro ao alterar visibilidade"),
+  });
+
+  return (
+    <Card>
+      <CardContent className="py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Radar className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Radar de Concursos</p>
+              <p className="text-xs text-muted-foreground">
+                {radarVisivel ? "Visível para os usuários" : "Oculto para os usuários"}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={radarVisivel ?? false}
+            onCheckedChange={() => toggleMutation.mutate()}
+            disabled={toggleMutation.isPending}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function PartnerPaymentHistory({ userId }: { userId: string }) {
   const { data: payments, isLoading } = useQuery({
     queryKey: ["partner-payment-history", userId],
