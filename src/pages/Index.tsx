@@ -7,7 +7,7 @@ import {
   ArrowRight, CheckCircle, X, Zap, Shield, Brain, Target, BarChart3,
   Users, Star, Clock, TrendingUp, BookOpen, Award, Lock, ChevronDown,
   Flame, Trophy, MessageCircle, GraduationCap, Mail, Instagram, Crown,
-  AlertTriangle, Percent, Play, Eye, HelpCircle, Heart
+  AlertTriangle, Percent, Play, Eye, HelpCircle, Heart, FileText, Radar
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";

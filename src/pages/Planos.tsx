@@ -16,7 +16,7 @@ type Periodo = "mensal" | "trimestral" | "anual";
 
 const FEATURE_LABELS: Record<string, string> = {
   simulado_basico: "Simulado básico",
-  simulado_reverso: "Simulado reverso",
+  simulado_reverso: "Simulado reverso inteligente",
   estatisticas_basicas: "Estatísticas básicas",
   estatisticas_avancadas: "Estatísticas avançadas",
   historico_erros: "Histórico de erros",
@@ -24,6 +24,10 @@ const FEATURE_LABELS: Record<string, string> = {
   filtro_estado: "Filtro por estado",
   filtro_concurso_real: "Filtro por concurso real",
   ranking: "Ranking completo",
+  professor_ia: "Professor IA 24h (Professor PX)",
+  correcao_redacao: "Correção de redação por IA",
+  analisar_edital: "Análise de edital por IA",
+  concursos_abertos: "Radar de concursos abertos",
 };
 
 const SLUG_ICONS: Record<string, any> = {
