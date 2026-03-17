@@ -192,14 +192,7 @@ Para CADA matéria, crie um resumo COMPLETO e DETALHADO que funcione como materi
       const content = aiData.choices?.[0]?.message?.content;
       if (!content) throw new Error("Resposta vazia da IA");
 
-      let resultado;
-      try {
-        resultado = JSON.parse(content);
-      } catch {
-        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (jsonMatch) resultado = JSON.parse(jsonMatch[1]);
-        else resultado = JSON.parse(content.replace(/^[^{]*/, "").replace(/[^}]*$/, ""));
-      }
+      const resultado = extractJsonFromResponse(content);
 
       await supabaseAdmin.from("edital_analyses").update({
         status: "concluido",
