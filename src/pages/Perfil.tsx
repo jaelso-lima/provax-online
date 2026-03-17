@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen } from "lucide-react";
+import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
