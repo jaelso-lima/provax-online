@@ -64,7 +64,7 @@ export default function Register() {
         return;
       }
 
-      const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined, phoneDigits);
+      const { error } = await signUp(email, password, nome, codigoIndicacao.trim() || undefined, phoneDigits || undefined);
       if (error) {
         const msg = error.message.toLowerCase();
         if (msg.includes("already registered") || msg.includes("already been registered")) {
