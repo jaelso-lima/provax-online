@@ -608,7 +608,7 @@ export default function Simulado() {
               Finalizar Simulado
             </Button>
           ) : (
-            <Button disabled={isLastQuestion || (isProvaCompleta && isFreePlan && currentIdx >= FREE_PROVA_COMPLETA_LIMIT - 1)} onClick={() => setCurrentIdx(i => i+1)}>
+            <Button disabled={isLastQuestion || (isFreePlan && currentIdx >= freeAnswerLimit - 1)} onClick={() => setCurrentIdx(i => i+1)}>
               Próxima<ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           )}
