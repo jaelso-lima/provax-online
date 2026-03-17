@@ -78,14 +78,18 @@ serve(async (req) => {
     // Download and convert PDF
     const pdfBase64 = await pdfToBase64(supabaseAdmin, analysis.storage_path);
 
-    const systemPrompt = `Você é um especialista em concursos públicos e editais. Analise o edital enviado e extraia TODAS as matérias/disciplinas cobradas.
+    const systemPrompt = `Você é um especialista em concursos públicos e editais. Analise o edital enviado e extraia TODOS os cargos disponíveis e TODAS as matérias/disciplinas cobradas.
 
-Para CADA matéria encontrada, retorne um objeto JSON com a seguinte estrutura:
+IMPORTANTE: Muitos editais possuem múltiplos cargos com matérias diferentes. Você DEVE identificar cada cargo separadamente e associar as matérias corretas a cada um.
+
+Retorne um objeto JSON com a seguinte estrutura:
 
 {
+  "cargos": ["Cargo 1", "Cargo 2", "Cargo 3"],
   "materias": [
     {
       "nome": "Nome da Matéria/Disciplina",
+      "cargos_aplicaveis": ["Cargo 1", "Cargo 2"],
       "explicacao": "Explicação simples e direta sobre o que é essa matéria e sua importância no concurso",
       "conteudos_principais": ["tópico 1", "tópico 2", "tópico 3"],
       "exemplos": [
@@ -105,12 +109,15 @@ Para CADA matéria encontrada, retorne um objeto JSON com a seguinte estrutura:
   "info_concurso": {
     "nome": "Nome do concurso/órgão",
     "banca": "Nome da banca examinadora se identificada",
-    "cargo": "Cargo(s) identificado(s)",
+    "cargo": "Todos os cargos separados por vírgula",
     "total_materias": 0
   }
 }
 
-IMPORTANTE:
+REGRAS:
+- O campo "cargos" deve listar TODOS os cargos/funções encontrados no edital
+- Cada matéria deve ter "cargos_aplicaveis" indicando para quais cargos ela é cobrada
+- Se uma matéria é comum a todos os cargos (ex: Língua Portuguesa), liste todos os cargos em "cargos_aplicaveis"
 - Seja objetivo e prático
 - Use linguagem acessível
 - Foque no que realmente importa para aprovação

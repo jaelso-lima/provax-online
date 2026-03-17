@@ -6,20 +6,20 @@ import { toast } from "@/hooks/use-toast";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Upload, FileText, Lock, Crown, Loader2, BookOpen, Target,
   Lightbulb, GraduationCap, AlertTriangle, ChevronDown, ChevronUp,
-  Play, RefreshCw, Trash2, Clock, Download
+  Play, RefreshCw, Trash2, Clock, Download, Briefcase, Filter
 } from "lucide-react";
 import { generateEditalPdf } from "@/lib/editalPdf";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 interface MateriaResult {
   nome: string;
@@ -28,9 +28,11 @@ interface MateriaResult {
   exemplos: { topico: string; exemplo: string }[];
   dicas_prova: string[];
   estrategia_estudo: string;
+  cargos_aplicaveis?: string[];
 }
 
 interface AnalysisResult {
+  cargos?: string[];
   materias: MateriaResult[];
   info_concurso?: {
     nome?: string;
@@ -76,7 +78,6 @@ export default function AnalisarEdital() {
     fetchAnalyses();
   }, [fetchAnalyses]);
 
-  // Poll for processing analyses
   useEffect(() => {
     const processing = analyses.some(a => a.status === "processando" || a.status === "pendente");
     if (!processing) return;
@@ -123,8 +124,6 @@ export default function AnalisarEdital() {
       toast({ title: "Edital enviado!", description: "A análise será iniciada em instantes." });
       fetchAnalyses();
 
-      // Trigger processing
-      const { data: { session } } = await supabase.auth.getSession();
       supabase.functions.invoke("analyze-edital", {
         body: { analysis_id: (analysisRow as any).id },
       }).catch(err => {
@@ -153,7 +152,6 @@ export default function AnalisarEdital() {
     navigate(`/simulado?materia_nome=${encodeURIComponent(materiaNome)}`);
   };
 
-  // Paywall for free users
   if (isFreePlan) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -186,7 +184,6 @@ export default function AnalisarEdital() {
     <div className="min-h-screen flex flex-col bg-background">
       <AppHeader />
       <main className="flex-1 container max-w-4xl py-6 px-4 space-y-6">
-        {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
             <FileText className="h-7 w-7 text-primary" />
@@ -197,7 +194,6 @@ export default function AnalisarEdital() {
           </p>
         </div>
 
-        {/* Upload Card */}
         <Card>
           <CardContent className="py-8">
             <label className="flex flex-col items-center gap-4 cursor-pointer group">
@@ -228,7 +224,6 @@ export default function AnalisarEdital() {
           </CardContent>
         </Card>
 
-        {/* Analyses List */}
         {loadingAnalyses ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -256,11 +251,9 @@ export default function AnalisarEdital() {
                   toast({ title: "Reprocessando edital..." });
                 }}
                 onNavigateSimulado={navigateToSimulado}
-                onDownloadPdf={async () => {
-                  if (analysis.resultado) {
-                    await generateEditalPdf(analysis.resultado as AnalysisResult, analysis.file_name);
-                    toast({ title: "PDF gerado!", description: "O download começará automaticamente." });
-                  }
+                onDownloadPdf={async (filteredResult: AnalysisResult) => {
+                  await generateEditalPdf(filteredResult, analysis.file_name);
+                  toast({ title: "PDF gerado!", description: "O download começará automaticamente." });
                 }}
               />
             ))}
@@ -281,8 +274,10 @@ function AnalysisCard({
   onDelete: () => void;
   onRetry: () => void;
   onNavigateSimulado: (nome: string) => void;
-  onDownloadPdf: () => void;
+  onDownloadPdf: (filteredResult: AnalysisResult) => void;
 }) {
+  const [selectedCargo, setSelectedCargo] = useState<string | null>(null);
+
   const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     pendente: { label: "Aguardando", color: "bg-muted text-muted-foreground", icon: <Clock className="h-3.5 w-3.5" /> },
     processando: { label: "Analisando...", color: "bg-primary/10 text-primary", icon: <Loader2 className="h-3.5 w-3.5 animate-spin" /> },
@@ -292,6 +287,22 @@ function AnalysisCard({
 
   const status = statusConfig[analysis.status] || statusConfig.pendente;
   const resultado = analysis.resultado as AnalysisResult | null;
+
+  // Extract cargos list
+  const cargos = resultado?.cargos || [];
+  const hasCargos = cargos.length > 1;
+
+  // Filter materias by selected cargo
+  const filteredMaterias = resultado?.materias?.filter(mat => {
+    if (!selectedCargo) return true;
+    if (!mat.cargos_aplicaveis || mat.cargos_aplicaveis.length === 0) return true;
+    return mat.cargos_aplicaveis.includes(selectedCargo);
+  }) || [];
+
+  const filteredResult: AnalysisResult = {
+    ...resultado!,
+    materias: filteredMaterias,
+  };
 
   return (
     <Card className="overflow-hidden">
@@ -355,108 +366,177 @@ function AnalysisCard({
                   )}
                   <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                     {resultado.info_concurso.banca && <span>Banca: <strong className="text-foreground">{resultado.info_concurso.banca}</strong></span>}
-                    {resultado.info_concurso.cargo && <span>• Cargo: <strong className="text-foreground">{resultado.info_concurso.cargo}</strong></span>}
-                    {resultado.materias?.length > 0 && <span>• {resultado.materias.length} matérias identificadas</span>}
+                    {hasCargos && <span>• {cargos.length} cargos identificados</span>}
+                    {filteredMaterias.length > 0 && <span>• {filteredMaterias.length} matérias{selectedCargo ? ` para ${selectedCargo}` : ""}</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Cargo Selector */}
+              {hasCargos && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-sm text-foreground">Selecione o cargo desejado</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Filtre as matérias pelo cargo que você vai prestar. Se não selecionar, todas as matérias serão exibidas.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setSelectedCargo(null)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors border ${
+                        !selectedCargo
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                      }`}
+                    >
+                      <Filter className="h-3 w-3" />
+                      Todos os cargos
+                    </button>
+                    {cargos.map((cargo) => {
+                      const materiaCount = resultado.materias?.filter(m =>
+                        !m.cargos_aplicaveis || m.cargos_aplicaveis.length === 0 || m.cargos_aplicaveis.includes(cargo)
+                      ).length || 0;
+
+                      return (
+                        <button
+                          key={cargo}
+                          onClick={() => setSelectedCargo(selectedCargo === cargo ? null : cargo)}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors border ${
+                            selectedCargo === cargo
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                          }`}
+                        >
+                          <Briefcase className="h-3 w-3" />
+                          {cargo}
+                          <span className="opacity-70">({materiaCount})</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Materias */}
-              <Accordion type="multiple" className="space-y-2">
-                {resultado.materias?.map((materia, idx) => (
-                  <AccordionItem key={idx} value={`mat-${idx}`} className="border rounded-lg px-4">
-                    <AccordionTrigger className="py-3 hover:no-underline">
-                      <div className="flex items-center gap-2 text-left">
-                        <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                        <span className="font-semibold">{materia.nome}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4 space-y-4">
-                      {/* Explicação */}
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
-                          <BookOpen className="h-3.5 w-3.5" /> Sobre a matéria
-                        </h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{materia.explicacao}</p>
-                      </div>
-
-                      {/* Conteúdos Principais */}
-                      {materia.conteudos_principais?.length > 0 && (
-                        <div className="space-y-1.5">
-                          <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
-                            <Target className="h-3.5 w-3.5" /> Conteúdos Principais
-                          </h4>
-                          <ul className="grid gap-1 text-sm">
-                            {materia.conteudos_principais.map((c, i) => (
-                              <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                                <span className="text-primary mt-1">•</span> {c}
-                              </li>
-                            ))}
-                          </ul>
+              {filteredMaterias.length === 0 ? (
+                <div className="py-6 text-center text-muted-foreground text-sm">
+                  Nenhuma matéria encontrada para o cargo selecionado.
+                </div>
+              ) : (
+                <Accordion type="multiple" className="space-y-2">
+                  {filteredMaterias.map((materia, idx) => (
+                    <AccordionItem key={idx} value={`mat-${idx}`} className="border rounded-lg px-4">
+                      <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="flex items-center gap-2 text-left">
+                          <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                          <span className="font-semibold">{materia.nome}</span>
+                          {materia.cargos_aplicaveis && materia.cargos_aplicaveis.length > 0 && materia.cargos_aplicaveis.length < cargos.length && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                              {materia.cargos_aplicaveis.length === 1 ? "específica" : `${materia.cargos_aplicaveis.length} cargos`}
+                            </Badge>
+                          )}
                         </div>
-                      )}
-
-                      {/* Exemplos */}
-                      {materia.exemplos?.length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
-                            <GraduationCap className="h-3.5 w-3.5" /> Exemplos Práticos
-                          </h4>
-                          <div className="space-y-2">
-                            {materia.exemplos.map((ex, i) => (
-                              <div key={i} className="rounded-md bg-muted/50 p-3 text-sm">
-                                <p className="font-medium text-foreground text-xs mb-1">{ex.topico}</p>
-                                <p className="text-muted-foreground">{ex.exemplo}</p>
-                              </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-4 space-y-4">
+                        {/* Cargos aplicáveis */}
+                        {!selectedCargo && materia.cargos_aplicaveis && materia.cargos_aplicaveis.length > 0 && materia.cargos_aplicaveis.length < cargos.length && (
+                          <div className="flex flex-wrap gap-1">
+                            {materia.cargos_aplicaveis.map((c) => (
+                              <Badge key={c} variant="secondary" className="text-[10px]">
+                                {c}
+                              </Badge>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Dicas */}
-                      {materia.dicas_prova?.length > 0 && (
-                        <div className="space-y-1.5">
-                          <h4 className="text-sm font-semibold flex items-center gap-1.5 text-amber-500">
-                            <Lightbulb className="h-3.5 w-3.5" /> Dicas de Prova
-                          </h4>
-                          <ul className="space-y-1 text-sm">
-                            {materia.dicas_prova.map((d, i) => (
-                              <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                                <span className="text-amber-500 mt-1">💡</span> {d}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Estratégia */}
-                      {materia.estrategia_estudo && (
+                        {/* Explicação */}
                         <div className="space-y-1">
-                          <h4 className="text-sm font-semibold flex items-center gap-1.5 text-green-600">
-                            <GraduationCap className="h-3.5 w-3.5" /> Estratégia de Estudo
+                          <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                            <BookOpen className="h-3.5 w-3.5" /> Sobre a matéria
                           </h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{materia.estrategia_estudo}</p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{materia.explicacao}</p>
                         </div>
-                      )}
 
-                      {/* CTA Simulado */}
-                      <Button
-                        size="sm"
-                        className="gap-1.5 w-full sm:w-auto"
-                        onClick={() => onNavigateSimulado(materia.nome)}
-                      >
-                        <Play className="h-3.5 w-3.5" />
-                        Treinar essa matéria agora
-                      </Button>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                        {/* Conteúdos Principais */}
+                        {materia.conteudos_principais?.length > 0 && (
+                          <div className="space-y-1.5">
+                            <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                              <Target className="h-3.5 w-3.5" /> Conteúdos Principais
+                            </h4>
+                            <ul className="grid gap-1 text-sm">
+                              {materia.conteudos_principais.map((c, i) => (
+                                <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                                  <span className="text-primary mt-1">•</span> {c}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Exemplos */}
+                        {materia.exemplos?.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                              <GraduationCap className="h-3.5 w-3.5" /> Exemplos Práticos
+                            </h4>
+                            <div className="space-y-2">
+                              {materia.exemplos.map((ex, i) => (
+                                <div key={i} className="rounded-md bg-muted/50 p-3 text-sm">
+                                  <p className="font-medium text-foreground text-xs mb-1">{ex.topico}</p>
+                                  <p className="text-muted-foreground">{ex.exemplo}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Dicas */}
+                        {materia.dicas_prova?.length > 0 && (
+                          <div className="space-y-1.5">
+                            <h4 className="text-sm font-semibold flex items-center gap-1.5 text-amber-500">
+                              <Lightbulb className="h-3.5 w-3.5" /> Dicas de Prova
+                            </h4>
+                            <ul className="space-y-1 text-sm">
+                              {materia.dicas_prova.map((d, i) => (
+                                <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                                  <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" /> {d}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Estratégia */}
+                        {materia.estrategia_estudo && (
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-semibold flex items-center gap-1.5 text-green-600">
+                              <GraduationCap className="h-3.5 w-3.5" /> Estratégia de Estudo
+                            </h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{materia.estrategia_estudo}</p>
+                          </div>
+                        )}
+
+                        {/* CTA Simulado */}
+                        <Button
+                          size="sm"
+                          className="gap-1.5 w-full sm:w-auto"
+                          onClick={() => onNavigateSimulado(materia.nome)}
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          Treinar essa matéria agora
+                        </Button>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 pt-2">
-                <Button size="sm" variant="outline" onClick={onDownloadPdf} className="gap-1.5">
-                  <Download className="h-3.5 w-3.5" /> Baixar resumo em PDF
+                <Button size="sm" variant="outline" onClick={() => onDownloadPdf(filteredResult)} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" /> Baixar resumo em PDF{selectedCargo ? ` (${selectedCargo})` : ""}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={onDelete} className="gap-1.5 text-destructive">
                   <Trash2 className="h-3.5 w-3.5" /> Remover análise
