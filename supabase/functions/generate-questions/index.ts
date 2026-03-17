@@ -87,11 +87,11 @@ serve(async (req) => {
     const allowedNiveis = ["facil", "medio", "media", "dificil"];
     const allowedModos = ["concurso", "enem"];
 
-    // For prova_completa, allow any quantity up to 80; otherwise stick to fixed options
+    // Allow any quantity up to 100 for all modes; prova_completa up to 80
     const rawQuantidade = typeof body.quantidade === "number" ? body.quantidade : 10;
     const quantidade = body.provaCompleta === true
       ? Math.min(Math.max(rawQuantidade, 5), 80)
-      : ([5, 10, 20, 60].includes(rawQuantidade) ? rawQuantidade : 10);
+      : Math.min(Math.max(rawQuantidade, 5), 100);
     const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "medio";
     const modo = allowedModos.includes(body.modo) ? body.modo : "concurso";
     const materia = typeof body.materia === "string" ? body.materia.slice(0, 100) : undefined;
@@ -105,6 +105,9 @@ serve(async (req) => {
     const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
     const provaCompleta = body.provaCompleta === true;
     const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 2000) : undefined;
+    const excludeEnunciados: string[] = Array.isArray(body.exclude_enunciados)
+      ? body.exclude_enunciados.slice(0, 200).map((e: any) => String(e).slice(0, 100))
+      : [];
 
     // --- Rate Limiting ---
     const { data: allowed, error: rlError } = await supabase.rpc("check_rate_limit", {
@@ -146,6 +149,12 @@ serve(async (req) => {
       filterParts.push(distribuicao);
     }
 
+    // Add exclusion context to avoid repeating questions
+    let excludeContext = "";
+    if (excludeEnunciados.length > 0) {
+      excludeContext = `\n\nIMPORTANTE: NÃO repita questões similares a estas já respondidas pelo aluno (primeiros 100 caracteres de cada):\n${excludeEnunciados.map((e, i) => `${i + 1}. "${e}"`).join("\n")}\n\nGere questões DIFERENTES e ORIGINAIS sobre o mesmo tema.`;
+    }
+
     // --- Build prompt universal ---
     const systemPrompt = buildPrompt({
       modo,
@@ -153,7 +162,7 @@ serve(async (req) => {
       nivel,
       filterContext: filterParts.join(". "),
       ano,
-    });
+    }) + excludeContext;
 
     // --- AI Gateway com tool calling ---
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

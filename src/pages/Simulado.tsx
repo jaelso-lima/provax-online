@@ -347,9 +347,27 @@ export default function Simulado() {
         }
       }
 
-      let qtd = parseInt(quantidade);
+      let qtd = tipoMode === "disciplina" ? 100 : parseInt(quantidade);
       let bodyPayload: any = { quantidade: qtd, nivel: nivel || "medio", modo };
       let provaCompletaContext = "";
+
+      // Fetch previously answered question enunciados to avoid repeats
+      let excludeEnunciados: string[] = [];
+      if (tipoMode === "disciplina" && materiaId && user) {
+        const { data: prevQuestoes } = await supabase
+          .from("respostas")
+          .select("questao_id, questoes!inner(enunciado, materia_id)")
+          .eq("questoes.materia_id", materiaId)
+          .in("simulado_id", 
+            (await supabase.from("simulados").select("id").eq("user_id", user.id).eq("status", "finalizado")).data?.map((s: any) => s.id) || []
+          )
+          .limit(200);
+        if (prevQuestoes && prevQuestoes.length > 0) {
+          excludeEnunciados = prevQuestoes
+            .map((r: any) => r.questoes?.enunciado?.slice(0, 100))
+            .filter(Boolean);
+        }
+      }
 
       // Build metadata context from selected filters
       const meta: SimuladoMeta = {};
@@ -391,6 +409,7 @@ export default function Simulado() {
           esfera: esferaId || undefined,
           ano: anoConcurso ? parseInt(anoConcurso) : undefined,
           topic: topicId || undefined,
+          ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
         };
       } else {
         bodyPayload = { ...bodyPayload, area: ENEM_AREAS.find(a => a.id === areaEnem)?.nome, ano: anoEnem || undefined };
@@ -665,7 +684,7 @@ export default function Simulado() {
         {/* Common fields */}
         <div className="space-y-2"><Label>Dificuldade</Label><Select value={nivel} onValueChange={setNivel}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="facil">Fácil</SelectItem><SelectItem value="medio">Médio</SelectItem><SelectItem value="dificil">Difícil</SelectItem></SelectContent></Select></div>
         
-        {tipoMode !== "prova_completa" && (
+        {tipoMode === "livre" && (
           <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem><SelectItem value="30">30 questões</SelectItem><SelectItem value="50">50 questões</SelectItem><SelectItem value="100">100 questões</SelectItem></SelectContent></Select></div>
         )}
 
