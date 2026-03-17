@@ -654,13 +654,13 @@ export default function Dashboard() {
         <h2 className="mb-4 font-display text-xl font-semibold hidden lg:block">Ações</h2>
         <div className="mb-8 hidden gap-4 lg:grid lg:grid-cols-3">
           {[
-            { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary" },
-            { icon: Radar, title: "Concursos Abertos", desc: "Radar de concursos em todo o Brasil", path: "/concursos", color: "text-accent" },
-            { icon: PenTool, title: "Redação com IA", desc: "Escreva e receba feedback", path: "/redacao", color: "text-accent" },
-            { icon: Coins, title: "Comprar Moedas", desc: "Adquira mais créditos", path: "/comprar-moedas", color: "text-coin" },
-            { icon: Trophy, title: "Ver Planos", desc: "Upgrade para mais recursos", path: "/planos", color: "text-warning" },
-            { icon: FileText, title: "Meu Perfil", desc: "Editar dados e ver histórico", path: "/perfil", color: "text-primary" },
-          ].map(a => (
+            { icon: BookOpen, title: "Gerar Simulado", desc: modo === "enem" ? "Questões no modelo ENEM" : "Questões por IA no padrão da banca", path: `/simulado?modo=${modo}`, color: "text-primary", visible: true },
+            { icon: Radar, title: "Concursos Abertos", desc: "Radar de concursos em todo o Brasil", path: "/concursos", color: "text-accent", visible: radarVisivel },
+            { icon: PenTool, title: "Redação com IA", desc: "Escreva e receba feedback", path: "/redacao", color: "text-accent", visible: true },
+            { icon: Coins, title: "Comprar Moedas", desc: "Adquira mais créditos", path: "/comprar-moedas", color: "text-coin", visible: true },
+            { icon: Trophy, title: "Ver Planos", desc: "Upgrade para mais recursos", path: "/planos", color: "text-warning", visible: true },
+            { icon: FileText, title: "Meu Perfil", desc: "Editar dados e ver histórico", path: "/perfil", color: "text-primary", visible: true },
+          ].filter(a => a.visible).map(a => (
             <Card key={a.title} className="cursor-pointer transition-shadow hover:shadow-md" onClick={() => navigate(a.path)}>
               <CardHeader><a.icon className={`mb-2 h-6 w-6 ${a.color}`} /><CardTitle className="text-base">{a.title}</CardTitle><CardDescription>{a.desc}</CardDescription></CardHeader>
             </Card>
