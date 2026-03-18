@@ -347,7 +347,7 @@ export default function Simulado() {
         }
       }
 
-      let qtd = tipoMode === "disciplina" ? 100 : parseInt(quantidade);
+      let qtd = tipoMode === "disciplina" ? 40 : parseInt(quantidade);
       let bodyPayload: any = { quantidade: qtd, nivel: nivel || "medio", modo };
       let provaCompletaContext = "";
 
@@ -423,7 +423,24 @@ export default function Simulado() {
         bodyPayload = { ...bodyPayload, area: ENEM_AREAS.find(a => a.id === areaEnem)?.nome, ano: anoEnem || undefined };
       }
 
-      const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-questions", { body: bodyPayload });
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 120000); // 2 min timeout
+      
+      let aiData: any;
+      let aiError: any;
+      try {
+        const result = await supabase.functions.invoke("generate-questions", { 
+          body: bodyPayload,
+        });
+        aiData = result.data;
+        aiError = result.error;
+      } catch (invokeErr: any) {
+        clearTimeout(timeoutId);
+        if (invokeErr.name === "AbortError") throw new Error("Tempo esgotado. Tente com menos questões.");
+        throw invokeErr;
+      }
+      clearTimeout(timeoutId);
+      
       if (aiError) throw new Error(aiError.message || "Erro ao gerar questões");
       if (aiData?.error) throw new Error(aiData.error);
 

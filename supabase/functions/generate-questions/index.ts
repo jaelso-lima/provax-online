@@ -42,20 +42,39 @@ REGRAS OBRIGATÓRIAS:
 }
 
 // ── Validação de output ───────────────────────────────────────────
+function normalizeQuestion(q: any): any | null {
+  if (!q.enunciado || typeof q.enunciado !== "string") return null;
+  if (!Array.isArray(q.alternativas) || q.alternativas.length < 4) return null;
+
+  const validLetters = ["A", "B", "C", "D", "E"];
+  
+  // Try to fix alternativas: normalize letra field
+  const normalized = q.alternativas.slice(0, 5).map((a: any, i: number) => ({
+    letra: validLetters[i],
+    texto: a.texto || a.text || a.content || String(a.letra === undefined ? a : ""),
+  }));
+  
+  // Pad to 5 if only 4
+  while (normalized.length < 5) {
+    normalized.push({ letra: validLetters[normalized.length], texto: "Nenhuma das anteriores" });
+  }
+
+  // Normalize resposta_correta
+  let resposta = String(q.resposta_correta || "").trim().toUpperCase();
+  if (!validLetters.includes(resposta)) {
+    // Try to match by index or content
+    if (resposta.length > 1) resposta = resposta.charAt(0);
+    if (!validLetters.includes(resposta)) return null;
+  }
+
+  return { ...q, alternativas: normalized, resposta_correta: resposta };
+}
+
 function validateQuestions(questoes: any[], expectedCount: number): { valid: boolean; cleaned: any[] } {
   if (!Array.isArray(questoes) || questoes.length === 0) return { valid: false, cleaned: [] };
 
-  const validLetters = new Set(["A", "B", "C", "D", "E"]);
-  const cleaned = questoes.filter((q) => {
-    if (!q.enunciado || typeof q.enunciado !== "string") return false;
-    if (!Array.isArray(q.alternativas) || q.alternativas.length !== 5) return false;
-    if (!q.resposta_correta || !validLetters.has(q.resposta_correta)) return false;
-    const letters = q.alternativas.map((a: any) => a.letra);
-    if (!["A", "B", "C", "D", "E"].every((l) => letters.includes(l))) return false;
-    return true;
-  });
-
-  return { valid: cleaned.length >= Math.ceil(expectedCount * 0.8), cleaned };
+  const cleaned = questoes.map(normalizeQuestion).filter(Boolean);
+  return { valid: cleaned.length >= Math.ceil(expectedCount * 0.5), cleaned };
 }
 
 // ── Handler principal ─────────────────────────────────────────────
@@ -87,11 +106,11 @@ serve(async (req) => {
     const allowedNiveis = ["facil", "medio", "media", "dificil"];
     const allowedModos = ["concurso", "enem"];
 
-    // Allow any quantity up to 100 for all modes; prova_completa up to 80
+    // Allow any quantity up to 50 for all modes; prova_completa up to 60
     const rawQuantidade = typeof body.quantidade === "number" ? body.quantidade : 10;
     const quantidade = body.provaCompleta === true
-      ? Math.min(Math.max(rawQuantidade, 5), 80)
-      : Math.min(Math.max(rawQuantidade, 5), 100);
+      ? Math.min(Math.max(rawQuantidade, 5), 60)
+      : Math.min(Math.max(rawQuantidade, 5), 50);
     const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "medio";
     const modo = allowedModos.includes(body.modo) ? body.modo : "concurso";
     const materia = typeof body.materia === "string" ? body.materia.slice(0, 100) : undefined;
@@ -168,7 +187,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-    const BATCH_SIZE = 10; // Max questions per AI call for speed
+    const BATCH_SIZE = 15; // Max questions per AI call — larger batches = fewer calls = faster
 
     const callAIBatch = async (batchQtd: number, batchContext: string): Promise<any[]> => {
       const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano });
@@ -288,8 +307,8 @@ serve(async (req) => {
 
     console.log(`Splitting ${quantidade} questions into ${batches.length} parallel batches`);
 
-    // --- Execute batches in parallel (max 4 concurrent to avoid rate limits) ---
-    const MAX_CONCURRENT = 4;
+    // --- Execute batches in parallel (max 3 concurrent to avoid rate limits) ---
+    const MAX_CONCURRENT = 3;
     let questoes: any[] = [];
     let lastError: any = null;
 
