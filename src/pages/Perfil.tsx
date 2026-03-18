@@ -408,13 +408,6 @@ export default function Perfil() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </CardContent>
-        </Card>
       </main>
       <AppFooter />
     </div>
