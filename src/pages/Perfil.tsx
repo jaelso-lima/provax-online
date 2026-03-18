@@ -327,7 +327,11 @@ export default function Perfil() {
                                     <span className="text-[11px] text-muted-foreground truncate flex-1">{t.nome}</span>
                                     <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{tPct}% · {t.total}q</span>
                                   </div>
-                                  <Progress value={tPct} className="h-1" />
+                                  <Progress value={tPct} className="h-1 mb-0.5" />
+                                  <div className="flex gap-2 text-[10px] text-muted-foreground">
+                                    <span className="text-primary font-medium">{t.acertos} acertos</span>
+                                    <span className="text-destructive font-medium">{t.erros} erros</span>
+                                  </div>
                                 </div>
                               );
                             })}
