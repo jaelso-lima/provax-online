@@ -33,6 +33,7 @@ export default function Perfil() {
   const [respostasPorMateria, setRespostasPorMateria] = useState<any[]>([]);
   const [simulados, setSimulados] = useState<any[]>([]);
   const [resetting, setResetting] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   useEffect(() => { if (profile) setNome(profile.nome); }, [profile]);
 
