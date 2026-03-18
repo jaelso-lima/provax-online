@@ -2291,6 +2291,7 @@ export type Database = {
       }
       reset_daily_credits: { Args: { _user_id: string }; Returns: Json }
       reset_stuck_pdf_imports: { Args: never; Returns: number }
+      reset_user_history: { Args: { _user_id: string }; Returns: boolean }
       suspend_account: {
         Args: { _reason: string; _target_user_id: string }
         Returns: boolean
