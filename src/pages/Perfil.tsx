@@ -360,40 +360,54 @@ export default function Perfil() {
                   <p className="text-xs text-muted-foreground">Apaga simulados, respostas, redações e favoritos</p>
                 </div>
               </div>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" disabled={resetting}>
-                    {resetting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                    Zerar
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta ação é <strong>irreversível</strong>. Todo o seu histórico de simulados, respostas, redações e favoritos será apagado permanentemente. Seu perfil, moedas e XP serão mantidos.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      onClick={async () => {
-                        if (!user) return;
-                        setResetting(true);
-                        const { error } = await supabase.rpc("reset_user_history", { _user_id: user.id });
-                        setResetting(false);
-                        if (error) {
-                          toast({ title: "Erro ao zerar", description: error.message, variant: "destructive" });
-                        } else {
-                          toast({ title: "Histórico zerado com sucesso!" });
-                          setSimulados([]);
-                          setRespostas([]);
-                          setRespostasPorMateria([]);
-                        }
-                      }}
-                    >
-                      Sim, zerar tudo
+              <Button variant="destructive" size="sm" disabled={resetting} onClick={() => setResetDialogOpen(true)}>
+                {resetting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                Zerar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>⚠️ Atenção: Ação irreversível!</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <span className="block">Você está prestes a <strong>apagar permanentemente</strong> todo o seu histórico:</span>
+                <span className="block text-destructive font-medium">• Todos os simulados realizados</span>
+                <span className="block text-destructive font-medium">• Todas as respostas</span>
+                <span className="block text-destructive font-medium">• Todas as redações</span>
+                <span className="block text-destructive font-medium">• Todos os favoritos</span>
+                <span className="block mt-2">Seu perfil, moedas e XP serão mantidos. <strong>Essa ação NÃO pode ser desfeita.</strong></span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!user) return;
+                  setResetting(true);
+                  const { error } = await supabase.rpc("reset_user_history", { _user_id: user.id });
+                  setResetting(false);
+                  setResetDialogOpen(false);
+                  if (error) {
+                    toast({ title: "Erro ao zerar", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "Histórico zerado com sucesso!" });
+                    setSimulados([]);
+                    setRespostas([]);
+                    setRespostasPorMateria([]);
+                  }
+                }}
+              >
+                {resetting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                Sim, zerar tudo
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
