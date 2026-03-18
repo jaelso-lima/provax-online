@@ -187,7 +187,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-    const BATCH_SIZE = 10; // Max questions per AI call for speed
+    const BATCH_SIZE = 15; // Max questions per AI call — larger batches = fewer calls = faster
 
     const callAIBatch = async (batchQtd: number, batchContext: string): Promise<any[]> => {
       const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano });
