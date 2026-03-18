@@ -9,11 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle, Trash2 } from "lucide-react";
+import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
@@ -49,7 +50,7 @@ export default function Perfil() {
         supabase.from("respostas").select("acertou").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostas(data); });
         // Respostas com matéria para breakdown
-        supabase.from("respostas").select("acertou, questoes!inner(materia_id, materias!inner(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
+        supabase.from("respostas").select("acertou, questoes!inner(materia_id, materias!inner(nome), topic_id, topics(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostasPorMateria(data); });
       });
   }, [user]);
@@ -92,16 +93,28 @@ export default function Perfil() {
 
   const materiaStats = useMemo(() => {
     if (!respostasPorMateria.length) return [];
-    const map: Record<string, { nome: string; acertos: number; erros: number; total: number }> = {};
+    const map: Record<string, { nome: string; acertos: number; erros: number; total: number; topics: Record<string, { nome: string; acertos: number; erros: number; total: number }> }> = {};
     for (const r of respostasPorMateria) {
-      const matNome = (r as any).questoes?.materias?.nome;
+      const q = (r as any).questoes;
+      const matNome = q?.materias?.nome;
       if (!matNome) continue;
-      if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0 };
+      if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0, topics: {} };
       map[matNome].total++;
       if (r.acertou === true) map[matNome].acertos++;
       else if (r.acertou === false) map[matNome].erros++;
+
+      const topicNome = q?.topics?.nome;
+      if (topicNome) {
+        if (!map[matNome].topics[topicNome]) map[matNome].topics[topicNome] = { nome: topicNome, acertos: 0, erros: 0, total: 0 };
+        map[matNome].topics[topicNome].total++;
+        if (r.acertou === true) map[matNome].topics[topicNome].acertos++;
+        else if (r.acertou === false) map[matNome].topics[topicNome].erros++;
+      }
     }
-    return Object.values(map).sort((a, b) => b.total - a.total);
+    return Object.values(map).map(m => ({
+      ...m,
+      topicsList: Object.values(m.topics).sort((a, b) => b.total - a.total),
+    })).sort((a, b) => b.total - a.total);
   }, [respostasPorMateria]);
 
   const xp = profile?.xp ?? 0;
@@ -279,22 +292,51 @@ export default function Perfil() {
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {materiaStats.map(m => {
                   const pct = m.total > 0 ? Math.round((m.acertos / m.total) * 100) : 0;
                   return (
-                    <div key={m.nome}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium truncate flex-1">{m.nome}</span>
-                        <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{m.total} questões</span>
+                    <Collapsible key={m.nome}>
+                      <div>
+                        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 hover:bg-muted/50 transition-colors group">
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+                            <span className="text-xs font-medium truncate">{m.nome}</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                            <span className="text-[10px] text-primary font-medium">{pct}%</span>
+                            <span className="text-[10px] text-muted-foreground">{m.total}q</span>
+                          </div>
+                        </CollapsibleTrigger>
+                        <div className="px-2">
+                          <Progress value={pct} className="h-1 mb-1" />
+                          <div className="flex gap-3 text-[10px] text-muted-foreground mb-1">
+                            <span className="text-primary font-medium">{m.acertos} acertos</span>
+                            <span className="text-destructive font-medium">{m.erros} erros</span>
+                          </div>
+                        </div>
                       </div>
-                      <Progress value={pct} className="h-1.5 mb-1" />
-                      <div className="flex gap-3 text-[10px] text-muted-foreground">
-                        <span className="text-primary font-medium">{m.acertos} acertos</span>
-                        <span className="text-destructive font-medium">{m.erros} erros</span>
-                        <span>{pct}% aproveitamento</span>
-                      </div>
-                    </div>
+                      <CollapsibleContent>
+                        {m.topicsList.length > 0 ? (
+                          <div className="ml-5 border-l border-border pl-3 py-1 space-y-1.5">
+                            {m.topicsList.map(t => {
+                              const tPct = t.total > 0 ? Math.round((t.acertos / t.total) * 100) : 0;
+                              return (
+                                <div key={t.nome}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] text-muted-foreground truncate flex-1">{t.nome}</span>
+                                    <span className="text-[10px] text-muted-foreground ml-2 shrink-0">{tPct}% · {t.total}q</span>
+                                  </div>
+                                  <Progress value={tPct} className="h-1" />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="ml-5 pl-3 text-[10px] text-muted-foreground py-1">Sem detalhamento por assunto</p>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
                   );
                 })}
               </div>
