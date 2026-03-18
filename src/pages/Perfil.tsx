@@ -50,7 +50,7 @@ export default function Perfil() {
         supabase.from("respostas").select("acertou").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostas(data); });
         // Respostas com matéria para breakdown
-        supabase.from("respostas").select("acertou, questoes!inner(materia_id, materias!inner(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
+        supabase.from("respostas").select("acertou, questoes!inner(materia_id, materias!inner(nome), topic_id, topics(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostasPorMateria(data); });
       });
   }, [user]);
