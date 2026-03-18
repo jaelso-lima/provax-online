@@ -347,7 +347,7 @@ export default function Simulado() {
         }
       }
 
-      let qtd = tipoMode === "disciplina" ? 100 : parseInt(quantidade);
+      let qtd = tipoMode === "disciplina" ? 40 : parseInt(quantidade);
       let bodyPayload: any = { quantidade: qtd, nivel: nivel || "medio", modo };
       let provaCompletaContext = "";
 

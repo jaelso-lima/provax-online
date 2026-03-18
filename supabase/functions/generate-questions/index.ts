@@ -307,8 +307,8 @@ serve(async (req) => {
 
     console.log(`Splitting ${quantidade} questions into ${batches.length} parallel batches`);
 
-    // --- Execute batches in parallel (max 4 concurrent to avoid rate limits) ---
-    const MAX_CONCURRENT = 4;
+    // --- Execute batches in parallel (max 3 concurrent to avoid rate limits) ---
+    const MAX_CONCURRENT = 3;
     let questoes: any[] = [];
     let lastError: any = null;
 
