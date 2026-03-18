@@ -300,6 +300,7 @@ export default function Perfil() {
               </div>
             </CardContent>
           </Card>
+        )}
 
         {/* Zerar Histórico */}
         <Card className="mb-4 border-destructive/30">
