@@ -93,16 +93,28 @@ export default function Perfil() {
 
   const materiaStats = useMemo(() => {
     if (!respostasPorMateria.length) return [];
-    const map: Record<string, { nome: string; acertos: number; erros: number; total: number }> = {};
+    const map: Record<string, { nome: string; acertos: number; erros: number; total: number; topics: Record<string, { nome: string; acertos: number; erros: number; total: number }> }> = {};
     for (const r of respostasPorMateria) {
-      const matNome = (r as any).questoes?.materias?.nome;
+      const q = (r as any).questoes;
+      const matNome = q?.materias?.nome;
       if (!matNome) continue;
-      if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0 };
+      if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0, topics: {} };
       map[matNome].total++;
       if (r.acertou === true) map[matNome].acertos++;
       else if (r.acertou === false) map[matNome].erros++;
+
+      const topicNome = q?.topics?.nome;
+      if (topicNome) {
+        if (!map[matNome].topics[topicNome]) map[matNome].topics[topicNome] = { nome: topicNome, acertos: 0, erros: 0, total: 0 };
+        map[matNome].topics[topicNome].total++;
+        if (r.acertou === true) map[matNome].topics[topicNome].acertos++;
+        else if (r.acertou === false) map[matNome].topics[topicNome].erros++;
+      }
     }
-    return Object.values(map).sort((a, b) => b.total - a.total);
+    return Object.values(map).map(m => ({
+      ...m,
+      topicsList: Object.values(m.topics).sort((a, b) => b.total - a.total),
+    })).sort((a, b) => b.total - a.total);
   }, [respostasPorMateria]);
 
   const xp = profile?.xp ?? 0;
