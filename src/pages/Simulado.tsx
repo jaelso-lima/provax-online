@@ -43,6 +43,7 @@ interface Questao {
   resposta_correta: string;
   explicacao?: string;
   materia_nome?: string;
+  topic_nome?: string;
 }
 
 // Metadata context for displaying on question cards
@@ -52,6 +53,8 @@ interface SimuladoMeta {
   carreira_nome?: string;
   ano?: string;
   estado_nome?: string;
+  materia_nome?: string;
+  topic_nome?: string;
 }
 
 export default function Simulado() {
@@ -140,7 +143,7 @@ export default function Simulado() {
       setResumeLoading(true);
       try {
         const { data: sim } = await supabase
-          .from("simulados").select("*")
+          .from("simulados").select("*, bancas:banca_id(nome), areas:area_id(nome), carreiras:carreira_id(nome), states:state_id(nome), materias:materia_id(nome), topics:topic_id(nome)")
           .eq("id", continuarId).eq("user_id", user.id).eq("status", "em_andamento").single();
 
         if (!sim) {
@@ -148,8 +151,18 @@ export default function Simulado() {
           navigate("/dashboard"); return;
         }
 
+        // Build metadata from saved simulado relations
+        const resumeMeta: SimuladoMeta = {};
+        if ((sim as any).bancas?.nome) resumeMeta.banca_nome = (sim as any).bancas.nome;
+        if ((sim as any).areas?.nome) resumeMeta.area_nome = (sim as any).areas.nome;
+        if ((sim as any).carreiras?.nome) resumeMeta.carreira_nome = (sim as any).carreiras.nome;
+        if ((sim as any).states?.nome) resumeMeta.estado_nome = (sim as any).states.nome;
+        if ((sim as any).materias?.nome) resumeMeta.materia_nome = (sim as any).materias.nome;
+        if ((sim as any).topics?.nome) resumeMeta.topic_nome = (sim as any).topics.nome;
+        setSimuladoMeta(resumeMeta);
+
         const { data: existingRespostas } = await supabase
-          .from("respostas").select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao)")
+          .from("respostas").select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao, materias:materia_id(nome), topics:topic_id(nome))")
           .eq("simulado_id", continuarId).order("created_at");
 
         let allQuestoes: Questao[] = [];
@@ -161,6 +174,8 @@ export default function Simulado() {
               id: r.questoes?.id, enunciado: r.questoes?.enunciado || "",
               alternativas: Array.isArray(r.questoes?.alternativas) ? r.questoes.alternativas : [],
               resposta_correta: r.questoes?.resposta_correta || "", explicacao: r.questoes?.explicacao,
+              materia_nome: r.questoes?.materias?.nome || undefined,
+              topic_nome: r.questoes?.topics?.nome || undefined,
             })).filter((q: Questao) => q.id && q.enunciado);
 
           existingRespostas.forEach((r: any, i: number) => {
@@ -385,6 +400,11 @@ export default function Simulado() {
         if (carreiraId) meta.carreira_nome = carreiras.find(c => c.id === carreiraId)?.nome;
         if (stateId) meta.estado_nome = states.find(s => s.id === stateId)?.nome;
         if (anoConcurso) meta.ano = anoConcurso;
+        if (materiaId) meta.materia_nome = materias.find(m => m.id === materiaId)?.nome;
+        if (topicId) meta.topic_nome = topics.find(t => t.id === topicId)?.nome;
+      } else {
+        if (areaEnem) meta.area_nome = ENEM_AREAS.find(a => a.id === areaEnem)?.nome;
+        if (anoEnem) meta.ano = anoEnem;
       }
       setSimuladoMeta(meta);
 
@@ -558,8 +578,16 @@ export default function Simulado() {
           <div className="rounded-lg bg-accent/10 p-4 text-center"><p className="text-sm text-muted-foreground">Acertos</p><p className="text-3xl font-bold text-accent">{resultado.acertos}/{resultado.total}</p></div>
           <div className="rounded-lg bg-warning/10 p-4 text-center"><p className="text-sm text-muted-foreground">XP Ganho</p><p className="text-3xl font-bold text-warning">+{resultado.xpGanho}</p></div>
         </div>
-        <div><h3 className="mb-3 font-display text-lg font-semibold">Correção Detalhada</h3><div className="space-y-3">{questoes.map((q, i) => { const resp = respostas[i]; const correta = resp === q.resposta_correta; return (<Card key={i} className={`border-l-4 ${correta ? "border-l-accent" : "border-l-destructive"}`}><CardContent className="pt-4">
-          {(q.materia_nome || simuladoMeta.banca_nome) && <div className="mb-1.5 flex flex-wrap gap-1">{q.materia_nome && <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">📚 {q.materia_nome}</span>}{simuladoMeta.banca_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">🏛️ {simuladoMeta.banca_nome}</span>}{simuladoMeta.carreira_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">💼 {simuladoMeta.carreira_nome}</span>}</div>}
+        <div><h3 className="mb-3 font-display text-lg font-semibold">Correção Detalhada</h3><div className="space-y-3">{questoes.map((q, i) => { const resp = respostas[i]; const correta = resp === q.resposta_correta; const materiaNome = q.materia_nome || simuladoMeta.materia_nome; const topicNome = q.topic_nome || simuladoMeta.topic_nome; return (<Card key={i} className={`border-l-4 ${correta ? "border-l-accent" : "border-l-destructive"}`}><CardContent className="pt-4">
+          <div className="mb-1.5 flex flex-wrap gap-1">
+            {simuladoMeta.area_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">📂 {simuladoMeta.area_nome}</span>}
+            {materiaNome && <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-2 py-0.5">📚 {materiaNome}</span>}
+            {topicNome && <span className="text-[10px] font-medium text-accent-foreground bg-accent/10 rounded-full px-2 py-0.5">📖 {topicNome}</span>}
+            {simuladoMeta.banca_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">🏛️ {simuladoMeta.banca_nome}</span>}
+            {simuladoMeta.carreira_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">💼 {simuladoMeta.carreira_nome}</span>}
+            {simuladoMeta.estado_nome && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">📍 {simuladoMeta.estado_nome}</span>}
+            {simuladoMeta.ano && <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-2 py-0.5">📅 {simuladoMeta.ano}</span>}
+          </div>
           <p className="mb-2 text-sm font-medium">{i+1}. {q.enunciado}</p><p className="text-xs"><span className={resp ? (correta ? "text-accent" : "text-destructive") : "text-muted-foreground"}>Sua: {resp || "—"}</span> | <span className="font-medium text-accent">Correta: {q.resposta_correta}</span></p>{q.explicacao && <p className="mt-2 text-xs text-muted-foreground italic">{q.explicacao}</p>}</CardContent></Card>); })}</div></div>
         <div className="flex gap-3 justify-center"><Button onClick={() => navigate("/dashboard")}>Voltar</Button><Button variant="outline" onClick={() => { setResultado(null); setSimuladoId(null); setQuestoes([]); }}>Novo Simulado</Button></div>
       </CardContent></Card></main><AppFooter /></div>
@@ -777,14 +805,24 @@ function QuestionCard({
   return (
     <Card>
       <CardContent className="pt-6">
-        {/* Metadata badges */}
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {question.materia_nome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {question.materia_nome}</span>}
-          {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
-          {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
-          {simuladoMeta.area_nome && !question.materia_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
-          {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
-        </div>
+        {/* Metadata badges — always show all available info */}
+        {(() => {
+          const materiaNome = question.materia_nome || simuladoMeta.materia_nome;
+          const topicNome = question.topic_nome || simuladoMeta.topic_nome;
+          const hasBadges = materiaNome || simuladoMeta.area_nome || simuladoMeta.banca_nome || simuladoMeta.carreira_nome || simuladoMeta.estado_nome || simuladoMeta.ano || topicNome;
+          if (!hasBadges) return null;
+          return (
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {simuladoMeta.area_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
+              {materiaNome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {materiaNome}</span>}
+              {topicNome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">📖 {topicNome}</span>}
+              {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
+              {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
+              {simuladoMeta.estado_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📍 {simuladoMeta.estado_nome}</span>}
+              {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
+            </div>
+          );
+        })()}
         <p className="mb-6 text-sm leading-relaxed">{question.enunciado}</p>
         <div className="space-y-2">
           {question.alternativas.map(o => {
