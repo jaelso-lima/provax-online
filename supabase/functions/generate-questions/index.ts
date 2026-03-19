@@ -350,10 +350,7 @@ serve(async (req) => {
     }
 
     if (questoes.length === 0) {
-      return new Response(
-        JSON.stringify({ error: lastError?.userMessage || "Erro ao gerar questões" }),
-        { status: lastError?.status || 500, headers: corsHeaders }
-      );
+      return errorResponse(lastError?.userMessage || "Erro ao gerar questões", lastError?.status || 500);
     }
 
     return new Response(JSON.stringify({ questoes }), { headers });
