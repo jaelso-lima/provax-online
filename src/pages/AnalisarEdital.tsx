@@ -534,10 +534,23 @@ export default function AnalisarEdital() {
                     <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs gap-1">
                       <CheckCircle2 className="h-3 w-3" /> Concluido
                     </Badge>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(analysis.id); }}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={(e) => e.stopPropagation()}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+                          <AlertDialogDescription>Esta ação não pode ser desfeita. A análise do edital "{analysis.file_name}" será excluída permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(analysis.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
