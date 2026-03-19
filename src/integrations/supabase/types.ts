@@ -668,6 +668,8 @@ export type Database = {
       }
       edital_analyses: {
         Row: {
+          cargo_selecionado: string | null
+          carreiras_identificadas: Json | null
           created_at: string
           erro_detalhes: string | null
           file_name: string
@@ -679,6 +681,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cargo_selecionado?: string | null
+          carreiras_identificadas?: Json | null
           created_at?: string
           erro_detalhes?: string | null
           file_name: string
@@ -690,6 +694,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cargo_selecionado?: string | null
+          carreiras_identificadas?: Json | null
           created_at?: string
           erro_detalhes?: string | null
           file_name?: string
