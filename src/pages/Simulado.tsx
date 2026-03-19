@@ -454,8 +454,9 @@ export default function Simulado() {
         setLoading(false); return;
       }
 
-      // Increment daily usage for free users
-      if (isFreePlan && tipoMode !== "prova_completa") {
+      // Increment daily usage (for missão/meta diária)
+      // Mantém regra antiga do free para prova completa (não contabiliza nesse modo)
+      if (!isFreePlan || tipoMode !== "prova_completa") {
         await supabase.rpc("incrementar_uso_diario", { _user_id: user!.id, _quantidade: generatedQuestoes.length });
       }
 
