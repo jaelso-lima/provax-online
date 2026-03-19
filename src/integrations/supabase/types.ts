@@ -2302,6 +2302,10 @@ export type Database = {
         Args: { _reason: string; _target_user_id: string }
         Returns: boolean
       }
+      update_own_profile: {
+        Args: { _avatar_url?: string; _nome?: string; _telefone?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "owner" | "partner"
