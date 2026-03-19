@@ -948,8 +948,9 @@ function CronogramaSection({ cronograma }: { cronograma?: any }) {
   const cicloDias = regras?.ciclo_dias || 10;
   const ciclosCompletos = regras?.ciclos_completos || Math.floor(totalDiasEstudo / cicloDias);
   const diasRestantes = regras?.dias_restantes || totalDiasEstudo % cicloDias;
-  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
+  const dataInicio = parseDateOnly(regras?.data_inicio || "") || new Date();
   const dataProvaStr = regras?.data_prova;
+  const dataProva = dataProvaStr ? parseDateOnly(dataProvaStr) : null;
 
   // Expand cycle into full schedule with real dates
   const fullDias: { dia: number; realDate: Date; titulo: string; tipo: string; blocos: any[] }[] = [];
