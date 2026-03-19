@@ -34,9 +34,14 @@ interface CronogramaReverso {
     total_dia: string;
     meta_questoes_bloco: string;
     meta_questoes_dia: string;
-    meta_30_dias: string;
+    meta_30_dias?: string;
     ciclo_dias: number;
-    repeticoes: number;
+    repeticoes?: number;
+    total_dias_estudo?: number;
+    ciclos_completos?: number;
+    dias_restantes?: number;
+    data_inicio?: string;
+    data_prova?: string;
   };
   dias: CronogramaDia[];
   como_executar?: string[];
@@ -302,22 +307,47 @@ export async function generateEditalPdf(resultado: AnalysisResult, fileName: str
   // === CRONOGRAMA DE ESTUDO REVERSO ===
   if (resultado.cronograma_reverso?.dias?.length) {
     const cr = resultado.cronograma_reverso;
+    const totalDias = cr.regras?.total_dias_estudo || 30;
+    const cicloDias = cr.regras?.ciclo_dias || 10;
+    const ciclosCompletos = cr.regras?.ciclos_completos || Math.floor(totalDias / cicloDias);
+    const diasRestantes = cr.regras?.dias_restantes || totalDias % cicloDias;
+    const dataInicio = cr.regras?.data_inicio ? new Date(cr.regras.data_inicio) : new Date();
+
+    const addDaysPdf = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+    const fmtDate = (d: Date) => d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+
+    // Expand cycle
+    const allDias: { dia: number; date: Date; titulo: string; tipo: string; blocos: CronogramaBloco[] }[] = [];
+    let dc = 0;
+    for (let c = 0; c < ciclosCompletos; c++) {
+      for (const db of cr.dias) {
+        if (dc >= totalDias) break;
+        allDias.push({ dia: dc + 1, date: addDaysPdf(dataInicio, dc), titulo: db.titulo, tipo: db.tipo, blocos: db.blocos || [] });
+        dc++;
+      }
+    }
+    for (let r = 0; r < diasRestantes && dc < totalDias; r++) {
+      const db = cr.dias[r % cr.dias.length];
+      allDias.push({ dia: dc + 1, date: addDaysPdf(dataInicio, dc), titulo: db.titulo, tipo: db.tipo, blocos: db.blocos || [] });
+      dc++;
+    }
 
     checkPage(20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.setTextColor(37, 99, 235);
-    doc.text("CRONOGRAMA - ESTUDO REVERSO (CICLO 10 DIAS)", margin, y);
+    doc.text(`CRONOGRAMA PERSONALIZADO - ${totalDias} DIAS DE ESTUDO`, margin, y);
     y += 8;
 
     // Rules box
     if (cr.regras) {
+      checkPage(30);
       doc.setFillColor(245, 245, 255);
-      doc.roundedRect(margin, y - 3, maxW, 28, 2, 2, "F");
+      doc.roundedRect(margin, y - 3, maxW, 32, 2, 2, "F");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.setTextColor(37, 99, 235);
-      doc.text("REGRA FIXA", margin + 3, y + 2);
+      doc.text("ESTUDO REVERSO - Regras", margin + 3, y + 2);
       y += 6;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(50, 50, 50);
@@ -326,14 +356,17 @@ export async function generateEditalPdf(resultado: AnalysisResult, fileName: str
       y += 4;
       doc.text(`Meta por bloco: ${cr.regras.meta_questoes_bloco || "20-30"} questoes  |  Por dia: ${cr.regras.meta_questoes_dia || "80-120"} questoes`, margin + 3, y);
       y += 4;
-      doc.text(`Ciclo: ${cr.regras.ciclo_dias || 10} dias x ${cr.regras.repeticoes || 3} = 30 dias  |  Meta total: ${cr.regras.meta_30_dias || "+2.500 questoes"}`, margin + 3, y);
+      doc.text(`Periodo: ${totalDias} dias (${ciclosCompletos} ciclos de ${cicloDias} dias${diasRestantes > 0 ? ` + ${diasRestantes} dias` : ""})`, margin + 3, y);
       y += 4;
-      doc.text("Repita o ciclo 3x = 30 dias de estudo focado", margin + 3, y);
-      y += 10;
+      if (cr.regras.data_prova) {
+        doc.text(`Inicio: ${fmtDate(dataInicio)}  |  Prova: ${fmtDate(new Date(cr.regras.data_prova))}`, margin + 3, y);
+        y += 4;
+      }
+      y += 8;
     }
 
     // Days
-    cr.dias.forEach((dia) => {
+    allDias.forEach((dia) => {
       checkPage(30);
       const isRevisao = dia.tipo === "revisao";
       const isSimulado = dia.tipo === "simulado";
@@ -344,7 +377,7 @@ export async function generateEditalPdf(resultado: AnalysisResult, fileName: str
       else if (isRevisao) doc.setTextColor(180, 120, 0);
       else doc.setTextColor(37, 99, 235);
 
-      doc.text(`DIA ${dia.dia}${dia.titulo ? ` - ${dia.titulo}` : ""}`, margin, y);
+      doc.text(`DIA ${dia.dia} - ${fmtDate(dia.date)}${dia.titulo ? ` | ${dia.titulo}` : ""}`, margin, y);
       y += 5;
 
       dia.blocos?.forEach((bloco) => {
