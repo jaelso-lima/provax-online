@@ -11,19 +11,36 @@ interface MateriaResult {
   exemplos: { topico: string; exemplo: string }[];
   dicas_prova: string[];
   estrategia_estudo: string;
-  cargos_aplicaveis?: string[];
+}
+
+interface CronogramaBloco {
+  ordem: number;
+  materia: string;
+  topico: string;
+  tipo_atividade: string;
 }
 
 interface CronogramaDia {
-  dia: string;
-  materias: string[];
-  foco: string;
+  dia: number;
+  titulo: string;
+  tipo: string;
+  blocos: CronogramaBloco[];
 }
 
-interface CronogramaSemana {
-  semana: number;
-  titulo: string;
+interface CronogramaReverso {
+  regras: {
+    bloco_minutos: number;
+    blocos_por_dia: number;
+    total_dia: string;
+    meta_questoes_bloco: string;
+    meta_questoes_dia: string;
+    meta_30_dias: string;
+    ciclo_dias: number;
+    repeticoes: number;
+  };
   dias: CronogramaDia[];
+  como_executar?: string[];
+  regras_importantes?: string[];
 }
 
 interface RaioX {
@@ -42,15 +59,16 @@ interface RaioX {
   observacoes?: string;
 }
 
-interface AnalysisResult {
+export interface AnalysisResult {
   cargos?: string[];
   materias: MateriaResult[];
   raio_x?: RaioX;
-  cronograma?: CronogramaSemana[];
+  cronograma_reverso?: CronogramaReverso;
   info_concurso?: {
     nome?: string;
     banca?: string;
     cargo?: string;
+    total_materias?: number;
   };
 }
 
@@ -115,6 +133,7 @@ export async function generateEditalPdf(resultado: AnalysisResult, fileName: str
   }
   const meta: string[] = [];
   if (resultado.info_concurso?.banca || resultado.raio_x?.banca) meta.push(`Banca: ${resultado.raio_x?.banca || resultado.info_concurso?.banca}`);
+  if (resultado.info_concurso?.cargo) meta.push(`Cargo: ${resultado.info_concurso.cargo}`);
   if (resultado.materias?.length) meta.push(`${resultado.materias.length} materias`);
   if (meta.length) doc.text(meta.join("  |  "), margin, y);
 
@@ -184,12 +203,6 @@ export async function generateEditalPdf(resultado: AnalysisResult, fileName: str
     doc.setTextColor(37, 99, 235);
     doc.text(`${idx + 1}. ${mat.nome}`, margin, y + 2);
     y += 14;
-
-    if (mat.cargos_aplicaveis?.length) {
-      doc.setFont("helvetica", "italic");
-      addWrappedText(`Cargos: ${mat.cargos_aplicaveis.join(", ")}`, margin, 8, [120, 120, 120]);
-      y += 2;
-    }
 
     doc.setFont("helvetica", "bold");
     addWrappedText("Sobre a materia", margin, 10, [30, 30, 30]);
@@ -286,43 +299,101 @@ export async function generateEditalPdf(resultado: AnalysisResult, fileName: str
     y += 8;
   });
 
-  // === CRONOGRAMA ===
-  if (resultado.cronograma?.length) {
+  // === CRONOGRAMA DE ESTUDO REVERSO ===
+  if (resultado.cronograma_reverso?.dias?.length) {
+    const cr = resultado.cronograma_reverso;
+
     checkPage(20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.setTextColor(37, 99, 235);
-    doc.text("CRONOGRAMA DE ESTUDOS - 4 SEMANAS", margin, y);
-    y += 10;
+    doc.text("CRONOGRAMA - ESTUDO REVERSO (CICLO 10 DIAS)", margin, y);
+    y += 8;
 
-    resultado.cronograma.forEach((semana) => {
+    // Rules box
+    if (cr.regras) {
+      doc.setFillColor(245, 245, 255);
+      doc.roundedRect(margin, y - 3, maxW, 28, 2, 2, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(37, 99, 235);
+      doc.text("REGRA FIXA", margin + 3, y + 2);
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(8);
+      doc.text(`Cada bloco = ${cr.regras.bloco_minutos || 40} min  |  ${cr.regras.blocos_por_dia || 4} blocos/dia  |  Total: ${cr.regras.total_dia || "2h40"}`, margin + 3, y);
+      y += 4;
+      doc.text(`Meta por bloco: ${cr.regras.meta_questoes_bloco || "20-30"} questoes  |  Por dia: ${cr.regras.meta_questoes_dia || "80-120"} questoes`, margin + 3, y);
+      y += 4;
+      doc.text(`Ciclo: ${cr.regras.ciclo_dias || 10} dias x ${cr.regras.repeticoes || 3} = 30 dias  |  Meta total: ${cr.regras.meta_30_dias || "+2.500 questoes"}`, margin + 3, y);
+      y += 4;
+      doc.text("Repita o ciclo 3x = 30 dias de estudo focado", margin + 3, y);
+      y += 10;
+    }
+
+    // Days
+    cr.dias.forEach((dia) => {
+      checkPage(30);
+      const isRevisao = dia.tipo === "revisao";
+      const isSimulado = dia.tipo === "simulado";
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      if (isSimulado) doc.setTextColor(220, 50, 50);
+      else if (isRevisao) doc.setTextColor(180, 120, 0);
+      else doc.setTextColor(37, 99, 235);
+
+      doc.text(`DIA ${dia.dia}${dia.titulo ? ` - ${dia.titulo}` : ""}`, margin, y);
+      y += 5;
+
+      dia.blocos?.forEach((bloco) => {
+        checkPage(6);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(80, 80, 80);
+        doc.text(`40 min -> ${bloco.materia} (${bloco.topico})`, margin + 4, y);
+        y += 4;
+      });
+      y += 3;
+    });
+
+    // Execution rules
+    if (cr.como_executar?.length) {
+      checkPage(15);
+      y += 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(22, 130, 70);
+      doc.text("COMO EXECUTAR CADA BLOCO (40 min):", margin, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      cr.como_executar.forEach((r) => {
+        checkPage(5);
+        doc.setTextColor(30, 100, 50);
+        doc.text(`  > ${r}`, margin + 3, y);
+        y += 4;
+      });
+      y += 2;
+    }
+
+    if (cr.regras_importantes?.length) {
       checkPage(15);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(30, 30, 30);
-      doc.text(`Semana ${semana.semana}${semana.titulo ? ` - ${semana.titulo}` : ""}`, margin, y);
-      y += 6;
-
-      semana.dias?.forEach((dia) => {
-        checkPage(8);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.setTextColor(60, 60, 60);
-        doc.text(`${dia.dia}:`, margin + 3, y);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(80, 80, 80);
-        const materiasTxt = dia.materias?.join(", ") || "";
-        doc.text(materiasTxt, margin + 25, y);
+      doc.setFontSize(9);
+      doc.setTextColor(200, 50, 50);
+      doc.text("REGRAS IMPORTANTES:", margin, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      cr.regras_importantes.forEach((r) => {
+        checkPage(5);
+        doc.setTextColor(150, 50, 50);
+        doc.text(`  x ${r}`, margin + 3, y);
         y += 4;
-        if (dia.foco) {
-          doc.setFontSize(8);
-          doc.setTextColor(120, 120, 120);
-          doc.text(`Foco: ${dia.foco}`, margin + 25, y);
-          y += 4;
-        }
       });
-      y += 4;
-    });
+    }
   }
 
   // Footer
