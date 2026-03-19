@@ -473,13 +473,19 @@ export default function Simulado() {
         throw new Error(aiData.error);
       }
 
+      // Handle case where response is not parsed JSON
+      if (!aiData || typeof aiData !== 'object') {
+        console.error("Unexpected aiData type:", typeof aiData, aiData);
+        throw new Error("Resposta inválida do servidor. Tente novamente.");
+      }
+
       const generatedQuestoes: Questao[] = (aiData.questoes || []).map((q: any) => ({
         ...q,
         // Fallback: if AI didn't return materia_nome, use selected matéria name
         materia_nome: q.materia_nome || (materiaId ? materias.find(m => m.id === materiaId)?.nome : undefined),
       }));
       if (generatedQuestoes.length === 0) {
-        toast({ title: "IA não retornou questões. Tente novamente.", variant: "destructive" });
+        toast({ title: "IA não retornou questões", description: "Tente novamente ou altere os filtros.", variant: "destructive" });
         setLoading(false); return;
       }
 
