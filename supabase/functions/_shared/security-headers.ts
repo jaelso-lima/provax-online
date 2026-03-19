@@ -53,7 +53,7 @@ export function validateOrigin(req: Request): string | null {
   if (origin) {
     if (ALLOWED_ORIGINS.some((allowed) => origin.startsWith(allowed))) return null;
     // Allow Lovable preview origins (dynamic subdomains)
-    if (origin.includes(".lovable.app")) return null;
+    if (origin.includes(".lovable.app") || origin.includes(".lovableproject.com")) return null;
     return `Origin bloqueada: ${origin}`;
   }
 
