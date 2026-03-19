@@ -981,7 +981,7 @@ function CronogramaSection({ cronograma }: { cronograma?: any }) {
   );
 }
 
-/* ─── Estudo Section (Anotações + Progresso) ─── */
+/* ─── Estudo Section (Espelho do Conteúdo com Progresso) ─── */
 interface StudyProgress {
   checkedContent: Record<string, boolean>;
   checkedDays: Record<number, boolean>;
@@ -1006,8 +1006,8 @@ function saveProgress(analysisId: string, progress: StudyProgress) {
 }
 
 function EstudoSection({ analysisId, resultado }: { analysisId: string; resultado: AnalysisResult }) {
+  const navigate = useNavigate();
   const [progress, setProgress] = useState<StudyProgress>(() => loadProgress(analysisId));
-  const [activeTab, setActiveTab] = useState<"conteudo" | "cronograma" | "notas">("conteudo");
 
   const update = (fn: (p: StudyProgress) => StudyProgress) => {
     setProgress(prev => {
@@ -1017,194 +1017,293 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
     });
   };
 
+  const toggleContent = (key: string) => {
+    update(p => ({ ...p, checkedContent: { ...p.checkedContent, [key]: !p.checkedContent[key] } }));
+  };
+
+  const setNote = (key: string, value: string) => {
+    update(p => ({ ...p, notes: { ...p.notes, [key]: value } }));
+  };
+
   const materias = resultado.materias || [];
   const cronograma = resultado.cronograma_reverso;
 
-  // Calculate progress stats
+  // Stats
   const totalContent = materias.reduce((acc, m) => acc + (m.conteudos_principais?.length || 0), 0);
-  const checkedContent = Object.values(progress.checkedContent).filter(Boolean).length;
-  const contentPct = totalContent > 0 ? Math.round((checkedContent / totalContent) * 100) : 0;
+  const checkedCount = Object.values(progress.checkedContent).filter(Boolean).length;
+  const contentPct = totalContent > 0 ? Math.round((checkedCount / totalContent) * 100) : 0;
 
   const totalDays = cronograma?.dias?.length || 0;
-  const checkedDays = Object.values(progress.checkedDays).filter(Boolean).length;
-  const daysPct = totalDays > 0 ? Math.round((checkedDays / totalDays) * 100) : 0;
+  const checkedDaysCount = Object.values(progress.checkedDays).filter(Boolean).length;
+  const daysPct = totalDays > 0 ? Math.round((checkedDaysCount / totalDays) * 100) : 0;
+
+  const navigateToSimulado = (materiaNome: string) => {
+    navigate(`/simulado?materia_nome=${encodeURIComponent(materiaNome)}`);
+  };
 
   return (
     <div className="space-y-4">
       {/* Progress overview */}
       <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-3">
         <h3 className="text-sm font-bold text-primary flex items-center gap-1.5">
-          <PenLine className="h-4 w-4" /> Area de Estudo e Anotacoes
+          <PenLine className="h-4 w-4" /> Progresso de Estudo
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Conteudo estudado</p>
+            <p className="text-xs text-muted-foreground">Topicos estudados</p>
             <Progress value={contentPct} className="h-2" />
-            <p className="text-xs font-semibold text-foreground">{checkedContent}/{totalContent} ({contentPct}%)</p>
+            <p className="text-xs font-semibold text-foreground">{checkedCount}/{totalContent} ({contentPct}%)</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Dias concluidos</p>
             <Progress value={daysPct} className="h-2" />
-            <p className="text-xs font-semibold text-foreground">{checkedDays}/{totalDays} ({daysPct}%)</p>
+            <p className="text-xs font-semibold text-foreground">{checkedDaysCount}/{totalDays} ({daysPct}%)</p>
           </div>
         </div>
       </div>
 
-      {/* Sub-tabs */}
-      <div className="flex gap-2 border-b pb-2">
-        {([
-          { key: "conteudo" as const, icon: CheckSquare, label: "Conteudo" },
-          { key: "cronograma" as const, icon: CalendarDays, label: "Dias" },
-          { key: "notas" as const, icon: StickyNote, label: "Anotacoes" },
-        ]).map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-              activeTab === tab.key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            <tab.icon className="h-3.5 w-3.5" />
-            {tab.label}
-          </button>
-        ))}
+      {/* General notes */}
+      <div className="rounded-lg border p-4 space-y-2">
+        <Label className="text-sm font-semibold flex items-center gap-1.5">
+          <StickyNote className="h-4 w-4 text-primary" />
+          Anotacoes gerais
+        </Label>
+        <Textarea
+          placeholder="Escreva suas anotacoes, lembretes, duvidas ou observacoes aqui..."
+          value={progress.generalNote}
+          onChange={(e) => update(p => ({ ...p, generalNote: e.target.value }))}
+          className="min-h-[80px]"
+        />
       </div>
 
-      {/* Conteúdo checklist */}
-      {activeTab === "conteudo" && (
-        <div className="space-y-4">
-          {materias.map((materia, mIdx) => (
-            <div key={mIdx} className="space-y-2">
-              <h4 className="text-sm font-semibold flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-primary" />
-                {materia.nome}
-              </h4>
-              {materia.conteudos_principais?.map((conteudo: string, cIdx: number) => {
-                const key = `${mIdx}-${cIdx}`;
-                const checked = !!progress.checkedContent[key];
-                return (
-                  <div key={cIdx} className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
-                    checked ? "bg-primary/5 border-primary/20" : "border-border"
-                  }`}>
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={(val) => {
-                        update(p => ({ ...p, checkedContent: { ...p.checkedContent, [key]: !!val } }));
-                      }}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                        {conteudo}
-                      </p>
-                      {/* Inline note */}
-                      {checked && (
-                        <Textarea
-                          placeholder="Anotacao sobre este topico..."
-                          value={progress.notes[key] || ""}
-                          onChange={(e) => {
-                            update(p => ({ ...p, notes: { ...p.notes, [key]: e.target.value } }));
-                          }}
-                          className="mt-2 text-xs min-h-[40px] resize-none"
-                          rows={2}
-                        />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Materias - mirror of Conteudo with checkboxes */}
+      <Accordion type="multiple" className="space-y-2">
+        {materias.map((materia, mIdx) => {
+          const topicKeys = materia.conteudos_principais?.map((_: string, cIdx: number) => `${mIdx}-${cIdx}`) || [];
+          const checkedTopics = topicKeys.filter((k: string) => progress.checkedContent[k]);
+          const materiaPct = topicKeys.length > 0 ? Math.round((checkedTopics.length / topicKeys.length) * 100) : 0;
+          const allChecked = topicKeys.length > 0 && checkedTopics.length === topicKeys.length;
 
-      {/* Cronograma days checklist */}
-      {activeTab === "cronograma" && cronograma?.dias?.length > 0 && (
-        <div className="space-y-2">
-          {cronograma.dias.map((dia: any, dIdx: number) => {
-            const checked = !!progress.checkedDays[dIdx];
-            return (
-              <div key={dIdx} className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
-                checked ? "bg-primary/5 border-primary/20" : "border-border"
-              }`}>
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={(val) => {
-                    update(p => ({ ...p, checkedDays: { ...p.checkedDays, [dIdx]: !!val } }));
-                  }}
-                  className="mt-0.5"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                    DIA {dIdx + 1} {dia.titulo && `- ${dia.titulo}`}
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {dia.blocos?.map((bloco: any, bIdx: number) => (
-                      <Badge key={bIdx} variant={checked ? "secondary" : "outline"} className="text-[10px]">
-                        {bloco.materia}
+          return (
+            <AccordionItem key={mIdx} value={`estudo-${mIdx}`} className="border rounded-lg px-4">
+              <AccordionTrigger className="py-3 hover:no-underline">
+                <div className="flex items-center gap-2 text-left flex-1">
+                  <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-semibold">{materia.nome}</span>
+                  {materia.tipo && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                      {materia.tipo === "basico" ? "Basico" : "Especifico"}
+                    </Badge>
+                  )}
+                  <div className="ml-auto flex items-center gap-2 shrink-0">
+                    {allChecked ? (
+                      <Badge className="bg-primary/10 text-primary text-[10px]">
+                        <CheckCircle2 className="h-3 w-3 mr-0.5" /> Concluido
                       </Badge>
-                    ))}
+                    ) : topicKeys.length > 0 ? (
+                      <span className="text-[10px] text-muted-foreground">{checkedTopics.length}/{topicKeys.length}</span>
+                    ) : null}
                   </div>
                 </div>
-                {checked && (
-                  <Badge className="bg-primary/10 text-primary text-[10px] shrink-0">
-                    <CheckCircle2 className="h-3 w-3 mr-0.5" /> Concluido
-                  </Badge>
+              </AccordionTrigger>
+              <AccordionContent className="pb-4 space-y-4">
+                {/* Progress bar per matéria */}
+                {topicKeys.length > 0 && (
+                  <div className="space-y-1">
+                    <Progress value={materiaPct} className="h-1.5" />
+                    <p className="text-[10px] text-muted-foreground">{materiaPct}% concluido</p>
+                  </div>
                 )}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Notes */}
-      {activeTab === "notas" && (
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold flex items-center gap-1.5">
-              <StickyNote className="h-4 w-4 text-primary" />
-              Anotacoes gerais
-            </Label>
-            <Textarea
-              placeholder="Escreva suas anotacoes, lembretes, duvidas ou observacoes aqui..."
-              value={progress.generalNote}
-              onChange={(e) => {
-                update(p => ({ ...p, generalNote: e.target.value }));
-              }}
-              className="min-h-[200px]"
-            />
-          </div>
+                {/* Sobre a matéria */}
+                {materia.explicacao && (
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                      <BookOpen className="h-3.5 w-3.5" /> Sobre a materia
+                    </h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{materia.explicacao}</p>
+                  </div>
+                )}
 
-          {/* Per-materia notes summary */}
-          {materias.some((m, mIdx) =>
-            m.conteudos_principais?.some((_: string, cIdx: number) => progress.notes[`${mIdx}-${cIdx}`])
-          ) && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold flex items-center gap-1.5">
-                <BookOpen className="h-4 w-4 text-primary" />
-                Anotacoes por conteudo
-              </h4>
-              {materias.map((materia, mIdx) => {
-                const notesForMateria = materia.conteudos_principais
-                  ?.map((c: string, cIdx: number) => ({ conteudo: c, note: progress.notes[`${mIdx}-${cIdx}`] }))
-                  .filter((n: any) => n.note);
-                if (!notesForMateria?.length) return null;
-                return (
-                  <div key={mIdx} className="rounded-lg border p-3 space-y-2">
-                    <p className="text-xs font-semibold text-primary">{materia.nome}</p>
-                    {notesForMateria.map((n: any, i: number) => (
-                      <div key={i} className="text-xs space-y-0.5">
-                        <p className="text-muted-foreground">{n.conteudo}</p>
-                        <p className="text-foreground bg-muted/50 rounded p-1.5">{n.note}</p>
+                {/* Topics checklist with notes */}
+                {materia.conteudos_principais?.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                      <CheckSquare className="h-3.5 w-3.5" /> Topicos para estudar ({materia.conteudos_principais.length})
+                    </h4>
+                    {materia.conteudos_principais.map((conteudo: string, cIdx: number) => {
+                      const key = `${mIdx}-${cIdx}`;
+                      const checked = !!progress.checkedContent[key];
+                      return (
+                        <div key={cIdx} className={`rounded-md border p-3 transition-colors ${
+                          checked ? "bg-primary/5 border-primary/20" : "border-border"
+                        }`}>
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={() => toggleContent(key)}
+                              className="mt-0.5"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                                {conteudo}
+                              </p>
+                            </div>
+                            {checked && (
+                              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                            )}
+                          </div>
+                          {/* Note field always visible when checked */}
+                          {checked && (
+                            <Textarea
+                              placeholder="Suas anotacoes sobre este topico..."
+                              value={progress.notes[key] || ""}
+                              onChange={(e) => setNote(key, e.target.value)}
+                              className="mt-2 text-xs min-h-[40px] resize-none ml-7"
+                              rows={2}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Resumo detalhado */}
+                {materia.resumo_detalhado && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                      <ScrollText className="h-3.5 w-3.5" /> Resumo Completo
+                    </h4>
+                    <div className="rounded-lg bg-primary/5 border border-primary/10 p-4 text-sm text-foreground leading-relaxed whitespace-pre-line">
+                      {materia.resumo_detalhado}
+                    </div>
+                  </div>
+                )}
+
+                {/* Exemplos */}
+                {materia.exemplos?.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 text-primary">
+                      <GraduationCap className="h-3.5 w-3.5" /> Exemplos
+                    </h4>
+                    {materia.exemplos.map((ex: any, i: number) => (
+                      <div key={i} className="rounded-md bg-muted/50 p-3 text-sm">
+                        <p className="font-medium text-foreground text-xs mb-1">{ex.topico}</p>
+                        <p className="text-muted-foreground">{ex.exemplo}</p>
                       </div>
                     ))}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
+
+                {/* Dicas */}
+                {materia.dicas_prova?.length > 0 && (
+                  <div className="space-y-1.5">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 text-amber-500">
+                      <Lightbulb className="h-3.5 w-3.5" /> Dicas de Prova
+                    </h4>
+                    <ul className="space-y-1 text-sm">
+                      {materia.dicas_prova.map((d: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                          <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" /> {d}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Macetes da matéria */}
+                {materia.macetes?.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 text-purple-500">
+                      <Sparkles className="h-3.5 w-3.5" /> Macetes
+                    </h4>
+                    {materia.macetes.map((macete: string, i: number) => (
+                      <div key={i} className="rounded-md bg-purple-500/5 border border-purple-500/10 p-3 text-sm flex items-start gap-2">
+                        <Sparkles className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                        <span className="text-foreground">{macete}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Estratégia */}
+                {materia.estrategia_estudo && (
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold flex items-center gap-1.5 text-green-600">
+                      <Target className="h-3.5 w-3.5" /> Estrategia de Estudo
+                    </h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{materia.estrategia_estudo}</p>
+                  </div>
+                )}
+
+                {/* Matéria note */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground">
+                    <PenLine className="h-3 w-3" /> Anotacao da materia
+                  </Label>
+                  <Textarea
+                    placeholder={`Anotacoes sobre ${materia.nome}...`}
+                    value={progress.notes[`materia-${mIdx}`] || ""}
+                    onChange={(e) => setNote(`materia-${mIdx}`, e.target.value)}
+                    className="text-xs min-h-[50px] resize-none"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Treinar button */}
+                <Button size="sm" className="gap-1.5 w-full sm:w-auto" onClick={() => navigateToSimulado(materia.nome)}>
+                  <Play className="h-3.5 w-3.5" /> Treinar essa materia
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+
+      {/* Cronograma days checklist */}
+      {cronograma?.dias?.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            Dias do Cronograma
+            <span className="text-xs text-muted-foreground font-normal">({checkedDaysCount}/{totalDays} concluidos)</span>
+          </h3>
+          <div className="space-y-2">
+            {cronograma.dias.map((dia: any, dIdx: number) => {
+              const checked = !!progress.checkedDays[dIdx];
+              return (
+                <div key={dIdx} className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
+                  checked ? "bg-primary/5 border-primary/20" : "border-border"
+                }`}>
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(val) => {
+                      update(p => ({ ...p, checkedDays: { ...p.checkedDays, [dIdx]: !!val } }));
+                    }}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      DIA {dIdx + 1} {dia.titulo && `- ${dia.titulo}`}
+                    </p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {dia.blocos?.map((bloco: any, bIdx: number) => (
+                        <Badge key={bIdx} variant={checked ? "secondary" : "outline"} className="text-[10px]">
+                          {bloco.materia} ({bloco.topico})
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  {checked && (
+                    <Badge className="bg-primary/10 text-primary text-[10px] shrink-0">
+                      <CheckCircle2 className="h-3 w-3 mr-0.5" /> Concluido
+                    </Badge>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
