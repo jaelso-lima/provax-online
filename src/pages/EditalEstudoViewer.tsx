@@ -230,7 +230,10 @@ function ViewerCronograma({ resultado }: { resultado: AnalysisResult }) {
   const cicloDias = regras?.ciclo_dias || dias.length;
   const ciclosCompletos = regras?.ciclos_completos || Math.floor(totalDiasEstudo / cicloDias);
   const diasRestantes = regras?.dias_restantes || totalDiasEstudo % cicloDias;
-  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
+  const dataInicio = regras?.data_inicio ? (() => {
+    const parts = regras.data_inicio.split('-');
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  })() : new Date();
 
   const fullDias: any[] = [];
   let dc = 0;
