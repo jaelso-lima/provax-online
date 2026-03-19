@@ -370,7 +370,33 @@ export default function AnalisarEdital() {
                 </div>
               )}
 
-              <div className="grid gap-3">
+              {/* Exam date input */}
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                <Label htmlFor="data-prova" className="text-sm font-semibold flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Data da Prova *
+                </Label>
+                <Input
+                  id="data-prova"
+                  type="date"
+                  value={dataProva}
+                  onChange={(e) => setDataProva(e.target.value)}
+                  min={new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0]}
+                  className="max-w-xs"
+                />
+                {dataProva && (
+                  <p className="text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3 inline mr-1" />
+                    {calcDiasEstudo(dataProva)} dias de estudo ate a prova
+                  </p>
+                )}
+                {!dataProva && (
+                  <p className="text-xs text-amber-600">
+                    <AlertTriangle className="h-3 w-3 inline mr-1" />
+                    Informe a data da prova para gerar o cronograma personalizado
+                  </p>
+                )}
+              </div>
                 {carreiras.map((carreira, i) => (
                   <button
                     key={i}
