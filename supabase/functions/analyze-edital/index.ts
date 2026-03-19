@@ -19,12 +19,8 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 function fixBadEscapes(str: string): string {
-  // Fix invalid JSON escape sequences: \a \e \o etc → remove the backslash
-  // Valid JSON escapes: \" \\ \/ \b \f \n \r \t \uXXXX
-  return str.replace(/\\([^"\\/bfnrtu])/g, (match, ch) => {
-    // If it's a unicode sequence like \uXXXX, keep it
-    if (ch === 'u') return match;
-    // Otherwise remove the bad backslash
+  return str.replace(/\\([^"\\/bfnrtu])/g, (_match, ch) => {
+    if (ch === 'u') return _match;
     return ch;
   });
 }
@@ -35,26 +31,17 @@ function extractJsonFromResponse(response: string): unknown {
     .replace(/```\s*/g, "")
     .trim();
 
-  // Remove control characters except newline/tab
   cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   const jsonStart = cleaned.indexOf('{');
   if (jsonStart === -1) throw new Error("No JSON object found in response");
   cleaned = cleaned.substring(jsonStart);
-
-  // Fix bad escape sequences BEFORE parsing
   cleaned = fixBadEscapes(cleaned);
 
-  try {
-    return JSON.parse(cleaned);
-  } catch (_e) {
-    console.log("Direct JSON parse failed, attempting repair...");
-  }
+  try { return JSON.parse(cleaned); } catch (_e) { /* continue */ }
 
-  // Remove trailing commas
   cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
 
-  // Fix truncated JSON by balancing braces/brackets
   let braces = 0, brackets = 0;
   for (const char of cleaned) {
     if (char === '{') braces++;
@@ -64,13 +51,9 @@ function extractJsonFromResponse(response: string): unknown {
   }
 
   if (braces > 0 || brackets > 0) {
-    console.log(`JSON truncated: ${braces} unclosed braces, ${brackets} unclosed brackets. Repairing...`);
-    // Remove incomplete trailing entries
     cleaned = cleaned.replace(/,?\s*"[^"]*$/g, '');
     cleaned = cleaned.replace(/,?\s*"[^"]*"\s*:\s*$/g, '');
     cleaned = cleaned.replace(/,\s*$/, '');
-
-    // Recount and close
     braces = 0; brackets = 0;
     for (const char of cleaned) {
       if (char === '{') braces++;
@@ -82,19 +65,12 @@ function extractJsonFromResponse(response: string): unknown {
     while (braces > 0) { cleaned += '}'; braces--; }
   }
 
-  // Second attempt after repair
-  try {
-    return JSON.parse(cleaned);
-  } catch (_e2) {
-    // Last resort: try to fix strings with unescaped newlines inside JSON strings
+  try { return JSON.parse(cleaned); } catch (_e2) {
     cleaned = cleaned.replace(/(?<=:\s*")([\s\S]*?)(?=")/g, (match) => {
       return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     });
-    try {
-      return JSON.parse(cleaned);
-    } catch (repairErr) {
-      console.error("JSON repair failed:", (repairErr as Error).message);
-      throw new Error(`Failed to parse AI response: ${(repairErr as Error).message}`);
+    try { return JSON.parse(cleaned); } catch (err) {
+      throw new Error(`Failed to parse AI response: ${(err as Error).message}`);
     }
   }
 }
@@ -105,7 +81,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+      return new Response(JSON.stringify({ error: "Nao autorizado" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -114,15 +90,14 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY nao configurada");
 
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+      return new Response(JSON.stringify({ error: "Nao autorizado" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -130,49 +105,139 @@ serve(async (req) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const { data: profileData } = await supabaseAdmin
       .from("profiles").select("plano").eq("id", user.id).single();
-    
     if (!profileData || profileData.plano === "free") {
       return new Response(JSON.stringify({ error: "Funcionalidade exclusiva para planos pagos" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { analysis_id } = await req.json();
-    if (!analysis_id) throw new Error("analysis_id é obrigatório");
+    const body = await req.json();
+    const { analysis_id, mode, cargo_selecionado } = body;
+    if (!analysis_id) throw new Error("analysis_id e obrigatorio");
 
     const { data: analysis, error: analysisError } = await supabaseAdmin
       .from("edital_analyses").select("*").eq("id", analysis_id).single();
-    if (analysisError || !analysis) throw new Error("Análise não encontrada");
+    if (analysisError || !analysis) throw new Error("Analise nao encontrada");
 
+    // ===== MODE: extract_careers =====
+    if (mode === "extract_careers") {
+      await supabaseAdmin.from("edital_analyses").update({
+        status: "extraindo_carreiras", updated_at: new Date().toISOString(),
+      }).eq("id", analysis_id);
+
+      const { data: pdfBlob, error: dlError } = await supabaseAdmin.storage.from("editais").download(analysis.storage_path);
+      if (dlError || !pdfBlob) throw new Error("Erro ao baixar arquivo");
+      const pdfArrayBuffer = await pdfBlob.arrayBuffer();
+      const pdfBase64 = arrayBufferToBase64(pdfArrayBuffer);
+
+      const extractPrompt = `Voce e um especialista em concursos publicos brasileiros. Analise rapidamente este edital e extraia:
+
+1. TODAS as carreiras/cargos/funcoes disponiveis no edital
+2. Informacoes basicas do concurso (raio-x rapido)
+
+Retorne JSON no formato:
+{
+  "carreiras": [
+    {
+      "nome": "Nome do cargo/carreira",
+      "escolaridade": "Nivel exigido",
+      "vagas": "Quantidade ou CR",
+      "salario": "Remuneracao"
+    }
+  ],
+  "raio_x_resumido": {
+    "orgao": "Nome do orgao",
+    "banca": "Banca examinadora",
+    "data_prova": "Data se informada",
+    "inscricao_inicio": "Inicio inscricoes",
+    "inscricao_fim": "Fim inscricoes",
+    "taxa_inscricao": "Valor da taxa"
+  }
+}
+
+REGRAS:
+- Liste TODAS as carreiras/cargos mesmo que sejam parecidos
+- Se so existir um cargo, liste esse unico cargo
+- NAO use acentos ou caracteres especiais (use "a" em vez de "a", "c" em vez de "c")
+- Retorne APENAS JSON valido`;
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000);
+
+      try {
+        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: extractPrompt },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: "Identifique todos os cargos/carreiras disponiveis neste edital e as informacoes basicas do concurso:" },
+                  { type: "image_url", image_url: { url: `data:application/pdf;base64,${pdfBase64}` } },
+                ],
+              },
+            ],
+            response_format: { type: "json_object" },
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+        if (!aiResponse.ok) {
+          const errText = await aiResponse.text();
+          console.error("AI error:", aiResponse.status, errText);
+          throw new Error(`AI error: ${aiResponse.status}`);
+        }
+
+        const aiData = await aiResponse.json();
+        const content = aiData.choices?.[0]?.message?.content;
+        if (!content) throw new Error("Resposta vazia da IA");
+
+        const resultado = extractJsonFromResponse(content) as any;
+
+        await supabaseAdmin.from("edital_analyses").update({
+          status: "carreiras_identificadas",
+          carreiras_identificadas: resultado,
+          updated_at: new Date().toISOString(),
+        }).eq("id", analysis_id);
+
+        return new Response(JSON.stringify({ success: true, carreiras: resultado }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+
+      } catch (e: any) {
+        clearTimeout(timeout);
+        const errMsg = e.name === "AbortError" ? "Tempo limite excedido." : (e.message || "Erro desconhecido");
+        await supabaseAdmin.from("edital_analyses").update({
+          status: "erro", erro_detalhes: errMsg, updated_at: new Date().toISOString(),
+        }).eq("id", analysis_id);
+        throw e;
+      }
+    }
+
+    // ===== MODE: generate_guide (default) =====
     await supabaseAdmin.from("edital_analyses").update({
-      status: "processando", updated_at: new Date().toISOString(),
+      status: "processando",
+      cargo_selecionado: cargo_selecionado || null,
+      updated_at: new Date().toISOString(),
     }).eq("id", analysis_id);
 
     const { data: pdfBlob, error: dlError } = await supabaseAdmin.storage.from("editais").download(analysis.storage_path);
-    if (dlError || !pdfBlob) throw new Error("Erro ao baixar arquivo: " + (dlError?.message || "não encontrado"));
+    if (dlError || !pdfBlob) throw new Error("Erro ao baixar arquivo");
     const pdfArrayBuffer = await pdfBlob.arrayBuffer();
     const pdfBase64 = arrayBufferToBase64(pdfArrayBuffer);
 
-    const systemPrompt = `Voce e um professor e especialista senior em concursos publicos brasileiros com 20 anos de experiencia. Sua tarefa e analisar o edital enviado e criar um GUIA DE ESTUDO MASTER COMPLETO.
+    const cargoFilter = cargo_selecionado
+      ? `\n\nIMPORTANTE: O usuario escolheu o cargo "${cargo_selecionado}". Gere o guia APENAS com as materias e topicos relevantes para este cargo especifico. Inclua Conhecimentos Basicos (comuns) + Conhecimentos Especificos deste cargo.`
+      : "";
 
-## FLUXO OBRIGATORIO:
-
-### PASSO 1 - RAIO-X DO EDITAL
-Extraia TODAS as informacoes administrativas do concurso: orgao, banca, cargos disponiveis, requisitos, salarios, datas, vagas, taxa de inscricao, etapas do concurso.
-
-### PASSO 2 - IDENTIFICAR TODOS OS CARGOS
-Leia o edital INTEGRALMENTE. Identifique TODOS os cargos/funcoes disponiveis.
-
-### PASSO 3 - MAPEAR CONTEUDO POR CARGO
-Para cada cargo, identifique TODAS as disciplinas/materias do conteudo programatico. Separe claramente:
-- Conhecimentos Basicos (comuns a todos os cargos)
-- Conhecimentos Especificos (por cargo)
-
-### PASSO 4 - RESUMIR CADA MATERIA EM PROFUNDIDADE
-Para CADA materia, crie um resumo COMPLETO com macetes de memorizacao.
-
-### PASSO 5 - CRONOGRAMA DE ESTUDOS
-Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrategica.
+    const systemPrompt = `Voce e um professor e especialista senior em concursos publicos brasileiros com 20 anos de experiencia. Sua tarefa e analisar o edital enviado e criar um GUIA DE ESTUDO MASTER COMPLETO.${cargoFilter}
 
 ## FORMATO DE RESPOSTA (JSON):
 
@@ -180,83 +245,114 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
   "raio_x": {
     "orgao": "Nome do orgao",
     "banca": "Banca examinadora",
-    "escolaridade": "Nivel de escolaridade exigido",
-    "salario_de": "Valor minimo ou unico",
-    "salario_ate": "Valor maximo (se houver faixa)",
+    "escolaridade": "Nivel de escolaridade",
+    "salario_de": "Valor minimo",
+    "salario_ate": "Valor maximo",
     "vagas": "Numero de vagas",
     "taxa_inscricao": "Valor da taxa",
-    "data_prova": "Data da prova (se informada)",
-    "inscricao_inicio": "Inicio das inscricoes",
-    "inscricao_fim": "Fim das inscricoes",
-    "etapas": ["Prova objetiva", "Prova discursiva", "TAF", "etc"],
-    "requisitos": ["Requisito 1", "Requisito 2"],
-    "observacoes": "Outras informacoes relevantes do edital"
+    "data_prova": "Data da prova",
+    "inscricao_inicio": "Inicio inscricoes",
+    "inscricao_fim": "Fim inscricoes",
+    "etapas": ["Prova objetiva", "etc"],
+    "requisitos": ["Req 1"],
+    "observacoes": "Outras informacoes"
   },
-  "cargos": ["Cargo 1", "Cargo 2"],
+  "cargos": ["Cargo selecionado"],
   "materias": [
     {
       "nome": "Nome da Materia",
       "tipo": "basico ou especifico",
-      "cargos_aplicaveis": ["Cargo 1", "Cargo 2"],
-      "explicacao": "Explicacao do que essa materia aborda e sua importancia",
-      "conteudos_principais": [
-        "Item 1 EXATAMENTE como listado no edital",
-        "Item 2 EXATAMENTE como listado no edital"
-      ],
-      "resumo_detalhado": "RESUMO COMPLETO E DIDATICO. Explique cada topico com definicoes, conceitos-chave, regras. Minimo 500 palavras. Organize por subtopicos. O aluno vai estudar por aqui.",
-      "macetes": [
-        "LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiencia",
-        "Outro macete pratico"
-      ],
-      "exemplos": [
-        {
-          "topico": "Topico cobrado",
-          "exemplo": "Exemplo de questao com resposta explicada"
-        }
-      ],
-      "dicas_prova": [
-        "Como a banca cobra esse assunto",
-        "Pegadinhas comuns"
-      ],
-      "estrategia_estudo": "Plano pratico de estudo para essa materia"
+      "explicacao": "O que essa materia aborda",
+      "conteudos_principais": ["Item 1 do edital", "Item 2"],
+      "resumo_detalhado": "RESUMO COMPLETO com definicoes, conceitos, regras. Minimo 500 palavras. Organize por subtopicos.",
+      "macetes": ["LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiencia"],
+      "exemplos": [{"topico": "Topico", "exemplo": "Exemplo de questao"}],
+      "dicas_prova": ["Como a banca cobra", "Pegadinhas comuns"],
+      "estrategia_estudo": "Plano pratico"
     }
   ],
-  "cronograma": [
-    {
-      "semana": 1,
-      "titulo": "Titulo da semana",
-      "dias": [
-        { "dia": "Segunda", "materias": ["Portugues (2h)", "Informatica (1h)"], "foco": "Gramatica basica e hardware" },
-        { "dia": "Terca", "materias": ["Raciocinio Logico (2h)", "Legislacao (1h)"], "foco": "Proposicoes e CF/88" },
-        { "dia": "Quarta", "materias": ["Portugues (2h)", "Direito Admin (1h)"], "foco": "Interpretacao e principios" },
-        { "dia": "Quinta", "materias": ["Informatica (2h)", "Raciocinio Logico (1h)"], "foco": "Redes e conjuntos" },
-        { "dia": "Sexta", "materias": ["Legislacao (2h)", "Especificas (1h)"], "foco": "Leis organicas e conteudo tecnico" },
-        { "dia": "Sabado", "materias": ["Revisao geral (3h)", "Simulado (2h)"], "foco": "Revisao e pratica" }
-      ]
-    }
-  ],
+  "cronograma_reverso": {
+    "regras": {
+      "bloco_minutos": 40,
+      "blocos_por_dia": 4,
+      "total_dia": "2h40",
+      "meta_questoes_bloco": "20 a 30",
+      "meta_questoes_dia": "80 a 120",
+      "meta_30_dias": "+2.500 questoes",
+      "ciclo_dias": 10,
+      "repeticoes": 3
+    },
+    "dias": [
+      {
+        "dia": 1,
+        "titulo": "Titulo descritivo do dia",
+        "tipo": "estudo",
+        "blocos": [
+          {"ordem": 1, "materia": "Portugues", "topico": "Interpretacao de Texto", "tipo_atividade": "questoes"},
+          {"ordem": 2, "materia": "Administracao", "topico": "PODC", "tipo_atividade": "questoes"},
+          {"ordem": 3, "materia": "Lei 8.112", "topico": "Deveres", "tipo_atividade": "questoes"},
+          {"ordem": 4, "materia": "Arquivologia", "topico": "Tipos de arquivo", "tipo_atividade": "questoes"}
+        ]
+      },
+      {
+        "dia": 7,
+        "titulo": "REVISAO INTELIGENTE",
+        "tipo": "revisao",
+        "blocos": [
+          {"ordem": 1, "materia": "Portugues", "topico": "Revisao geral", "tipo_atividade": "revisao"},
+          {"ordem": 2, "materia": "Administracao", "topico": "Revisao geral", "tipo_atividade": "revisao"},
+          {"ordem": 3, "materia": "Legislacao", "topico": "Revisao geral", "tipo_atividade": "revisao"},
+          {"ordem": 4, "materia": "Arquivologia", "topico": "Revisao geral", "tipo_atividade": "revisao"}
+        ]
+      },
+      {
+        "dia": 10,
+        "titulo": "SIMULADO REAL",
+        "tipo": "simulado",
+        "blocos": [
+          {"ordem": 1, "materia": "Misto", "topico": "Bloco misto - todas materias", "tipo_atividade": "simulado"},
+          {"ordem": 2, "materia": "Misto", "topico": "Bloco misto", "tipo_atividade": "simulado"},
+          {"ordem": 3, "materia": "Misto", "topico": "Bloco misto", "tipo_atividade": "simulado"},
+          {"ordem": 4, "materia": "Correcao", "topico": "Correcao completa", "tipo_atividade": "correcao"}
+        ]
+      }
+    ],
+    "como_executar": [
+      "Resolver o maximo de questoes no bloco de 40min",
+      "Corrigir rapido",
+      "Estudar so o erro"
+    ],
+    "regras_importantes": [
+      "Nao travar em questao dificil",
+      "Nao voltar teoria antes",
+      "Foco total em pratica",
+      "Aprender errando"
+    ]
+  },
   "info_concurso": {
-    "nome": "Nome completo do concurso",
-    "banca": "Banca examinadora",
-    "cargo": "Lista resumida dos cargos",
+    "nome": "Nome do concurso",
+    "banca": "Banca",
+    "cargo": "Cargo selecionado",
     "total_materias": 0
   }
 }
 
-## REGRAS INEGOCIAVEIS:
+## REGRAS DO CRONOGRAMA (ESTUDO REVERSO):
+1. EXATAMENTE 10 dias no ciclo
+2. Cada dia tem EXATAMENTE 4 blocos de 40 minutos
+3. Dia 7 = REVISAO INTELIGENTE (revisar materias principais)
+4. Dia 10 = SIMULADO REAL (blocos mistos + correcao)
+5. Os outros dias distribuem as materias de forma inteligente, priorizando pratica com questoes
+6. O ciclo se repete 3x para completar 30 dias
+7. Distribua TODAS as materias do edital ao longo dos 10 dias
 
-1. CADA materia DEVE ter "resumo_detalhado" extenso (minimo 300 palavras) que ENSINE o conteudo
-2. "conteudos_principais" deve conter 100% dos itens do edital para aquela materia
-3. "macetes" deve conter pelo menos 3 mnemonicos/truques de memorizacao PRATICOS por materia
-4. Materias como Informatica, Direito, Portugues devem vir DESTRINCHADAS com cada subarea detalhada
-5. Separe Conhecimentos Basicos e Especificos com "tipo": "basico" ou "especifico"
-6. Legislacao especifica deve aparecer como topico individual
-7. O "raio_x" deve conter TODAS as informacoes administrativas encontradas no edital
-8. O "cronograma" deve ter EXATAMENTE 4 semanas com distribuicao inteligente das materias
-9. Retorne APENAS JSON valido, sem markdown
-10. NAO use acentos, cedilhas ou caracteres especiais nos textos (use "a" em vez de "ã", "c" em vez de "ç", "e" em vez de "é", etc)
-11. NAO use barras invertidas (\\) dentro dos textos exceto para sequencias JSON validas
-12. Mantenha os textos simples e sem formatacao especial`;
+## REGRAS GERAIS:
+1. CADA materia DEVE ter "resumo_detalhado" extenso (minimo 300 palavras)
+2. "conteudos_principais" = 100% dos itens do edital
+3. "macetes" = minimo 3 mnemonicos por materia
+4. Retorne APENAS JSON valido
+5. NAO use acentos, cedilhas ou caracteres especiais
+6. NAO use barras invertidas exceto para sequencias JSON validas`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 240000);
@@ -275,11 +371,8 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
             {
               role: "user",
               content: [
-                { type: "text", text: "Analise este edital de forma EXAUSTIVA. Extraia o raio-x completo, todas as materias com resumos detalhados e macetes, e gere o cronograma de 4 semanas. DESTRINCHE cada materia (Informatica, Direito, Portugues, etc) com todos os subtopicos. NAO PULE NENHUM TOPICO do conteudo especifico:" },
-                {
-                  type: "image_url",
-                  image_url: { url: `data:application/pdf;base64,${pdfBase64}` },
-                },
+                { type: "text", text: `Analise este edital de forma EXAUSTIVA.${cargo_selecionado ? ` Foque APENAS no cargo: ${cargo_selecionado}.` : ""} Extraia raio-x, todas as materias com resumos e macetes, e gere o CRONOGRAMA DE ESTUDO REVERSO em ciclo de 10 dias:` },
+                { type: "image_url", image_url: { url: `data:application/pdf;base64,${pdfBase64}` } },
               ],
             },
           ],
@@ -293,7 +386,6 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
       if (!aiResponse.ok) {
         const errText = await aiResponse.text();
         console.error("AI error:", aiResponse.status, errText);
-        
         if (aiResponse.status === 429) {
           await supabaseAdmin.from("edital_analyses").update({
             status: "erro", erro_detalhes: "Limite de requisicoes atingido. Tente novamente em alguns minutos.",
@@ -303,7 +395,6 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
             status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-
         throw new Error(`AI error: ${aiResponse.status}`);
       }
 
@@ -320,51 +411,31 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
         updated_at: new Date().toISOString(),
       }).eq("id", analysis_id);
 
-      // === Feed edital into question extraction pipeline (with dedup) ===
+      // === Feed into pipeline (non-blocking) ===
       try {
         const hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", pdfArrayBuffer));
         const hashStr = Array.from(hashBytes).map(b => b.toString(16).padStart(2, "0")).join("");
-
         const { data: existingImport } = await supabaseAdmin
-          .from("pdf_imports")
-          .select("id")
-          .eq("hash_arquivo", hashStr)
-          .maybeSingle();
-
-        if (existingImport) {
-          console.log(`Duplicate PDF detected (hash: ${hashStr.slice(0, 12)}...), skipping pipeline feed.`);
-        } else {
+          .from("pdf_imports").select("id").eq("hash_arquivo", hashStr).maybeSingle();
+        if (!existingImport) {
           const importPath = `edital_${analysis_id}_${Date.now()}.pdf`;
-          await supabaseAdmin.storage.from("pdf-imports").upload(importPath, new Blob([pdfArrayBuffer], { type: "application/pdf" }), {
-            contentType: "application/pdf",
-          });
-
+          await supabaseAdmin.storage.from("pdf-imports").upload(importPath, new Blob([pdfArrayBuffer], { type: "application/pdf" }), { contentType: "application/pdf" });
           const bancaNome = (resultado as any)?.info_concurso?.banca || (resultado as any)?.raio_x?.banca || null;
           let bancaId = null;
           if (bancaNome) {
-            const { data: banca } = await supabaseAdmin
-              .from("bancas").select("id").ilike("nome", bancaNome).maybeSingle();
+            const { data: banca } = await supabaseAdmin.from("bancas").select("id").ilike("nome", bancaNome).maybeSingle();
             bancaId = banca?.id || null;
           }
-
           const { data: pdfImport } = await supabaseAdmin.from("pdf_imports").insert({
             nome_arquivo: analysis.file_name || `edital_${analysis_id}.pdf`,
-            hash_arquivo: hashStr,
-            storage_path: importPath,
-            uploaded_by: user.id,
-            tipo: "concurso",
-            banca_id: bancaId,
+            hash_arquivo: hashStr, storage_path: importPath, uploaded_by: user.id,
+            tipo: "concurso", banca_id: bancaId,
             cargo: (resultado as any)?.info_concurso?.cargo || null,
             status_processamento: "pendente",
           }).select("id").single();
-
           if (pdfImport) {
             fetch(`${supabaseUrl}/functions/v1/process-pdf`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-              },
+              method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}` },
               body: JSON.stringify({ import_id: pdfImport.id }),
             }).catch(e => console.error("Trigger process-pdf error:", e));
           }
@@ -379,13 +450,10 @@ Gere um plano de estudos de 4 semanas distribuindo as materias de forma estrateg
 
     } catch (e: any) {
       clearTimeout(timeout);
-      const isAbort = e.name === "AbortError";
-      const errMsg = isAbort ? "Tempo limite excedido. Tente novamente." : (e.message || "Erro desconhecido");
-      
+      const errMsg = e.name === "AbortError" ? "Tempo limite excedido. Tente novamente." : (e.message || "Erro desconhecido");
       await supabaseAdmin.from("edital_analyses").update({
         status: "erro", erro_detalhes: errMsg, updated_at: new Date().toISOString(),
       }).eq("id", analysis_id);
-
       throw e;
     }
 
