@@ -449,20 +449,29 @@ export default function Simulado() {
       let aiData: any;
       let aiError: any;
       try {
+        console.log("Calling generate-questions with payload:", JSON.stringify(bodyPayload));
         const result = await supabase.functions.invoke("generate-questions", { 
           body: bodyPayload,
         });
         aiData = result.data;
         aiError = result.error;
+        console.log("generate-questions response:", { hasData: !!aiData, hasError: !!aiError, questoesCount: aiData?.questoes?.length });
       } catch (invokeErr: any) {
         clearTimeout(timeoutId);
+        console.error("generate-questions invoke error:", invokeErr);
         if (invokeErr.name === "AbortError") throw new Error("Tempo esgotado. Tente com menos questões.");
         throw invokeErr;
       }
       clearTimeout(timeoutId);
       
-      if (aiError) throw new Error(aiError.message || "Erro ao gerar questões");
-      if (aiData?.error) throw new Error(aiData.error);
+      if (aiError) {
+        console.error("AI function error:", aiError);
+        throw new Error(typeof aiError === 'string' ? aiError : aiError.message || "Erro ao gerar questões");
+      }
+      if (aiData?.error) {
+        console.error("AI data error:", aiData.error);
+        throw new Error(aiData.error);
+      }
 
       const generatedQuestoes: Questao[] = (aiData.questoes || []).map((q: any) => ({
         ...q,
