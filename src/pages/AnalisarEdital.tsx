@@ -1238,19 +1238,6 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
                   </div>
                 )}
 
-                {/* Matéria note */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground">
-                    <PenLine className="h-3 w-3" /> Anotacao da materia
-                  </Label>
-                  <Textarea
-                    placeholder={`Anotacoes sobre ${materia.nome}...`}
-                    value={progress.notes[`materia-${mIdx}`] || ""}
-                    onChange={(e) => setNote(`materia-${mIdx}`, e.target.value)}
-                    className="text-xs min-h-[50px] resize-none"
-                    rows={2}
-                  />
-                </div>
 
                 {/* Treinar button */}
                 <Button size="sm" className="gap-1.5 w-full sm:w-auto" onClick={() => navigateToSimulado(materia.nome)}>
