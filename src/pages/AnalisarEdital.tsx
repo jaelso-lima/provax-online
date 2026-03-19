@@ -207,15 +207,22 @@ export default function AnalisarEdital() {
 
   const handleSelectCarreira = async (carreira: CarreiraOption) => {
     if (!activeAnalysisId) return;
-    setCurrentStep("generating");
 
-    toast({ title: `Gerando guia para: ${carreira.nome}`, description: "Isso pode levar ate 3 minutos..." });
+    if (!dataProva) {
+      toast({ title: "Informe a data da prova", description: "Precisamos da data para montar seu cronograma personalizado.", variant: "destructive" });
+      return;
+    }
+
+    setCurrentStep("generating");
+    const diasEstudo = calcDiasEstudo(dataProva);
+    toast({ title: `Gerando guia para: ${carreira.nome}`, description: `Cronograma de ${diasEstudo} dias ate a prova. Pode levar ate 3 minutos...` });
 
     supabase.functions.invoke("analyze-edital", {
       body: {
         analysis_id: activeAnalysisId,
         mode: "generate_guide",
         cargo_selecionado: carreira.nome,
+        data_prova_usuario: dataProva,
       },
     }).catch(err => console.error("Error invoking generate_guide:", err));
   };
