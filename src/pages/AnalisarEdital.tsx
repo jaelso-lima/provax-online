@@ -619,7 +619,7 @@ function ResultView({
 
       {/* Tabs */}
       <Tabs defaultValue="raio-x" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-auto">
+        <TabsList className="w-full grid grid-cols-5 h-auto">
           <TabsTrigger value="raio-x" className="text-xs py-2 gap-1">
             <Info className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Raio-X</span>
@@ -635,6 +635,10 @@ function ResultView({
           <TabsTrigger value="cronograma" className="text-xs py-2 gap-1">
             <CalendarDays className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Cronograma</span>
+          </TabsTrigger>
+          <TabsTrigger value="estudo" className="text-xs py-2 gap-1">
+            <PenLine className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Estudo</span>
           </TabsTrigger>
         </TabsList>
 
@@ -652,6 +656,10 @@ function ResultView({
 
         <TabsContent value="cronograma" className="mt-4">
           <CronogramaSection cronograma={resultado.cronograma_reverso} />
+        </TabsContent>
+
+        <TabsContent value="estudo" className="mt-4">
+          <EstudoSection analysisId={analysis.id} resultado={resultado} />
         </TabsContent>
       </Tabs>
 
