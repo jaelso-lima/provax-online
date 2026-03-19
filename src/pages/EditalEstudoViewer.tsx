@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Info, ClipboardList, Brain, CalendarDays, PenLine,
-  BookOpen, FileText, Briefcase, CheckCircle2
+  BookOpen, FileText, Briefcase, CheckCircle2, Lightbulb, Target, ScrollText
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
