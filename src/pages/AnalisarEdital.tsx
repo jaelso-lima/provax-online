@@ -60,6 +60,7 @@ export default function AnalisarEdital() {
   const [activeAnalysisId, setActiveAnalysisId] = useState<string | null>(null);
   const [carreiras, setCarreiras] = useState<CarreiraOption[]>([]);
   const [raioXResumido, setRaioXResumido] = useState<any>(null);
+  const [dataProva, setDataProva] = useState<string>("");
 
   const activeAnalysis = analyses.find(a => a.id === activeAnalysisId) || null;
 
