@@ -319,8 +319,8 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  CheckSquare, Target, Lightbulb, GraduationCap, Sparkles,
-  ScrollText, Play, StickyNote
+  CheckSquare, GraduationCap, Sparkles,
+  Play, StickyNote
 } from "lucide-react";
 
 interface StudyProgress {
