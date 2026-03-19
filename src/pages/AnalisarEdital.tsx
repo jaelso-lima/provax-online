@@ -15,7 +15,8 @@ import {
   Lightbulb, GraduationCap, AlertTriangle, Play, RefreshCw,
   Trash2, Clock, Download, Briefcase, Brain, Sparkles, ScrollText,
   CalendarDays, Info, MapPin, DollarSign, Users, ClipboardList,
-  CheckCircle2, CheckSquare, StopCircle, Calendar, PenLine, StickyNote, Save
+  CheckCircle2, CheckSquare, StopCircle, Calendar, PenLine, StickyNote, Save,
+  ExternalLink
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
