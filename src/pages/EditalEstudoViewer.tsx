@@ -198,17 +198,53 @@ function ViewerConteudo({ resultado }: { resultado: AnalysisResult }) {
 }
 
 function ViewerMacetes({ resultado }: { resultado: AnalysisResult }) {
-  const materias = (resultado.materias || []).filter(m => m.macetes?.length > 0);
+  const materias = (resultado.materias || []).filter(
+    (m: any) => m.macetes?.length > 0 || m.pegadinhas_frequentes?.length > 0 || m.palavras_chave?.length > 0
+  );
   if (!materias.length) return <p className="text-sm text-muted-foreground py-4">Nenhum macete.</p>;
 
   return (
-    <div className="space-y-4">
-      {materias.map((m, i) => (
-        <div key={i} className="space-y-2">
-          <h4 className="text-sm font-semibold">{m.nome}</h4>
-          {m.macetes.map((mac: string, j: number) => (
-            <div key={j} className="rounded-md bg-purple-500/5 border border-purple-500/10 p-3 text-sm">{mac}</div>
-          ))}
+    <div className="space-y-6">
+      {materias.map((m: any, i: number) => (
+        <div key={i} className="space-y-3">
+          <h4 className="text-sm font-bold flex items-center gap-2">
+            <Brain className="h-4 w-4 text-primary" /> {m.nome}
+          </h4>
+
+          {m.macetes?.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                <Lightbulb className="h-3.5 w-3.5" /> Macetes e Mnemonicos
+              </p>
+              {m.macetes.map((mac: string, j: number) => (
+                <div key={j} className="rounded-md bg-purple-500/5 border border-purple-500/10 p-3 text-sm">{mac}</div>
+              ))}
+            </div>
+          )}
+
+          {m.pegadinhas_frequentes?.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-destructive/80 flex items-center gap-1">
+                <Target className="h-3.5 w-3.5" /> Pegadinhas da Banca
+              </p>
+              {m.pegadinhas_frequentes.map((peg: string, j: number) => (
+                <div key={j} className="rounded-md bg-destructive/5 border border-destructive/10 p-3 text-sm">{peg}</div>
+              ))}
+            </div>
+          )}
+
+          {m.palavras_chave?.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-primary/80 flex items-center gap-1">
+                <ScrollText className="h-3.5 w-3.5" /> Palavras-Chave Recorrentes
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {m.palavras_chave.map((kw: string, j: number) => (
+                  <Badge key={j} variant="secondary" className="text-xs">{kw}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
