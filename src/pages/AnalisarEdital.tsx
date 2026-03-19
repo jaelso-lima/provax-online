@@ -1054,6 +1054,10 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
 
   const formatDateBR = (d: Date) => d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 
+  const totalContent = materias.reduce((acc, m) => acc + (m.conteudos_principales?.length || m.conteudos_principais?.length || 0), 0);
+  const checkedCount = Object.values(progress.checkedContent).filter(Boolean).length;
+  const contentPct = totalContent > 0 ? Math.round((checkedCount / totalContent) * 100) : 0;
+
   const totalDays = fullDias.length;
   const checkedDaysCount = Object.values(progress.checkedDays).filter(Boolean).length;
   const daysPct = totalDays > 0 ? Math.round((checkedDaysCount / totalDays) * 100) : 0;
