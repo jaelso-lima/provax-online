@@ -40,9 +40,13 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.rpc("check_daily_limit", { _user_id: user.id })
-      .then(({ data }) => { if (data) setDailyLimit(data as any); })
-      .catch(e => console.error("Daily limit check error:", e));
+    const loadDaily = async () => {
+      try {
+        const { data } = await supabase.rpc("check_daily_limit", { _user_id: user.id });
+        if (data) setDailyLimit(data as any);
+      } catch (e) { console.error("Daily limit check error:", e); }
+    };
+    loadDaily();
   }, [user]);
 
   useEffect(() => {
