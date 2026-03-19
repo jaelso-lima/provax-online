@@ -26,6 +26,10 @@ import {
 } from "@/components/ui/accordion";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -439,10 +443,23 @@ export default function AnalisarEdital() {
                 status={activeAnalysis.status}
               />
               <div className="flex justify-center gap-2 pt-4">
-                <Button size="sm" variant="outline" onClick={() => handleDelete(activeAnalysis.id)}
-                  className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
-                  <StopCircle className="h-3.5 w-3.5" /> Cancelar
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
+                      <StopCircle className="h-3.5 w-3.5" /> Cancelar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+                      <AlertDialogDescription>Esta ação não pode ser desfeita. A análise será excluída permanentemente.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(activeAnalysis.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>
@@ -462,9 +479,23 @@ export default function AnalisarEdital() {
                     <Button size="sm" variant="outline" onClick={() => handleRetry(activeAnalysis.id)} className="gap-1.5">
                       <RefreshCw className="h-3.5 w-3.5" /> Tentar novamente
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(activeAnalysis.id)} className="gap-1.5 text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" /> Remover
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="gap-1.5 text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" /> Remover
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+                          <AlertDialogDescription>Esta ação não pode ser desfeita. A análise será excluída permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(activeAnalysis.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
@@ -503,10 +534,23 @@ export default function AnalisarEdital() {
                     <Badge variant="secondary" className="bg-green-500/10 text-green-600 text-xs gap-1">
                       <CheckCircle2 className="h-3 w-3" /> Concluido
                     </Badge>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(analysis.id); }}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={(e) => e.stopPropagation()}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+                          <AlertDialogDescription>Esta ação não pode ser desfeita. A análise do edital "{analysis.file_name}" será excluída permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(analysis.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
@@ -680,9 +724,23 @@ function ResultView({
         <Button size="sm" variant="outline" className="gap-1.5" onClick={onNewAnalysis}>
           <Upload className="h-3.5 w-3.5" /> Novo edital
         </Button>
-        <Button size="sm" variant="ghost" onClick={onDelete} className="gap-1.5 text-destructive">
-          <Trash2 className="h-3.5 w-3.5" /> Remover
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="ghost" className="gap-1.5 text-destructive">
+              <Trash2 className="h-3.5 w-3.5" /> Remover
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+              <AlertDialogDescription>Esta ação não pode ser desfeita. A análise será excluída permanentemente.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
