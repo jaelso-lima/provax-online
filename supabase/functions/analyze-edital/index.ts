@@ -237,7 +237,31 @@ REGRAS:
       ? `\n\nIMPORTANTE: O usuario escolheu o cargo "${cargo_selecionado}". Gere o guia APENAS com as materias e topicos relevantes para este cargo especifico. Inclua Conhecimentos Basicos (comuns) + Conhecimentos Especificos deste cargo.`
       : "";
 
-    const systemPrompt = `Voce e um professor e especialista senior em concursos publicos brasileiros com 20 anos de experiencia. Sua tarefa e analisar o edital enviado e criar um GUIA DE ESTUDO MASTER COMPLETO.${cargoFilter}
+    // Calculate total study days
+    let totalDiasEstudo = 30; // default
+    let dataProvaInfo = "";
+    const dataProvaStr = data_prova_usuario || null;
+    if (dataProvaStr) {
+      try {
+        const provaDate = new Date(dataProvaStr);
+        const hoje = new Date();
+        hoje.setHours(0,0,0,0);
+        provaDate.setHours(0,0,0,0);
+        const diffMs = provaDate.getTime() - hoje.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays > 1) {
+          totalDiasEstudo = diffDays - 1; // 1 dia antes da prova
+        }
+        dataProvaInfo = `\n\nDATA DA PROVA: ${dataProvaStr}. O aluno tem EXATAMENTE ${totalDiasEstudo} dias de estudo (de hoje ate 1 dia antes da prova).`;
+      } catch (_e) { /* ignore parse errors */ }
+    }
+
+    const cicloDias = 10;
+    const ciclosCompletos = Math.floor(totalDiasEstudo / cicloDias);
+    const diasRestantes = totalDiasEstudo % cicloDias;
+    const totalDiasParaGerar = Math.min(cicloDias, totalDiasEstudo); // gera 1 ciclo base
+
+    const systemPrompt = `Voce e um professor e especialista senior em concursos publicos brasileiros com 20 anos de experiencia. Sua tarefa e analisar o edital enviado e criar um GUIA DE ESTUDO MASTER COMPLETO.${cargoFilter}${dataProvaInfo}
 
 ## FORMATO DE RESPOSTA (JSON):
 
@@ -250,7 +274,7 @@ REGRAS:
     "salario_ate": "Valor maximo",
     "vagas": "Numero de vagas",
     "taxa_inscricao": "Valor da taxa",
-    "data_prova": "Data da prova",
+    "data_prova": "Data da prova (formato YYYY-MM-DD se possivel)",
     "inscricao_inicio": "Inicio inscricoes",
     "inscricao_fim": "Fim inscricoes",
     "etapas": ["Prova objetiva", "etc"],
@@ -278,9 +302,12 @@ REGRAS:
       "total_dia": "2h40",
       "meta_questoes_bloco": "20 a 30",
       "meta_questoes_dia": "80 a 120",
-      "meta_30_dias": "+2.500 questoes",
-      "ciclo_dias": 10,
-      "repeticoes": 3
+      "total_dias_estudo": ${totalDiasEstudo},
+      "ciclo_dias": ${cicloDias},
+      "ciclos_completos": ${ciclosCompletos},
+      "dias_restantes": ${diasRestantes},
+      "data_inicio": "${new Date().toISOString().split('T')[0]}",
+      "data_prova": "${dataProvaStr || ''}"
     },
     "dias": [
       {
@@ -292,28 +319,6 @@ REGRAS:
           {"ordem": 2, "materia": "Administracao", "topico": "PODC", "tipo_atividade": "questoes"},
           {"ordem": 3, "materia": "Lei 8.112", "topico": "Deveres", "tipo_atividade": "questoes"},
           {"ordem": 4, "materia": "Arquivologia", "topico": "Tipos de arquivo", "tipo_atividade": "questoes"}
-        ]
-      },
-      {
-        "dia": 7,
-        "titulo": "REVISAO INTELIGENTE",
-        "tipo": "revisao",
-        "blocos": [
-          {"ordem": 1, "materia": "Portugues", "topico": "Revisao geral", "tipo_atividade": "revisao"},
-          {"ordem": 2, "materia": "Administracao", "topico": "Revisao geral", "tipo_atividade": "revisao"},
-          {"ordem": 3, "materia": "Legislacao", "topico": "Revisao geral", "tipo_atividade": "revisao"},
-          {"ordem": 4, "materia": "Arquivologia", "topico": "Revisao geral", "tipo_atividade": "revisao"}
-        ]
-      },
-      {
-        "dia": 10,
-        "titulo": "SIMULADO REAL",
-        "tipo": "simulado",
-        "blocos": [
-          {"ordem": 1, "materia": "Misto", "topico": "Bloco misto - todas materias", "tipo_atividade": "simulado"},
-          {"ordem": 2, "materia": "Misto", "topico": "Bloco misto", "tipo_atividade": "simulado"},
-          {"ordem": 3, "materia": "Misto", "topico": "Bloco misto", "tipo_atividade": "simulado"},
-          {"ordem": 4, "materia": "Correcao", "topico": "Correcao completa", "tipo_atividade": "correcao"}
         ]
       }
     ],
@@ -338,13 +343,13 @@ REGRAS:
 }
 
 ## REGRAS DO CRONOGRAMA (ESTUDO REVERSO):
-1. EXATAMENTE 10 dias no ciclo
+1. Gere EXATAMENTE ${totalDiasParaGerar} dias no ciclo base
 2. Cada dia tem EXATAMENTE 4 blocos de 40 minutos
-3. Dia 7 = REVISAO INTELIGENTE (revisar materias principais)
-4. Dia 10 = SIMULADO REAL (blocos mistos + correcao)
+3. A cada 7 dias do ciclo = REVISAO INTELIGENTE (revisar materias principais)
+4. O ultimo dia do ciclo = SIMULADO REAL (blocos mistos + correcao)
 5. Os outros dias distribuem as materias de forma inteligente, priorizando pratica com questoes
-6. O ciclo se repete 3x para completar 30 dias
-7. Distribua TODAS as materias do edital ao longo dos 10 dias
+6. O ciclo se repete ${ciclosCompletos} vezes${diasRestantes > 0 ? ` + ${diasRestantes} dias extras` : ''} para completar ${totalDiasEstudo} dias de estudo
+7. Distribua TODAS as materias do edital ao longo dos dias
 
 ## REGRAS GERAIS:
 1. CADA materia DEVE ter "resumo_detalhado" extenso (minimo 300 palavras)
