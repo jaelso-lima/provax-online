@@ -60,7 +60,7 @@ export function validateOrigin(req: Request): string | null {
   // Fallback to referer
   if (referer) {
     if (ALLOWED_ORIGINS.some((allowed) => referer.startsWith(allowed))) return null;
-    if (referer.includes(".lovable.app")) return null;
+    if (referer.includes(".lovable.app") || referer.includes(".lovableproject.com")) return null;
     return `Referer bloqueado: ${referer}`;
   }
 
