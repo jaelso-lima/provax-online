@@ -861,42 +861,85 @@ function CronogramaSection({ cronograma }: { cronograma?: any }) {
   }
 
   const { regras, dias, como_executar, regras_importantes } = cronograma;
+  const totalDiasEstudo = regras?.total_dias_estudo || 30;
+  const cicloDias = regras?.ciclo_dias || 10;
+  const ciclosCompletos = regras?.ciclos_completos || Math.floor(totalDiasEstudo / cicloDias);
+  const diasRestantes = regras?.dias_restantes || totalDiasEstudo % cicloDias;
+  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
+  const dataProvaStr = regras?.data_prova;
+
+  // Expand cycle into full schedule with real dates
+  const fullDias: { dia: number; realDate: Date; titulo: string; tipo: string; blocos: any[] }[] = [];
+  let dayCounter = 0;
+  for (let ciclo = 0; ciclo < ciclosCompletos; ciclo++) {
+    for (const diaBase of dias) {
+      if (dayCounter >= totalDiasEstudo) break;
+      fullDias.push({
+        dia: dayCounter + 1,
+        realDate: addDays(dataInicio, dayCounter),
+        titulo: diaBase.titulo,
+        tipo: diaBase.tipo,
+        blocos: diaBase.blocos || [],
+      });
+      dayCounter++;
+    }
+  }
+  // Remaining days
+  for (let r = 0; r < diasRestantes && dayCounter < totalDiasEstudo; r++) {
+    const diaBase = dias[r % dias.length];
+    fullDias.push({
+      dia: dayCounter + 1,
+      realDate: addDays(dataInicio, dayCounter),
+      titulo: diaBase.titulo,
+      tipo: diaBase.tipo,
+      blocos: diaBase.blocos || [],
+    });
+    dayCounter++;
+  }
+
+  const formatDateBR = (d: Date) => d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 
   return (
     <div className="space-y-4">
-      {/* Rules */}
+      {/* Summary */}
       {regras && (
         <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-2">
           <h3 className="text-sm font-bold text-primary flex items-center gap-1.5">
-            <Target className="h-4 w-4" /> REGRA FIXA - Estudo Reverso
+            <Target className="h-4 w-4" /> Cronograma Personalizado - Estudo Reverso
           </h3>
           <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-            <p>Cada bloco: <span className="font-semibold text-foreground">{regras.bloco_minutos || 40} min</span></p>
-            <p>Blocos/dia: <span className="font-semibold text-foreground">{regras.blocos_por_dia || 4}</span></p>
+            <p>Total de dias: <span className="font-semibold text-foreground">{totalDiasEstudo} dias</span></p>
+            <p>Blocos/dia: <span className="font-semibold text-foreground">{regras.blocos_por_dia || 4} x {regras.bloco_minutos || 40}min</span></p>
             <p>Total/dia: <span className="font-semibold text-foreground">{regras.total_dia || "2h40"}</span></p>
-            <p>Ciclo: <span className="font-semibold text-foreground">{regras.ciclo_dias || 10} dias x {regras.repeticoes || 3}</span></p>
+            <p>Ciclos: <span className="font-semibold text-foreground">{ciclosCompletos}x {cicloDias} dias{diasRestantes > 0 ? ` + ${diasRestantes}d` : ""}</span></p>
             <p>Meta/bloco: <span className="font-semibold text-foreground">{regras.meta_questoes_bloco || "20-30"} questoes</span></p>
             <p>Meta/dia: <span className="font-semibold text-foreground">{regras.meta_questoes_dia || "80-120"} questoes</span></p>
           </div>
-          <p className="text-xs font-semibold text-primary">Meta 30 dias: {regras.meta_30_dias || "+2.500 questoes"}</p>
+          {dataProvaStr && (
+            <p className="text-xs font-semibold text-primary flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Prova: {new Date(dataProvaStr).toLocaleDateString("pt-BR")} | Inicio: {dataInicio.toLocaleDateString("pt-BR")}
+            </p>
+          )}
         </div>
       )}
 
       {/* Days */}
       <div className="space-y-3">
-        {dias.map((dia: any) => {
+        {fullDias.map((dia) => {
           const isRevisao = dia.tipo === "revisao";
           const isSimulado = dia.tipo === "simulado";
-          const borderColor = isSimulado ? "border-red-500/30" : isRevisao ? "border-amber-500/30" : "border-border";
-          const bgColor = isSimulado ? "bg-red-500/5" : isRevisao ? "bg-amber-500/5" : "";
+          const borderColor = isSimulado ? "border-destructive/30" : isRevisao ? "border-amber-500/30" : "border-border";
+          const bgColor = isSimulado ? "bg-destructive/5" : isRevisao ? "bg-amber-500/5" : "";
 
           return (
             <div key={dia.dia} className={`rounded-lg border ${borderColor} ${bgColor} p-3 space-y-2`}>
               <h4 className={`text-sm font-bold flex items-center gap-1.5 ${
-                isSimulado ? "text-red-500" : isRevisao ? "text-amber-600" : "text-primary"
+                isSimulado ? "text-destructive" : isRevisao ? "text-amber-600" : "text-primary"
               }`}>
                 <CalendarDays className="h-4 w-4" />
-                DIA {dia.dia} {dia.titulo && `- ${dia.titulo}`}
+                DIA {dia.dia} - {formatDateBR(dia.realDate)}
+                {dia.titulo && ` | ${dia.titulo}`}
               </h4>
               <div className="space-y-1.5">
                 {dia.blocos?.map((bloco: any, i: number) => (
@@ -925,11 +968,11 @@ function CronogramaSection({ cronograma }: { cronograma?: any }) {
       )}
 
       {regras_importantes?.length > 0 && (
-        <div className="rounded-lg bg-red-500/5 border border-red-500/20 p-3 space-y-1.5">
-          <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">Regras importantes:</h4>
+        <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3 space-y-1.5">
+          <h4 className="text-sm font-semibold text-destructive">Regras importantes:</h4>
           {regras_importantes.map((r: string, i: number) => (
             <p key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" /> {r}
+              <AlertTriangle className="h-3 w-3 text-destructive shrink-0" /> {r}
             </p>
           ))}
         </div>
