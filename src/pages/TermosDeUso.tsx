@@ -53,7 +53,7 @@ export default function TermosDeUso() {
               <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
                 <li><strong>Gratuito:</strong> 10 questões por dia, simulados básicos e radar de concursos abertos.</li>
                 <li><strong>Provax X (R$ 14,90/mês):</strong> 20 questões por dia, Professor IA 24h, correção de redação por IA, estatísticas básicas e histórico de erros.</li>
-                <li><strong>Start (R$ 29,90/mês):</strong> 30 questões por dia, tudo do Provax X + análise de edital por IA e simulados personalizados.</li>
+                <li><strong>Start (R$ 29,90/mês):</strong> 30 questões por dia, tudo do Provax X + análise de edital por IA, cronograma personalizado, anotações por matéria, estudo em aba separada e simulados personalizados.</li>
                 <li><strong>Pro (R$ 49,90/mês):</strong> 60 questões por dia, tudo do Start + filtros avançados (banca, estado, concurso real), ranking, estatísticas avançadas e simulado reverso inteligente.</li>
               </ul>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">

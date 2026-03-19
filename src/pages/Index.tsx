@@ -390,8 +390,10 @@ export default function Index() {
               { icon: BookOpen, title: "Redação corrigida por IA", desc: "Correção nas 5 competências do ENEM com nota estimada." },
               { icon: MessageCircle, title: "Professor IA 24h", desc: "Tire dúvidas de qualquer matéria a qualquer hora com o Professor PX." },
               { icon: Shield, title: "Gabarito comentado", desc: "Explicação detalhada de cada questão para aprender com os erros." },
-              { icon: FileText, title: "Análise de edital por IA", desc: "Envie o edital e receba matérias, estratégias e conteúdo programático." },
+              { icon: FileText, title: "Análise de edital por IA", desc: "Envie o edital e receba cronograma personalizado, matérias e estratégias de estudo." },
               { icon: Eye, title: "Radar de concursos", desc: "Acompanhe concursos abertos com datas, vagas e salários." },
+              { icon: Crown, title: "Cronograma de estudo", desc: "Cronograma personalizado baseado no edital, com checklist diário até o dia da prova." },
+              { icon: GraduationCap, title: "Anotações por matéria", desc: "Faça anotações organizadas por matéria enquanto estuda, com painel colapsável." },
             ].map((f, i) => (
               <motion.div key={f.title} {...stagger} transition={{ delay: i * 0.05 }}>
                 <Card className="border-0 bg-secondary/50 h-full transition-all hover:shadow-md hover:-translate-y-0.5">
