@@ -200,7 +200,26 @@ export default function Perfil() {
           </CardContent>
         </Card>
 
-        {/* Comunidade WhatsApp */}
+        {/* Meta diária */}
+        <Card className="mb-4">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Target className="h-4 w-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Meta Diária</p>
+                  <p className="text-xs text-muted-foreground">
+                    {dailyLimit ? `${dailyLimit.usado} de ${dailyLimit.limite} questões resolvidas hoje` : "Carregando..."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {dailyLimit && (
+              <Progress value={dailyLimit.limite > 0 ? (dailyLimit.usado / dailyLimit.limite) * 100 : 0} className="mt-2 h-1.5" />
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="mb-4">
           <CardContent className="py-3">
             <a
