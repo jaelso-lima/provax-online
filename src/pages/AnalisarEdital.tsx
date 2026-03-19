@@ -208,14 +208,10 @@ export default function AnalisarEdital() {
   const handleSelectCarreira = async (carreira: CarreiraOption) => {
     if (!activeAnalysisId) return;
 
-    if (!dataProva) {
-      toast({ title: "Informe a data da prova", description: "Precisamos da data para montar seu cronograma personalizado.", variant: "destructive" });
-      return;
-    }
-
     setCurrentStep("generating");
-    const diasEstudo = calcDiasEstudo(dataProva);
-    toast({ title: `Gerando guia para: ${carreira.nome}`, description: `Cronograma de ${diasEstudo} dias ate a prova. Pode levar ate 3 minutos...` });
+    const diasEstudo = dataProva ? calcDiasEstudo(dataProva) : 30;
+    const descDias = dataProva ? `Cronograma de ${diasEstudo} dias ate a prova.` : "Cronograma de 30 dias de estudo.";
+    toast({ title: `Gerando guia para: ${carreira.nome}`, description: `${descDias} Pode levar ate 3 minutos...` });
 
     supabase.functions.invoke("analyze-edital", {
       body: {
