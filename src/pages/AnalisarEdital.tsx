@@ -16,7 +16,7 @@ import {
   Trash2, Clock, Download, Briefcase, Brain, Sparkles, ScrollText,
   CalendarDays, Info, MapPin, DollarSign, Users, ClipboardList,
   CheckCircle2, CheckSquare, StopCircle, Calendar, PenLine, StickyNote, Save,
-  ExternalLink
+  ExternalLink, ChevronDown
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -1355,33 +1356,48 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
       </div>
 
       {/* Right: Notes panel (1/3) - sticky */}
-      <div className="space-y-3 lg:sticky lg:top-16 lg:self-start">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <StickyNote className="h-4 w-4 text-primary" /> Anotacoes
-        </h3>
+      <div className="lg:sticky lg:top-16 lg:self-start">
+        <Collapsible defaultOpen>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center justify-between w-full rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <StickyNote className="h-4 w-4 text-primary" /> Anotações
+              </h3>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-3 pt-3">
+            <div className="rounded-lg border p-3 space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground">Anotações gerais</Label>
+              <Textarea
+                placeholder="Suas anotações gerais..."
+                value={progress.generalNote}
+                onChange={(e) => update(p => ({ ...p, generalNote: e.target.value }))}
+                className="min-h-[100px] text-sm"
+              />
+            </div>
 
-        <div className="rounded-lg border p-3 space-y-2">
-          <Label className="text-xs font-semibold text-muted-foreground">Anotacoes gerais</Label>
-          <Textarea
-            placeholder="Suas anotacoes gerais..."
-            value={progress.generalNote}
-            onChange={(e) => update(p => ({ ...p, generalNote: e.target.value }))}
-            className="min-h-[100px] text-sm"
-          />
-        </div>
-
-        {materias.map((materia, mIdx) => (
-          <div key={mIdx} className="rounded-lg border p-3 space-y-2">
-            <Label className="text-xs font-semibold text-primary">{materia.nome}</Label>
-            <Textarea
-              placeholder={`Anotacoes sobre ${materia.nome}...`}
-              value={progress.notes[`materia-${mIdx}`] || ""}
-              onChange={(e) => setNote(`materia-${mIdx}`, e.target.value)}
-              className="text-xs min-h-[50px] resize-none"
-              rows={2}
-            />
-          </div>
-        ))}
+            {materias.map((materia, mIdx) => (
+              <Collapsible key={mIdx}>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center justify-between w-full rounded-lg border p-3 hover:bg-muted/50 transition-colors">
+                    <Label className="text-xs font-semibold text-primary cursor-pointer">{materia.nome}</Label>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-2 px-1">
+                  <Textarea
+                    placeholder={`Anotações sobre ${materia.nome}...`}
+                    value={progress.notes[`materia-${mIdx}`] || ""}
+                    onChange={(e) => setNote(`materia-${mIdx}`, e.target.value)}
+                    className="text-xs min-h-[50px] resize-none"
+                    rows={2}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );
