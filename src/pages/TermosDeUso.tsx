@@ -86,6 +86,9 @@ export default function TermosDeUso() {
                 <li><strong>Professor PX:</strong> Tutor inteligente disponível 24h que analisa o histórico de erros do aluno para personalizar explicações e dicas.</li>
                 <li><strong>Correção de redação:</strong> Avaliação automática nas 5 competências do ENEM com nota estimada, pontos fortes e sugestões de melhoria.</li>
                 <li><strong>Análise de edital:</strong> Extração automática de conteúdo programático, matérias, cargos e estratégias de estudo a partir do PDF do edital.</li>
+                <li><strong>Cronograma personalizado:</strong> Geração automática de cronograma de estudo baseado no edital, com checklist diário adaptado ao período até a data da prova.</li>
+                <li><strong>Anotações por matéria:</strong> Painel de anotações organizadas por matéria, com possibilidade de expandir e recolher, integrado à área de estudo do edital.</li>
+                <li><strong>Estudo em aba separada:</strong> Possibilidade de abrir o conteúdo do edital em uma aba independente para estudar e fazer simulados simultaneamente.</li>
               </ul>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 As respostas geradas por IA são ferramentas de apoio e não substituem orientação profissional ou material didático oficial.
