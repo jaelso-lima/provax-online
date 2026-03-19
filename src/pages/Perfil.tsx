@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle, Trash2, ChevronDown, ChevronRight, Target } from "lucide-react";
+import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle, Trash2, ChevronDown, ChevronRight, Target, Camera } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -34,6 +35,7 @@ export default function Perfil() {
   const [simulados, setSimulados] = useState<any[]>([]);
   const [resetting, setResetting] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [dailyLimit, setDailyLimit] = useState<{ limite: number; usado: number; restante: number; pode_gerar: boolean } | null>(null);
 
   useEffect(() => { if (profile) setNome(profile.nome); }, [profile]);
@@ -81,6 +83,40 @@ export default function Perfil() {
     if (profile?.codigo_indicacao) {
       navigator.clipboard.writeText(profile.codigo_indicacao);
       toast({ title: "Código copiado!" });
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Arquivo inválido", description: "Selecione uma imagem.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Imagem muito grande", description: "Máximo 2MB.", variant: "destructive" });
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      // Remove old avatar files
+      const { data: existing } = await supabase.storage.from("avatars").list(user.id);
+      if (existing?.length) {
+        await supabase.storage.from("avatars").remove(existing.map(f => `${user.id}/${f.name}`));
+      }
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const avatarUrl = urlData.publicUrl + "?t=" + Date.now();
+      await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("id", user.id);
+      await refreshProfile();
+      toast({ title: "Foto atualizada!" });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar foto", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -151,6 +187,26 @@ export default function Perfil() {
         {/* Dados pessoais */}
         <Card className="mb-4">
           <CardContent className="space-y-4 pt-6">
+            {/* Avatar */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative group">
+                <Avatar className="h-20 w-20 border-2 border-primary/20">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.nome || "Avatar"} />
+                  <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
+                    {(profile?.nome || "U").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  {uploadingAvatar ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-white" />
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Clique na foto para alterar</p>
+            </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Nome</Label>
               <Input value={nome} onChange={e => setNome(e.target.value)} />
