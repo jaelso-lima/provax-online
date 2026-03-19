@@ -25,12 +25,45 @@ function fixBadEscapes(str: string): string {
   });
 }
 
+function escapeUnquotedNewlines(str: string): string {
+  // Walk through char-by-char, escape raw newlines/tabs only when inside a JSON string value
+  const result: string[] = [];
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (escaped) {
+      result.push(ch);
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\' && inString) {
+      escaped = true;
+      result.push(ch);
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      result.push(ch);
+      continue;
+    }
+    if (inString) {
+      if (ch === '\n') { result.push('\\n'); continue; }
+      if (ch === '\r') { result.push('\\r'); continue; }
+      if (ch === '\t') { result.push('\\t'); continue; }
+    }
+    result.push(ch);
+  }
+  return result.join('');
+}
+
 function extractJsonFromResponse(response: string): unknown {
   let cleaned = response
     .replace(/```json\s*/gi, "")
     .replace(/```\s*/g, "")
     .trim();
 
+  // Remove control characters (keep \n \r \t for now)
   cleaned = cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   const jsonStart = cleaned.indexOf('{');
@@ -38,10 +71,19 @@ function extractJsonFromResponse(response: string): unknown {
   cleaned = cleaned.substring(jsonStart);
   cleaned = fixBadEscapes(cleaned);
 
+  // Escape raw newlines inside string values
+  cleaned = escapeUnquotedNewlines(cleaned);
+
+  // Attempt 1: direct parse
   try { return JSON.parse(cleaned); } catch (_e) { /* continue */ }
 
+  // Fix trailing commas
   cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
 
+  // Attempt 2: after trailing comma fix
+  try { return JSON.parse(cleaned); } catch (_e) { /* continue */ }
+
+  // Balance braces/brackets (truncated response repair)
   let braces = 0, brackets = 0;
   for (const char of cleaned) {
     if (char === '{') braces++;
@@ -51,9 +93,12 @@ function extractJsonFromResponse(response: string): unknown {
   }
 
   if (braces > 0 || brackets > 0) {
+    // Remove potentially incomplete trailing key/value
     cleaned = cleaned.replace(/,?\s*"[^"]*$/g, '');
+    cleaned = cleaned.replace(/,?\s*"[^"]*"\s*:\s*"[^"]*$/g, '');
     cleaned = cleaned.replace(/,?\s*"[^"]*"\s*:\s*$/g, '');
     cleaned = cleaned.replace(/,\s*$/, '');
+    // Recount and close
     braces = 0; brackets = 0;
     for (const char of cleaned) {
       if (char === '{') braces++;
@@ -65,13 +110,16 @@ function extractJsonFromResponse(response: string): unknown {
     while (braces > 0) { cleaned += '}'; braces--; }
   }
 
-  try { return JSON.parse(cleaned); } catch (_e2) {
-    cleaned = cleaned.replace(/(?<=:\s*")([\s\S]*?)(?=")/g, (match) => {
-      return match.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
-    });
-    try { return JSON.parse(cleaned); } catch (err) {
-      throw new Error(`Failed to parse AI response: ${(err as Error).message}`);
+  // Attempt 3: after brace balancing
+  try { return JSON.parse(cleaned); } catch (err) {
+    console.error("JSON parse final error at:", (err as Error).message);
+    // Last resort: try to extract partial valid JSON by finding last valid closing brace
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (lastBrace > 0) {
+      const truncated = cleaned.substring(0, lastBrace + 1);
+      try { return JSON.parse(truncated); } catch (_e3) { /* fall through */ }
     }
+    throw new Error(`Failed to parse AI response: ${(err as Error).message}`);
   }
 }
 
