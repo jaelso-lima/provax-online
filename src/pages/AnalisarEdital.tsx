@@ -1287,7 +1287,7 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
       </Accordion>
 
       {/* Cronograma days checklist */}
-      {cronograma?.dias?.length > 0 && (
+      {fullDias.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-primary" />
@@ -1295,22 +1295,22 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
             <span className="text-xs text-muted-foreground font-normal">({checkedDaysCount}/{totalDays} concluidos)</span>
           </h3>
           <div className="space-y-2">
-            {cronograma.dias.map((dia: any, dIdx: number) => {
-              const checked = !!progress.checkedDays[dIdx];
+            {fullDias.map((dia) => {
+              const checked = !!progress.checkedDays[dia.dia];
               return (
-                <div key={dIdx} className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
+                <div key={dia.dia} className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
                   checked ? "bg-primary/5 border-primary/20" : "border-border"
                 }`}>
                   <Checkbox
                     checked={checked}
                     onCheckedChange={(val) => {
-                      update(p => ({ ...p, checkedDays: { ...p.checkedDays, [dIdx]: !!val } }));
+                      update(p => ({ ...p, checkedDays: { ...p.checkedDays, [dia.dia]: !!val } }));
                     }}
                     className="mt-0.5"
                   />
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                      DIA {dIdx + 1} {dia.titulo && `- ${dia.titulo}`}
+                      DIA {dia.dia} - {formatDateBR(dia.realDate)} {dia.titulo && `| ${dia.titulo}`}
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {dia.blocos?.map((bloco: any, bIdx: number) => (
