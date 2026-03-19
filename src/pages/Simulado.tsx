@@ -460,7 +460,35 @@ export default function Simulado() {
         clearTimeout(timeoutId);
         console.error("generate-questions invoke error:", invokeErr);
         if (invokeErr.name === "AbortError") throw new Error("Tempo esgotado. Tente com menos questões.");
-        throw invokeErr;
+
+        let extractedMessage: string | null = null;
+        const edgeContext = invokeErr?.context;
+
+        if (edgeContext?.clone) {
+          try {
+            const errorJson = await edgeContext.clone().json();
+            if (typeof errorJson?.error === "string") extractedMessage = errorJson.error;
+            else if (typeof errorJson?.message === "string") extractedMessage = errorJson.message;
+          } catch (_jsonErr) {
+            try {
+              const errorText = await edgeContext.clone().text();
+              if (errorText) {
+                try {
+                  const parsed = JSON.parse(errorText);
+                  if (typeof parsed?.error === "string") extractedMessage = parsed.error;
+                  else if (typeof parsed?.message === "string") extractedMessage = parsed.message;
+                  else extractedMessage = errorText;
+                } catch {
+                  extractedMessage = errorText;
+                }
+              }
+            } catch (_textErr) {
+              // no-op
+            }
+          }
+        }
+
+        throw new Error(extractedMessage || invokeErr?.message || "Erro ao gerar questões");
       }
       clearTimeout(timeoutId);
       

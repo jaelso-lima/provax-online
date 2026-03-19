@@ -1119,7 +1119,7 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
   const cicloDias = regras?.ciclo_dias || baseDias.length;
   const ciclosCompletos = regras?.ciclos_completos || (cicloDias > 0 ? Math.floor(totalDiasEstudo / cicloDias) : 1);
   const diasRestantes = regras?.dias_restantes || (cicloDias > 0 ? totalDiasEstudo % cicloDias : 0);
-  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
+  const dataInicio = parseDateOnly(regras?.data_inicio || "") || new Date();
 
   const fullDias: { dia: number; realDate: Date; titulo: string; tipo: string; blocos: any[] }[] = [];
   let dayCounter = 0;
