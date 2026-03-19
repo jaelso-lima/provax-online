@@ -400,6 +400,11 @@ export default function Simulado() {
         if (carreiraId) meta.carreira_nome = carreiras.find(c => c.id === carreiraId)?.nome;
         if (stateId) meta.estado_nome = states.find(s => s.id === stateId)?.nome;
         if (anoConcurso) meta.ano = anoConcurso;
+        if (materiaId) meta.materia_nome = materias.find(m => m.id === materiaId)?.nome;
+        if (topicId) meta.topic_nome = topics.find(t => t.id === topicId)?.nome;
+      } else {
+        if (areaEnem) meta.area_nome = ENEM_AREAS.find(a => a.id === areaEnem)?.nome;
+        if (anoEnem) meta.ano = anoEnem;
       }
       setSimuladoMeta(meta);
 
