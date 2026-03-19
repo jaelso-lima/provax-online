@@ -1073,27 +1073,21 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
   };
 
   return (
-    <div className="space-y-4">
-      {/* Progress overview */}
-      <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-3">
-        <h3 className="text-sm font-bold text-primary flex items-center gap-1.5">
-          <PenLine className="h-4 w-4" /> Progresso de Estudo
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Topicos estudados</p>
-            <Progress value={contentPct} className="h-2" />
-            <p className="text-xs font-semibold text-foreground">{checkedCount}/{totalContent} ({contentPct}%)</p>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Left: Study content (2/3) */}
+      <div className="lg:col-span-2 space-y-4">
+        {/* Progress overview */}
+        <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-primary flex items-center gap-1.5">
+              <PenLine className="h-4 w-4" /> Progresso de Estudo
+            </h3>
+            <span className="text-xs font-semibold text-foreground">{checkedCount}/{totalContent} ({contentPct}%) topicos | {checkedDaysCount}/{totalDays} ({daysPct}%) dias</span>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Dias concluidos</p>
-            <Progress value={daysPct} className="h-2" />
-            <p className="text-xs font-semibold text-foreground">{checkedDaysCount}/{totalDays} ({daysPct}%)</p>
-          </div>
+          <Progress value={contentPct} className="h-2" />
         </div>
-      </div>
 
-      {/* Materias - mirror of Conteudo with checkboxes */}
+      {/* Materias */}
       <Accordion type="multiple" className="space-y-2">
         {materias.map((materia, mIdx) => {
           const topicKeys = materia.conteudos_principais?.map((_: string, cIdx: number) => `${mIdx}-${cIdx}`) || [];
