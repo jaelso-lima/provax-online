@@ -1028,12 +1028,37 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
   const materias = resultado.materias || [];
   const cronograma = resultado.cronograma_reverso;
 
-  // Stats
+  // Expand cycle into full schedule (same logic as CronogramaSection)
+  const regras = cronograma?.regras;
+  const baseDias = cronograma?.dias || [];
+  const totalDiasEstudo = regras?.total_dias_estudo || baseDias.length;
+  const cicloDias = regras?.ciclo_dias || baseDias.length;
+  const ciclosCompletos = regras?.ciclos_completos || (cicloDias > 0 ? Math.floor(totalDiasEstudo / cicloDias) : 1);
+  const diasRestantes = regras?.dias_restantes || (cicloDias > 0 ? totalDiasEstudo % cicloDias : 0);
+  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
+
+  const fullDias: { dia: number; realDate: Date; titulo: string; tipo: string; blocos: any[] }[] = [];
+  let dayCounter = 0;
+  for (let ciclo = 0; ciclo < ciclosCompletos; ciclo++) {
+    for (const diaBase of baseDias) {
+      if (dayCounter >= totalDiasEstudo) break;
+      fullDias.push({ dia: dayCounter + 1, realDate: addDays(dataInicio, dayCounter), titulo: diaBase.titulo, tipo: diaBase.tipo, blocos: diaBase.blocos || [] });
+      dayCounter++;
+    }
+  }
+  for (let r = 0; r < diasRestantes && dayCounter < totalDiasEstudo; r++) {
+    const diaBase = baseDias[r % baseDias.length];
+    fullDias.push({ dia: dayCounter + 1, realDate: addDays(dataInicio, dayCounter), titulo: diaBase.titulo, tipo: diaBase.tipo, blocos: diaBase.blocos || [] });
+    dayCounter++;
+  }
+
+  const formatDateBR = (d: Date) => d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+
   const totalContent = materias.reduce((acc, m) => acc + (m.conteudos_principais?.length || 0), 0);
   const checkedCount = Object.values(progress.checkedContent).filter(Boolean).length;
   const contentPct = totalContent > 0 ? Math.round((checkedCount / totalContent) * 100) : 0;
 
-  const totalDays = cronograma?.dias?.length || 0;
+  const totalDays = fullDias.length;
   const checkedDaysCount = Object.values(progress.checkedDays).filter(Boolean).length;
   const daysPct = totalDays > 0 ? Math.round((checkedDaysCount / totalDays) * 100) : 0;
 
@@ -1262,7 +1287,7 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
       </Accordion>
 
       {/* Cronograma days checklist */}
-      {cronograma?.dias?.length > 0 && (
+      {fullDias.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-primary" />
@@ -1270,22 +1295,22 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
             <span className="text-xs text-muted-foreground font-normal">({checkedDaysCount}/{totalDays} concluidos)</span>
           </h3>
           <div className="space-y-2">
-            {cronograma.dias.map((dia: any, dIdx: number) => {
-              const checked = !!progress.checkedDays[dIdx];
+            {fullDias.map((dia) => {
+              const checked = !!progress.checkedDays[dia.dia];
               return (
-                <div key={dIdx} className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
+                <div key={dia.dia} className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
                   checked ? "bg-primary/5 border-primary/20" : "border-border"
                 }`}>
                   <Checkbox
                     checked={checked}
                     onCheckedChange={(val) => {
-                      update(p => ({ ...p, checkedDays: { ...p.checkedDays, [dIdx]: !!val } }));
+                      update(p => ({ ...p, checkedDays: { ...p.checkedDays, [dia.dia]: !!val } }));
                     }}
                     className="mt-0.5"
                   />
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium ${checked ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                      DIA {dIdx + 1} {dia.titulo && `- ${dia.titulo}`}
+                      DIA {dia.dia} - {formatDateBR(dia.realDate)} {dia.titulo && `| ${dia.titulo}`}
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {dia.blocos?.map((bloco: any, bIdx: number) => (
