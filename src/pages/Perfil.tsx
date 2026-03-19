@@ -86,6 +86,40 @@ export default function Perfil() {
     }
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Arquivo inválido", description: "Selecione uma imagem.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Imagem muito grande", description: "Máximo 2MB.", variant: "destructive" });
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      // Remove old avatar files
+      const { data: existing } = await supabase.storage.from("avatars").list(user.id);
+      if (existing?.length) {
+        await supabase.storage.from("avatars").remove(existing.map(f => `${user.id}/${f.name}`));
+      }
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const avatarUrl = urlData.publicUrl + "?t=" + Date.now();
+      await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("id", user.id);
+      await refreshProfile();
+      toast({ title: "Foto atualizada!" });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar foto", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const stats = useMemo(() => {
     // Usar respostas reais para acertos/erros precisos
     const respondidas = respostas.filter(r => r.acertou !== null);
