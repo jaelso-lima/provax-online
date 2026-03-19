@@ -34,6 +34,7 @@ export default function Perfil() {
   const [simulados, setSimulados] = useState<any[]>([]);
   const [resetting, setResetting] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [dailyLimit, setDailyLimit] = useState<{ limite: number; usado: number; restante: number; pode_gerar: boolean } | null>(null);
 
   useEffect(() => { if (profile) setNome(profile.nome); }, [profile]);
 
