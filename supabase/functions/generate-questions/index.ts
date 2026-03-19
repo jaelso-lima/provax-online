@@ -349,16 +349,11 @@ serve(async (req) => {
       );
     }
 
-    return new Response(JSON.stringify({ questoes }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ questoes }), { headers });
   } catch (e: any) {
     console.error("generate-questions error:", e);
     const message = e?.userMessage || (e instanceof Error ? e.message : "Erro interno");
     const status = e?.status || 500;
-    return new Response(JSON.stringify({ error: message }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(message, status);
   }
 });
