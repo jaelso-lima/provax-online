@@ -74,13 +74,20 @@ function validateQuestions(questoes: any[], expectedCount: number): { valid: boo
 
 // ── Handler principal ─────────────────────────────────────────────
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  const headers = getResponseHeaders();
 
   try {
+    // CSRF check
+    const originError = validateOrigin(req);
+    if (originError) return errorResponse(originError, 403);
+
     // --- Auth ---
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: corsHeaders });
+      return errorResponse("Não autorizado", 401);
     }
 
     const supabase = createClient(
