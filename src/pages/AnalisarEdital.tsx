@@ -1294,64 +1294,36 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
           </div>
         </div>
       )}
+      </div>
 
-      {/* Anotações - bloco separado */}
-      <div className="space-y-3">
+      {/* Right: Notes panel (1/3) - sticky */}
+      <div className="space-y-3 lg:sticky lg:top-16 lg:self-start">
         <h3 className="text-sm font-semibold flex items-center gap-2">
-          <StickyNote className="h-4 w-4 text-primary" />
-          Anotacoes
+          <StickyNote className="h-4 w-4 text-primary" /> Anotacoes
         </h3>
 
-        <div className="rounded-lg border p-4 space-y-2">
+        <div className="rounded-lg border p-3 space-y-2">
           <Label className="text-xs font-semibold text-muted-foreground">Anotacoes gerais</Label>
           <Textarea
-            placeholder="Escreva suas anotacoes, lembretes, duvidas ou observacoes aqui..."
+            placeholder="Suas anotacoes gerais..."
             value={progress.generalNote}
             onChange={(e) => update(p => ({ ...p, generalNote: e.target.value }))}
-            className="min-h-[100px]"
+            className="min-h-[100px] text-sm"
           />
         </div>
 
-        <Accordion type="multiple" className="space-y-2">
-          {materias.map((materia, mIdx) => (
-            <AccordionItem key={mIdx} value={`nota-${mIdx}`} className="border rounded-lg px-4">
-              <AccordionTrigger className="py-3 hover:no-underline text-sm">
-                <div className="flex items-center gap-2">
-                  <PenLine className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className="font-medium">{materia.nome}</span>
-                  {progress.notes[`materia-${mIdx}`] && (
-                    <Badge variant="secondary" className="text-[10px]">com anotacao</Badge>
-                  )}
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pb-4 space-y-3">
-                <Textarea
-                  placeholder={`Anotacoes sobre ${materia.nome}...`}
-                  value={progress.notes[`materia-${mIdx}`] || ""}
-                  onChange={(e) => setNote(`materia-${mIdx}`, e.target.value)}
-                  className="text-xs min-h-[60px]"
-                  rows={3}
-                />
-                {materia.conteudos_principais?.map((conteudo: string, cIdx: number) => {
-                  const key = `${mIdx}-${cIdx}`;
-                  if (!progress.checkedContent[key]) return null;
-                  return (
-                    <div key={cIdx} className="space-y-1">
-                      <p className="text-xs text-muted-foreground">{conteudo}</p>
-                      <Textarea
-                        placeholder="Anotacao sobre este topico..."
-                        value={progress.notes[key] || ""}
-                        onChange={(e) => setNote(key, e.target.value)}
-                        className="text-xs min-h-[40px] resize-none"
-                        rows={2}
-                      />
-                    </div>
-                  );
-                })}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        {materias.map((materia, mIdx) => (
+          <div key={mIdx} className="rounded-lg border p-3 space-y-2">
+            <Label className="text-xs font-semibold text-primary">{materia.nome}</Label>
+            <Textarea
+              placeholder={`Anotacoes sobre ${materia.nome}...`}
+              value={progress.notes[`materia-${mIdx}`] || ""}
+              onChange={(e) => setNote(`materia-${mIdx}`, e.target.value)}
+              className="text-xs min-h-[50px] resize-none"
+              rows={2}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
