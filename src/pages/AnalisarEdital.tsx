@@ -1002,7 +1002,7 @@ function CronogramaSection({ cronograma }: { cronograma?: any }) {
           {dataProvaStr && (
             <p className="text-xs font-semibold text-primary flex items-center gap-1">
               <CalendarDays className="h-3.5 w-3.5" />
-              Inicio: {dataInicio.toLocaleDateString("pt-BR")} | Prova: {new Date(dataProvaStr).toLocaleDateString("pt-BR")}
+              Inicio: {dataInicio.toLocaleDateString("pt-BR")} | Prova: {dataProva ? dataProva.toLocaleDateString("pt-BR") : dataProvaStr}
             </p>
           )}
         </div>
