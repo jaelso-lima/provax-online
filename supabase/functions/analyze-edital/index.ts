@@ -332,8 +332,13 @@ REGRAS:
       "explicacao": "O que essa materia aborda",
       "conteudos_principais": ["Item 1 do edital", "Item 2"],
       "resumo_detalhado": "RESUMO COMPLETO com definicoes, conceitos, regras. Minimo 500 palavras. Organize por subtopicos.",
-      "macetes": ["LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiencia"],
-      "exemplos": [{"topico": "Topico", "exemplo": "Exemplo de questao"}],
+      "macetes": [
+        "LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiencia (Principios da Adm Publica)",
+        "Para lembrar a diferenca entre Eficiencia e Eficacia: Eficiencia = fazer certo (meios), Eficacia = fazer a coisa certa (fins)",
+        "Dica de prova: Banca adora trocar 'anular' por 'revogar' - Anular = ilegalidade, Revogar = conveniencia"
+      ],
+      "pegadinhas_frequentes": ["Descricao de pegadinha 1 que a banca costuma cobrar", "Pegadinha 2"],
+      "palavras_chave": ["Termos importantes que caem na prova"],
       "dicas_prova": ["Como a banca cobra", "Pegadinhas comuns"],
       "estrategia_estudo": "Plano pratico"
     }
