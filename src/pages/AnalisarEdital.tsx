@@ -99,6 +99,13 @@ export default function AnalisarEdital() {
       if (ci?.carreiras?.length) {
         setCarreiras(ci.carreiras);
         setRaioXResumido(ci.raio_x_resumido || null);
+        // Try to pre-fill exam date from edital
+        if (ci.raio_x_resumido?.data_prova) {
+          const raw = ci.raio_x_resumido.data_prova;
+          // Try to parse various date formats to YYYY-MM-DD
+          const parsed = tryParseDate(raw);
+          if (parsed) setDataProva(parsed);
+        }
         setCurrentStep("selecting_career");
       }
     } else if (s === "processando") {
