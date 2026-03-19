@@ -397,6 +397,8 @@ export default function AnalisarEdital() {
                   </p>
                 )}
               </div>
+
+              <div className="grid gap-3">
                 {carreiras.map((carreira, i) => (
                   <button
                     key={i}
