@@ -1164,16 +1164,6 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
                               <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                             )}
                           </div>
-                          {/* Note field always visible when checked */}
-                          {checked && (
-                            <Textarea
-                              placeholder="Suas anotacoes sobre este topico..."
-                              value={progress.notes[key] || ""}
-                              onChange={(e) => setNote(key, e.target.value)}
-                              className="mt-2 text-xs min-h-[40px] resize-none ml-7"
-                              rows={2}
-                            />
-                          )}
                         </div>
                       );
                     })}
