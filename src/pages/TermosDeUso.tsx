@@ -53,7 +53,7 @@ export default function TermosDeUso() {
               <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
                 <li><strong>Gratuito:</strong> 10 questões por dia, simulados básicos e radar de concursos abertos.</li>
                 <li><strong>Provax X (R$ 14,90/mês):</strong> 20 questões por dia, Professor IA 24h, correção de redação por IA, estatísticas básicas e histórico de erros.</li>
-                <li><strong>Start (R$ 29,90/mês):</strong> 30 questões por dia, tudo do Provax X + análise de edital por IA e simulados personalizados.</li>
+                <li><strong>Start (R$ 29,90/mês):</strong> 30 questões por dia, tudo do Provax X + análise de edital por IA, cronograma personalizado, anotações por matéria, estudo em aba separada e simulados personalizados.</li>
                 <li><strong>Pro (R$ 49,90/mês):</strong> 60 questões por dia, tudo do Start + filtros avançados (banca, estado, concurso real), ranking, estatísticas avançadas e simulado reverso inteligente.</li>
               </ul>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">
@@ -86,6 +86,9 @@ export default function TermosDeUso() {
                 <li><strong>Professor PX:</strong> Tutor inteligente disponível 24h que analisa o histórico de erros do aluno para personalizar explicações e dicas.</li>
                 <li><strong>Correção de redação:</strong> Avaliação automática nas 5 competências do ENEM com nota estimada, pontos fortes e sugestões de melhoria.</li>
                 <li><strong>Análise de edital:</strong> Extração automática de conteúdo programático, matérias, cargos e estratégias de estudo a partir do PDF do edital.</li>
+                <li><strong>Cronograma personalizado:</strong> Geração automática de cronograma de estudo baseado no edital, com checklist diário adaptado ao período até a data da prova.</li>
+                <li><strong>Anotações por matéria:</strong> Painel de anotações organizadas por matéria, com possibilidade de expandir e recolher, integrado à área de estudo do edital.</li>
+                <li><strong>Estudo em aba separada:</strong> Possibilidade de abrir o conteúdo do edital em uma aba independente para estudar e fazer simulados simultaneamente.</li>
               </ul>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 As respostas geradas por IA são ferramentas de apoio e não substituem orientação profissional ou material didático oficial.
