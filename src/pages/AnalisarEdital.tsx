@@ -666,6 +666,11 @@ function ResultView({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => {
+          window.open(`/analisar-edital/${analysis.id}`, '_blank');
+        }}>
+          <ExternalLink className="h-3.5 w-3.5" /> Abrir em nova aba
+        </Button>
         <Button size="sm" variant="outline" className="gap-1.5" onClick={async () => {
           await generateEditalPdf(resultado, analysis.file_name);
           toast({ title: "PDF gerado!", description: "O download comecara automaticamente." });
