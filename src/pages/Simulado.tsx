@@ -797,14 +797,24 @@ function QuestionCard({
   return (
     <Card>
       <CardContent className="pt-6">
-        {/* Metadata badges */}
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {question.materia_nome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {question.materia_nome}</span>}
-          {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
-          {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
-          {simuladoMeta.area_nome && !question.materia_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
-          {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
-        </div>
+        {/* Metadata badges — always show all available info */}
+        {(() => {
+          const materiaNome = question.materia_nome || simuladoMeta.materia_nome;
+          const topicNome = question.topic_nome || simuladoMeta.topic_nome;
+          const hasBadges = materiaNome || simuladoMeta.area_nome || simuladoMeta.banca_nome || simuladoMeta.carreira_nome || simuladoMeta.estado_nome || simuladoMeta.ano || topicNome;
+          if (!hasBadges) return null;
+          return (
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {simuladoMeta.area_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
+              {materiaNome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {materiaNome}</span>}
+              {topicNome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">📖 {topicNome}</span>}
+              {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
+              {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
+              {simuladoMeta.estado_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📍 {simuladoMeta.estado_nome}</span>}
+              {simuladoMeta.ano && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📅 {simuladoMeta.ano}</span>}
+            </div>
+          );
+        })()}
         <p className="mb-6 text-sm leading-relaxed">{question.enunciado}</p>
         <div className="space-y-2">
           {question.alternativas.map(o => {
