@@ -443,10 +443,23 @@ export default function AnalisarEdital() {
                 status={activeAnalysis.status}
               />
               <div className="flex justify-center gap-2 pt-4">
-                <Button size="sm" variant="outline" onClick={() => handleDelete(activeAnalysis.id)}
-                  className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
-                  <StopCircle className="h-3.5 w-3.5" /> Cancelar
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
+                      <StopCircle className="h-3.5 w-3.5" /> Cancelar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+                      <AlertDialogDescription>Esta ação não pode ser desfeita. A análise será excluída permanentemente.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleDelete(activeAnalysis.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>
