@@ -208,14 +208,10 @@ export default function AnalisarEdital() {
   const handleSelectCarreira = async (carreira: CarreiraOption) => {
     if (!activeAnalysisId) return;
 
-    if (!dataProva) {
-      toast({ title: "Informe a data da prova", description: "Precisamos da data para montar seu cronograma personalizado.", variant: "destructive" });
-      return;
-    }
-
     setCurrentStep("generating");
-    const diasEstudo = calcDiasEstudo(dataProva);
-    toast({ title: `Gerando guia para: ${carreira.nome}`, description: `Cronograma de ${diasEstudo} dias ate a prova. Pode levar ate 3 minutos...` });
+    const diasEstudo = dataProva ? calcDiasEstudo(dataProva) : 30;
+    const descDias = dataProva ? `Cronograma de ${diasEstudo} dias ate a prova.` : "Cronograma de 30 dias de estudo.";
+    toast({ title: `Gerando guia para: ${carreira.nome}`, description: `${descDias} Pode levar ate 3 minutos...` });
 
     supabase.functions.invoke("analyze-edital", {
       body: {
@@ -370,33 +366,27 @@ export default function AnalisarEdital() {
                 </div>
               )}
 
-              {/* Exam date input */}
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
-                <Label htmlFor="data-prova" className="text-sm font-semibold flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  Data da Prova *
-                </Label>
-                <Input
-                  id="data-prova"
-                  type="date"
-                  value={dataProva}
-                  onChange={(e) => setDataProva(e.target.value)}
-                  min={new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0]}
-                  className="max-w-xs"
-                />
-                {dataProva && (
+              {/* Exam date info (auto-extracted) */}
+              {dataProva && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold">Data da Prova: {new Date(dataProva + "T12:00:00").toLocaleDateString("pt-BR")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3 inline mr-1" />
+                      {calcDiasEstudo(dataProva)} dias de estudo ate a prova
+                    </p>
+                  </div>
+                </div>
+              )}
+              {!dataProva && (
+                <div className="rounded-lg border border-muted bg-muted/30 p-3 flex items-center gap-2">
+                  <Info className="h-4 w-4 text-muted-foreground shrink-0" />
                   <p className="text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3 inline mr-1" />
-                    {calcDiasEstudo(dataProva)} dias de estudo ate a prova
+                    Data da prova nao identificada no edital. Sera gerado um cronograma padrao de 30 dias.
                   </p>
-                )}
-                {!dataProva && (
-                  <p className="text-xs text-amber-600">
-                    <AlertTriangle className="h-3 w-3 inline mr-1" />
-                    Informe a data da prova para gerar o cronograma personalizado
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="grid gap-3">
                 {carreiras.map((carreira, i) => (
