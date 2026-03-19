@@ -1028,12 +1028,33 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
   const materias = resultado.materias || [];
   const cronograma = resultado.cronograma_reverso;
 
-  // Stats
-  const totalContent = materias.reduce((acc, m) => acc + (m.conteudos_principais?.length || 0), 0);
-  const checkedCount = Object.values(progress.checkedContent).filter(Boolean).length;
-  const contentPct = totalContent > 0 ? Math.round((checkedCount / totalContent) * 100) : 0;
+  // Expand cycle into full schedule (same logic as CronogramaSection)
+  const regras = cronograma?.regras;
+  const baseDias = cronograma?.dias || [];
+  const totalDiasEstudo = regras?.total_dias_estudo || baseDias.length;
+  const cicloDias = regras?.ciclo_dias || baseDias.length;
+  const ciclosCompletos = regras?.ciclos_completos || (cicloDias > 0 ? Math.floor(totalDiasEstudo / cicloDias) : 1);
+  const diasRestantes = regras?.dias_restantes || (cicloDias > 0 ? totalDiasEstudo % cicloDias : 0);
+  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
 
-  const totalDays = cronograma?.dias?.length || 0;
+  const fullDias: { dia: number; realDate: Date; titulo: string; tipo: string; blocos: any[] }[] = [];
+  let dayCounter = 0;
+  for (let ciclo = 0; ciclo < ciclosCompletos; ciclo++) {
+    for (const diaBase of baseDias) {
+      if (dayCounter >= totalDiasEstudo) break;
+      fullDias.push({ dia: dayCounter + 1, realDate: addDays(dataInicio, dayCounter), titulo: diaBase.titulo, tipo: diaBase.tipo, blocos: diaBase.blocos || [] });
+      dayCounter++;
+    }
+  }
+  for (let r = 0; r < diasRestantes && dayCounter < totalDiasEstudo; r++) {
+    const diaBase = baseDias[r % baseDias.length];
+    fullDias.push({ dia: dayCounter + 1, realDate: addDays(dataInicio, dayCounter), titulo: diaBase.titulo, tipo: diaBase.tipo, blocos: diaBase.blocos || [] });
+    dayCounter++;
+  }
+
+  const formatDateBR = (d: Date) => d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+
+  const totalDays = fullDias.length;
   const checkedDaysCount = Object.values(progress.checkedDays).filter(Boolean).length;
   const daysPct = totalDays > 0 ? Math.round((checkedDaysCount / totalDays) * 100) : 0;
 
