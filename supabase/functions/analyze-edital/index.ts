@@ -112,7 +112,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { analysis_id, mode, cargo_selecionado } = body;
+    const { analysis_id, mode, cargo_selecionado, data_prova_usuario } = body;
     if (!analysis_id) throw new Error("analysis_id e obrigatorio");
 
     const { data: analysis, error: analysisError } = await supabaseAdmin
