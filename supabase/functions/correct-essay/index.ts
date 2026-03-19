@@ -1,20 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { handleCors, validateOrigin, errorResponse, getResponseHeaders, corsHeaders } from "../_shared/security-headers.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  const headers = getResponseHeaders();
 
   try {
+    // CSRF check
+    const originError = validateOrigin(req);
+    if (originError) return errorResponse(originError, 403);
+
     // --- Auth ---
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: corsHeaders });
+      return errorResponse("Não autorizado", 401);
     }
 
     const supabase = createClient(
@@ -26,7 +28,7 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: corsHeaders });
+      return errorResponse("Token inválido", 401);
     }
 
     // --- Body ---
@@ -34,10 +36,10 @@ serve(async (req) => {
     const tema = typeof body.tema === "string" ? body.tema.trim().slice(0, 500) : "";
     const texto = typeof body.texto === "string" ? body.texto.trim().slice(0, 15000) : "";
     if (!tema || tema.length < 3) {
-      return new Response(JSON.stringify({ error: "Tema inválido (mín. 3 caracteres)" }), { status: 400, headers: corsHeaders });
+      return errorResponse("Tema inválido (mín. 3 caracteres)", 400);
     }
     if (!texto || texto.length < 100) {
-      return new Response(JSON.stringify({ error: "Texto muito curto (mín. 100 caracteres)" }), { status: 400, headers: corsHeaders });
+      return errorResponse("Texto muito curto (mín. 100 caracteres)", 400);
     }
 
     // --- AI Gateway with tool calling ---
@@ -81,35 +83,12 @@ Seja justo mas criterioso. Identifique pontos fortes, pontos fracos e dê sugest
                   competencia_3: { type: "number", description: "Nota 0-200 para Argumentação" },
                   competencia_4: { type: "number", description: "Nota 0-200 para Coesão" },
                   competencia_5: { type: "number", description: "Nota 0-200 para Proposta de Intervenção" },
-                  pontos_fortes: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Lista de pontos fortes identificados na redação",
-                  },
-                  pontos_fracos: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Lista de pontos fracos identificados na redação",
-                  },
-                  sugestoes: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Lista de sugestões práticas de melhoria",
-                  },
+                  pontos_fortes: { type: "array", items: { type: "string" }, description: "Lista de pontos fortes" },
+                  pontos_fracos: { type: "array", items: { type: "string" }, description: "Lista de pontos fracos" },
+                  sugestoes: { type: "array", items: { type: "string" }, description: "Lista de sugestões práticas" },
                   feedback: { type: "string", description: "Feedback geral detalhado sobre a redação" },
                 },
-                required: [
-                  "nota_total",
-                  "competencia_1",
-                  "competencia_2",
-                  "competencia_3",
-                  "competencia_4",
-                  "competencia_5",
-                  "pontos_fortes",
-                  "pontos_fracos",
-                  "sugestoes",
-                  "feedback",
-                ],
+                required: ["nota_total", "competencia_1", "competencia_2", "competencia_3", "competencia_4", "competencia_5", "pontos_fortes", "pontos_fracos", "sugestoes", "feedback"],
                 additionalProperties: false,
               },
             },
@@ -121,33 +100,24 @@ Seja justo mas criterioso. Identifique pontos fortes, pontos fracos e dê sugest
 
     if (!aiResponse.ok) {
       const status = aiResponse.status;
-      const body = await aiResponse.text();
-      console.error("AI gateway error:", status, body);
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: "Muitas requisições. Aguarde um momento e tente novamente." }), { status: 429, headers: corsHeaders });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados. Entre em contato com o suporte." }), { status: 402, headers: corsHeaders });
-      }
-      return new Response(JSON.stringify({ error: "Erro ao corrigir redação" }), { status: 500, headers: corsHeaders });
+      const errBody = await aiResponse.text();
+      console.error("AI gateway error:", status, errBody);
+      if (status === 429) return errorResponse("Muitas requisições. Aguarde um momento e tente novamente.", 429);
+      if (status === 402) return errorResponse("Créditos de IA esgotados. Entre em contato com o suporte.", 402);
+      return errorResponse("Erro ao corrigir redação", 500);
     }
 
     const aiData = await aiResponse.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
       console.error("No tool call in response:", JSON.stringify(aiData));
-      return new Response(JSON.stringify({ error: "Resposta inesperada da IA" }), { status: 500, headers: corsHeaders });
+      return errorResponse("Resposta inesperada da IA", 500);
     }
 
     const correction = JSON.parse(toolCall.function.arguments);
-    return new Response(JSON.stringify(correction), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify(correction), { headers });
   } catch (e) {
     console.error("correct-essay error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro interno" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(e instanceof Error ? e.message : "Erro interno", 500);
   }
 });

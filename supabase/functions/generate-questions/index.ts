@@ -1,11 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { handleCors, validateOrigin, errorResponse, getResponseHeaders, corsHeaders } from "../_shared/security-headers.ts";
 
 // ── Prompt Universal ──────────────────────────────────────────────
 function buildPrompt(params: {
@@ -79,13 +74,20 @@ function validateQuestions(questoes: any[], expectedCount: number): { valid: boo
 
 // ── Handler principal ─────────────────────────────────────────────
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  const headers = getResponseHeaders();
 
   try {
+    // CSRF check
+    const originError = validateOrigin(req);
+    if (originError) return errorResponse(originError, 403);
+
     // --- Auth ---
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: corsHeaders });
+      return errorResponse("Não autorizado", 401);
     }
 
     const supabase = createClient(
@@ -348,22 +350,14 @@ serve(async (req) => {
     }
 
     if (questoes.length === 0) {
-      return new Response(
-        JSON.stringify({ error: lastError?.userMessage || "Erro ao gerar questões" }),
-        { status: lastError?.status || 500, headers: corsHeaders }
-      );
+      return errorResponse(lastError?.userMessage || "Erro ao gerar questões", lastError?.status || 500);
     }
 
-    return new Response(JSON.stringify({ questoes }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ questoes }), { headers });
   } catch (e: any) {
     console.error("generate-questions error:", e);
     const message = e?.userMessage || (e instanceof Error ? e.message : "Erro interno");
     const status = e?.status || 500;
-    return new Response(JSON.stringify({ error: message }), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(message, status);
   }
 });

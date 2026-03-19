@@ -1,23 +1,20 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { handleCors, validateOrigin, errorResponse, getResponseHeaders } from "../_shared/security-headers.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  const headers = getResponseHeaders();
 
   try {
+    // CSRF check
+    const originError = validateOrigin(req);
+    if (originError) return errorResponse(originError, 403);
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Não autorizado", 401);
     }
 
     const supabase = createClient(
@@ -28,13 +25,9 @@ Deno.serve(async (req) => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Não autorizado", 401);
     }
 
-    // Check admin role
     const { data: role } = await supabase
       .from("user_roles")
       .select("role")
@@ -43,13 +36,9 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!role) {
-      return new Response(JSON.stringify({ error: "Acesso negado" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Acesso negado", 403);
     }
 
-    // Get all active plans with checkout links
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -76,15 +65,10 @@ Deno.serve(async (req) => {
 
         if (resp.status >= 400) return "indisponivel";
 
-        // Cakto shows unavailable patterns when product is inactive
         const unavailablePatterns = [
-          "não está mais disponível",
-          "nao esta mais disponivel",
-          "produto indisponível",
-          "produto indisponivel",
-          "product not found",
-          "page not found",
-          "404",
+          "não está mais disponível", "nao esta mais disponivel",
+          "produto indisponível", "produto indisponivel",
+          "product not found", "page not found", "404",
           "checkout não encontrado",
         ];
 
@@ -99,7 +83,6 @@ Deno.serve(async (req) => {
       }
     };
 
-    // Check all links in parallel
     const checks: Promise<void>[] = [];
 
     for (const plan of plans || []) {
@@ -121,13 +104,8 @@ Deno.serve(async (req) => {
 
     await Promise.all(checks);
 
-    return new Response(JSON.stringify({ results }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ results }), { headers });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(err.message, 500);
   }
 });
