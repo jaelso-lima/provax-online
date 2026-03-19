@@ -479,9 +479,23 @@ export default function AnalisarEdital() {
                     <Button size="sm" variant="outline" onClick={() => handleRetry(activeAnalysis.id)} className="gap-1.5">
                       <RefreshCw className="h-3.5 w-3.5" /> Tentar novamente
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleDelete(activeAnalysis.id)} className="gap-1.5 text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" /> Remover
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="gap-1.5 text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" /> Remover
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+                          <AlertDialogDescription>Esta ação não pode ser desfeita. A análise será excluída permanentemente.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(activeAnalysis.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
