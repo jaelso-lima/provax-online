@@ -1,19 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { handleCors, validateOrigin, errorResponse, getResponseHeaders } from "../_shared/security-headers.ts";
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
+
+  const headers = getResponseHeaders();
 
   try {
+    // CSRF check
+    const originError = validateOrigin(req);
+    if (originError) return errorResponse(originError, 403);
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return errorResponse("Não autorizado", 401);
     }
 
     const supabase = createClient(
@@ -24,7 +26,7 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return errorResponse("Não autorizado", 401);
     }
 
     // Get user profile
@@ -39,7 +41,6 @@ serve(async (req) => {
     // Get user performance data for personalization
     let performanceContext = "";
     try {
-      // Get finished simulados
       const { data: simulados } = await supabase
         .from("simulados")
         .select("id")
@@ -49,7 +50,6 @@ serve(async (req) => {
       if (simulados && simulados.length > 0) {
         const simIds = simulados.map((s: any) => s.id);
         
-        // Get all responses with materia info
         const { data: respostas } = await supabase
           .from("respostas")
           .select("acertou, questoes(materia_id, materias:materia_id(nome))")
@@ -142,29 +142,21 @@ Comece sempre sendo acolhedor e pergunte como pode ajudar ${userName} hoje. Se t
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Muitas requisições. Aguarde um momento e tente novamente." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse("Muitas requisições. Aguarde um momento e tente novamente.", 429);
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return errorResponse("Créditos de IA esgotados.", 402);
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Erro no serviço de IA", 500);
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: { ...headers, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
     console.error("chat-professor error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return errorResponse(e instanceof Error ? e.message : "Erro desconhecido", 500);
   }
 });
