@@ -402,7 +402,9 @@ REGRAS:
 ## REGRAS GERAIS:
 1. CADA materia DEVE ter "resumo_detalhado" extenso (minimo 300 palavras)
 2. "conteudos_principais" = 100% dos itens do edital
-3. "macetes" = minimo 3 mnemonicos por materia
+3. "macetes" = minimo 5 mnemonicos/dicas por materia. Inclua: acronimos, frases memoraveis, associacoes visuais, regras praticas, comparacoes, pegadinhas da banca, palavras-chave recorrentes. Quanto mais macetes melhor!
+4. "pegadinhas_frequentes" = minimo 3 pegadinhas que a banca cobra nessa materia
+5. "palavras_chave" = termos tecnicos e palavras que aparecem com frequencia nas provas dessa materia
 4. Retorne APENAS JSON valido
 5. NAO use acentos, cedilhas ou caracteres especiais
 6. NAO use barras invertidas exceto para sequencias JSON validas`;
