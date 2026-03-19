@@ -1087,20 +1087,6 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
         </div>
       </div>
 
-      {/* General notes */}
-      <div className="rounded-lg border p-4 space-y-2">
-        <Label className="text-sm font-semibold flex items-center gap-1.5">
-          <StickyNote className="h-4 w-4 text-primary" />
-          Anotacoes gerais
-        </Label>
-        <Textarea
-          placeholder="Escreva suas anotacoes, lembretes, duvidas ou observacoes aqui..."
-          value={progress.generalNote}
-          onChange={(e) => update(p => ({ ...p, generalNote: e.target.value }))}
-          className="min-h-[80px]"
-        />
-      </div>
-
       {/* Materias - mirror of Conteudo with checkboxes */}
       <Accordion type="multiple" className="space-y-2">
         {materias.map((materia, mIdx) => {
