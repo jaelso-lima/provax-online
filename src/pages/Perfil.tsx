@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Copy, Share2, ArrowLeft, TrendingUp, CheckCircle, XCircle, BarChart3, BookOpen, MessageCircle, Trash2, ChevronDown, ChevronRight, Target } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -34,8 +34,20 @@ export default function Perfil() {
   const [simulados, setSimulados] = useState<any[]>([]);
   const [resetting, setResetting] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [dailyLimit, setDailyLimit] = useState<{ limite: number; usado: number; restante: number; pode_gerar: boolean } | null>(null);
 
   useEffect(() => { if (profile) setNome(profile.nome); }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    const loadDaily = async () => {
+      try {
+        const { data } = await supabase.rpc("check_daily_limit", { _user_id: user.id });
+        if (data) setDailyLimit(data as any);
+      } catch (e) { console.error("Daily limit check error:", e); }
+    };
+    loadDaily();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -188,7 +200,26 @@ export default function Perfil() {
           </CardContent>
         </Card>
 
-        {/* Comunidade WhatsApp */}
+        {/* Meta diária */}
+        <Card className="mb-4">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Target className="h-4 w-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Meta Diária</p>
+                  <p className="text-xs text-muted-foreground">
+                    {dailyLimit ? `${dailyLimit.usado} de ${dailyLimit.limite} questões resolvidas hoje` : "Carregando..."}
+                  </p>
+                </div>
+              </div>
+            </div>
+            {dailyLimit && (
+              <Progress value={dailyLimit.limite > 0 ? (dailyLimit.usado / dailyLimit.limite) * 100 : 0} className="mt-2 h-1.5" />
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="mb-4">
           <CardContent className="py-3">
             <a
