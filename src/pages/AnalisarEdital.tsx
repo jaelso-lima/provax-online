@@ -724,9 +724,23 @@ function ResultView({
         <Button size="sm" variant="outline" className="gap-1.5" onClick={onNewAnalysis}>
           <Upload className="h-3.5 w-3.5" /> Novo edital
         </Button>
-        <Button size="sm" variant="ghost" onClick={onDelete} className="gap-1.5 text-destructive">
-          <Trash2 className="h-3.5 w-3.5" /> Remover
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="ghost" className="gap-1.5 text-destructive">
+              <Trash2 className="h-3.5 w-3.5" /> Remover
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover análise?</AlertDialogTitle>
+              <AlertDialogDescription>Esta ação não pode ser desfeita. A análise será excluída permanentemente.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
