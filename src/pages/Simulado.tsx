@@ -43,6 +43,7 @@ interface Questao {
   resposta_correta: string;
   explicacao?: string;
   materia_nome?: string;
+  topic_nome?: string;
 }
 
 // Metadata context for displaying on question cards
@@ -52,6 +53,8 @@ interface SimuladoMeta {
   carreira_nome?: string;
   ano?: string;
   estado_nome?: string;
+  materia_nome?: string;
+  topic_nome?: string;
 }
 
 export default function Simulado() {
