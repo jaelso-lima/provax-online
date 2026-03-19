@@ -17,7 +17,6 @@ import {
   CalendarDays, Info, MapPin, DollarSign, Users, ClipboardList,
   CheckCircle2, CheckSquare, StopCircle, Calendar, PenLine, StickyNote, Save,
   ExternalLink, ChevronDown
-  ExternalLink
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
