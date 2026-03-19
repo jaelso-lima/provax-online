@@ -26,6 +26,38 @@ import {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+function tryParseDate(raw: string): string | null {
+  if (!raw) return null;
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  // DD/MM/YYYY
+  const brMatch = raw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (brMatch) {
+    const [, d, m, y] = brMatch;
+    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  // Try native parse
+  const d = new Date(raw);
+  if (!isNaN(d.getTime()) && d.getFullYear() > 2020) {
+    return d.toISOString().split("T")[0];
+  }
+  return null;
+}
+
+function calcDiasEstudo(dataProva: string): number {
+  const prova = new Date(dataProva);
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  prova.setHours(0,0,0,0);
+  return Math.max(1, Math.floor((prova.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) - 1);
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 interface CarreiraOption {
   nome: string;
   escolaridade?: string;
