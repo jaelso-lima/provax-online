@@ -16,6 +16,7 @@ import {
   Trash2, Clock, Download, Briefcase, Brain, Sparkles, ScrollText,
   CalendarDays, Info, MapPin, DollarSign, Users, ClipboardList,
   CheckCircle2, CheckSquare, StopCircle, Calendar, PenLine, StickyNote, Save,
+  ExternalLink, ChevronDown
   ExternalLink
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
