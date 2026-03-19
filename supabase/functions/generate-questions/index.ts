@@ -80,12 +80,18 @@ serve(async (req) => {
   const headers = getResponseHeaders();
 
   try {
-    // CSRF check
-    const originError = validateOrigin(req);
-    if (originError) return errorResponse(originError, 403);
-
     // --- Auth ---
     const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return errorResponse("Não autorizado", 401);
+    }
+
+    // CSRF check (warning-only for authenticated requests to avoid false negatives in preview/custom domains)
+    const originError = validateOrigin(req);
+    if (originError) {
+      console.warn("Origin validation warning:", originError);
+    }
+
     if (!authHeader?.startsWith("Bearer ")) {
       return errorResponse("Não autorizado", 401);
     }

@@ -34,30 +34,48 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-function tryParseDate(raw: string): string | null {
+function formatDateInputValue(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function parseDateOnly(raw: string): Date | null {
   if (!raw) return null;
-  // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  // DD/MM/YYYY
-  const brMatch = raw.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  const value = raw.trim();
+
+  const isoMatch = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch;
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  }
+
+  const brMatch = value.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (brMatch) {
     const [, d, m, y] = brMatch;
-    return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    return new Date(Number(y), Number(m) - 1, Number(d));
   }
-  // Try native parse
-  const d = new Date(raw);
-  if (!isNaN(d.getTime()) && d.getFullYear() > 2020) {
-    return d.toISOString().split("T")[0];
+
+  const parsed = new Date(value);
+  if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 2020) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
   }
+
   return null;
 }
 
+function tryParseDate(raw: string): string | null {
+  const parsed = parseDateOnly(raw);
+  return parsed ? formatDateInputValue(parsed) : null;
+}
+
 function calcDiasEstudo(dataProva: string): number {
-  const prova = new Date(dataProva);
+  const prova = parseDateOnly(dataProva);
+  if (!prova) return 30;
+
   const hoje = new Date();
-  hoje.setHours(0,0,0,0);
-  prova.setHours(0,0,0,0);
-  return Math.max(1, Math.floor((prova.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)) - 1);
+  const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const provaSemHora = new Date(prova.getFullYear(), prova.getMonth(), prova.getDate());
+
+  return Math.max(1, Math.floor((provaSemHora.getTime() - hojeSemHora.getTime()) / (1000 * 60 * 60 * 24)) - 1);
 }
 
 function addDays(date: Date, days: number): Date {
@@ -930,8 +948,9 @@ function CronogramaSection({ cronograma }: { cronograma?: any }) {
   const cicloDias = regras?.ciclo_dias || 10;
   const ciclosCompletos = regras?.ciclos_completos || Math.floor(totalDiasEstudo / cicloDias);
   const diasRestantes = regras?.dias_restantes || totalDiasEstudo % cicloDias;
-  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
+  const dataInicio = parseDateOnly(regras?.data_inicio || "") || new Date();
   const dataProvaStr = regras?.data_prova;
+  const dataProva = dataProvaStr ? parseDateOnly(dataProvaStr) : null;
 
   // Expand cycle into full schedule with real dates
   const fullDias: { dia: number; realDate: Date; titulo: string; tipo: string; blocos: any[] }[] = [];
@@ -983,7 +1002,7 @@ function CronogramaSection({ cronograma }: { cronograma?: any }) {
           {dataProvaStr && (
             <p className="text-xs font-semibold text-primary flex items-center gap-1">
               <CalendarDays className="h-3.5 w-3.5" />
-              Inicio: {dataInicio.toLocaleDateString("pt-BR")} | Prova: {new Date(dataProvaStr).toLocaleDateString("pt-BR")}
+              Inicio: {dataInicio.toLocaleDateString("pt-BR")} | Prova: {dataProva ? dataProva.toLocaleDateString("pt-BR") : dataProvaStr}
             </p>
           )}
         </div>
@@ -1100,7 +1119,7 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
   const cicloDias = regras?.ciclo_dias || baseDias.length;
   const ciclosCompletos = regras?.ciclos_completos || (cicloDias > 0 ? Math.floor(totalDiasEstudo / cicloDias) : 1);
   const diasRestantes = regras?.dias_restantes || (cicloDias > 0 ? totalDiasEstudo % cicloDias : 0);
-  const dataInicio = regras?.data_inicio ? new Date(regras.data_inicio) : new Date();
+  const dataInicio = parseDateOnly(regras?.data_inicio || "") || new Date();
 
   const fullDias: { dia: number; realDate: Date; titulo: string; tipo: string; blocos: any[] }[] = [];
   let dayCounter = 0;
