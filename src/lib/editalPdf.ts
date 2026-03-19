@@ -34,9 +34,14 @@ interface CronogramaReverso {
     total_dia: string;
     meta_questoes_bloco: string;
     meta_questoes_dia: string;
-    meta_30_dias: string;
+    meta_30_dias?: string;
     ciclo_dias: number;
-    repeticoes: number;
+    repeticoes?: number;
+    total_dias_estudo?: number;
+    ciclos_completos?: number;
+    dias_restantes?: number;
+    data_inicio?: string;
+    data_prova?: string;
   };
   dias: CronogramaDia[];
   como_executar?: string[];
