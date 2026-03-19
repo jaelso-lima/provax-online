@@ -187,6 +187,26 @@ export default function Perfil() {
         {/* Dados pessoais */}
         <Card className="mb-4">
           <CardContent className="space-y-4 pt-6">
+            {/* Avatar */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative group">
+                <Avatar className="h-20 w-20 border-2 border-primary/20">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.nome || "Avatar"} />
+                  <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
+                    {(profile?.nome || "U").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  {uploadingAvatar ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-white" />
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">Clique na foto para alterar</p>
+            </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Nome</Label>
               <Input value={nome} onChange={e => setNome(e.target.value)} />
