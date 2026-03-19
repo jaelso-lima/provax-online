@@ -40,6 +40,13 @@ export default function Perfil() {
 
   useEffect(() => {
     if (!user) return;
+    supabase.rpc("check_daily_limit", { _user_id: user.id })
+      .then(({ data }) => { if (data) setDailyLimit(data as any); })
+      .catch(e => console.error("Daily limit check error:", e));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
     // Simulados finalizados
     supabase.from("simulados").select("id, acertos, total_questoes, pontuacao, created_at, modo").eq("user_id", user.id).eq("status", "finalizado").order("created_at", { ascending: false }).limit(20)
       .then(({ data }) => { if (data) setSimulados(data); });
