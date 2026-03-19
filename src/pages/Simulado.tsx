@@ -143,7 +143,7 @@ export default function Simulado() {
       setResumeLoading(true);
       try {
         const { data: sim } = await supabase
-          .from("simulados").select("*")
+          .from("simulados").select("*, bancas:banca_id(nome), areas:area_id(nome), carreiras:carreira_id(nome), states:state_id(nome), materias:materia_id(nome), topics:topic_id(nome)")
           .eq("id", continuarId).eq("user_id", user.id).eq("status", "em_andamento").single();
 
         if (!sim) {
@@ -151,8 +151,18 @@ export default function Simulado() {
           navigate("/dashboard"); return;
         }
 
+        // Build metadata from saved simulado relations
+        const resumeMeta: SimuladoMeta = {};
+        if ((sim as any).bancas?.nome) resumeMeta.banca_nome = (sim as any).bancas.nome;
+        if ((sim as any).areas?.nome) resumeMeta.area_nome = (sim as any).areas.nome;
+        if ((sim as any).carreiras?.nome) resumeMeta.carreira_nome = (sim as any).carreiras.nome;
+        if ((sim as any).states?.nome) resumeMeta.estado_nome = (sim as any).states.nome;
+        if ((sim as any).materias?.nome) resumeMeta.materia_nome = (sim as any).materias.nome;
+        if ((sim as any).topics?.nome) resumeMeta.topic_nome = (sim as any).topics.nome;
+        setSimuladoMeta(resumeMeta);
+
         const { data: existingRespostas } = await supabase
-          .from("respostas").select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao)")
+          .from("respostas").select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao, materias:materia_id(nome), topics:topic_id(nome))")
           .eq("simulado_id", continuarId).order("created_at");
 
         let allQuestoes: Questao[] = [];
@@ -164,6 +174,8 @@ export default function Simulado() {
               id: r.questoes?.id, enunciado: r.questoes?.enunciado || "",
               alternativas: Array.isArray(r.questoes?.alternativas) ? r.questoes.alternativas : [],
               resposta_correta: r.questoes?.resposta_correta || "", explicacao: r.questoes?.explicacao,
+              materia_nome: r.questoes?.materias?.nome || undefined,
+              topic_nome: r.questoes?.topics?.nome || undefined,
             })).filter((q: Questao) => q.id && q.enunciado);
 
           existingRespostas.forEach((r: any, i: number) => {
