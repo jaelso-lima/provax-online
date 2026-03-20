@@ -12,7 +12,11 @@ function buildPrompt(params: {
 }): string {
   const { modo, quantidade, nivel, filterContext, ano } = params;
 
-  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.`;
+  const nivelInstruction = nivel === "misto"
+    ? "mistura de dificuldades (30% fácil, 40% médio, 30% difícil)"
+    : `nível ${nivel}`;
+
+  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} questões de múltipla escolha (A-E) de ${nivelInstruction}.`;
 
   const modoInstructions: Record<string, string> = {
     concurso: `Padrão: concursos públicos brasileiros. As questões devem ser realistas, no padrão de bancas federais/estaduais/municipais, com alternativas plausíveis e pegadinhas típicas de provas oficiais.${ano ? ` Ano de referência: ${ano}.` : ""}`,
@@ -31,7 +35,8 @@ REGRAS OBRIGATÓRIAS:
 7. Linguagem formal e técnica adequada ao contexto
 8. Enunciados claros, sem ambiguidade
 9. OBRIGATÓRIO: Cada questão deve incluir o campo "materia_nome" com o nome da matéria/disciplina da questão
-10. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada (agrupe questões por matéria na mesma sequência)`;
+10. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada (agrupe questões por matéria na mesma sequência)
+11. OBRIGATÓRIO: Cada questão deve incluir o campo "dificuldade" com valor "facil", "medio" ou "dificil"${nivel === "misto" ? "\n12. Para modo MISTO, distribua as dificuldades: ~30% fácil, ~40% médio, ~30% difícil" : ""}`;
 
   return `${base}\n\n${modoInstructions[modo] || modoInstructions.concurso}\n\n${filterContext ? `Contexto dos filtros: ${filterContext}` : ""}\n\n${rules}`;
 }
