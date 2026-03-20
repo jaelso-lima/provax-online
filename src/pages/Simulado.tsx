@@ -412,6 +412,7 @@ export default function Simulado() {
         if (anoConcurso) meta.ano = anoConcurso;
         if (materiaId) meta.materia_nome = materias.find(m => m.id === materiaId)?.nome;
         if (topicId) meta.topic_nome = topics.find(t => t.id === topicId)?.nome;
+        if (subtopicId) meta.subtopic_nome = subtopics.find(s => s.id === subtopicId)?.nome;
       } else {
         if (areaEnem) meta.area_nome = ENEM_AREAS.find(a => a.id === areaEnem)?.nome;
         if (anoEnem) meta.ano = anoEnem;
