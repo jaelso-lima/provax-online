@@ -268,7 +268,7 @@ export default function Simulado() {
   // Cascading: área → matérias (concurso)
   useEffect(() => {
     if (continuarId) return;
-    setMateriaId(""); setTopicId(""); setTopics([]);
+    setMateriaId(""); setTopicId(""); setSubtopicId(""); setTopics([]); setSubtopics([]);
     if (!areaId) { setMaterias([]); return; }
     fetchMateriasByArea(areaId).then(setMaterias);
   }, [areaId, continuarId]);
@@ -276,10 +276,18 @@ export default function Simulado() {
   // Load topics when materia selected
   useEffect(() => {
     if (continuarId) return;
-    setTopicId("");
+    setTopicId(""); setSubtopicId(""); setSubtopics([]);
     if (!materiaId) { setTopics([]); return; }
     fetchTopics(materiaId).then(setTopics);
   }, [materiaId, continuarId]);
+
+  // Load subtopics when topic selected
+  useEffect(() => {
+    if (continuarId) return;
+    setSubtopicId("");
+    if (!topicId) { setSubtopics([]); return; }
+    fetchSubtopics(topicId).then(setSubtopics);
+  }, [topicId, continuarId]);
 
   // Check prova completa availability when banca + area selected (concurso)
   useEffect(() => {
