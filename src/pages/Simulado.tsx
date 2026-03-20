@@ -549,7 +549,7 @@ export default function Simulado() {
         enunciado: q.enunciado, alternativas: q.alternativas as any, resposta_correta: q.resposta_correta,
         explicacao: q.explicacao || null, modo, materia_id: materiaId || null,
         area_id: areaId || null,
-        topic_id: topicId || null, banca_id: bancaId || null, source: "ai_generated",
+        topic_id: topicId || null, banca_id: bancaId || null, subtopic_id: subtopicId || null, source: "ai_generated",
       }));
       const { data: savedQuestoes, error: qErr } = await supabase.from("questoes").insert(questoesInsert).select("id");
       if (qErr) console.error("Erro ao salvar questões:", qErr);
