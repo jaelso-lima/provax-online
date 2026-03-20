@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   fetchAreas, fetchCarreiras, fetchBancas, fetchStates,
-  fetchEsferas, fetchTopics, fetchMateriasByArea, hasBancaDistribuicao,
+  fetchEsferas, fetchTopics, fetchSubtopics, fetchMateriasByArea, hasBancaDistribuicao,
   type FilterOption,
 } from "@/services/simuladoRepository";
 import {
