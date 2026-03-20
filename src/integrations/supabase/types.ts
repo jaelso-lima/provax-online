@@ -1510,6 +1510,7 @@ export type Database = {
           source: string | null
           state_id: string | null
           status_questao: string
+          subtopic_id: string | null
           topic_id: string | null
         }
         Insert: {
@@ -1531,6 +1532,7 @@ export type Database = {
           source?: string | null
           state_id?: string | null
           status_questao?: string
+          subtopic_id?: string | null
           topic_id?: string | null
         }
         Update: {
@@ -1552,6 +1554,7 @@ export type Database = {
           source?: string | null
           state_id?: string | null
           status_questao?: string
+          subtopic_id?: string | null
           topic_id?: string | null
         }
         Relationships: [
@@ -1602,6 +1605,13 @@ export type Database = {
             columns: ["state_id"]
             isOneToOne: false
             referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questoes_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
             referencedColumns: ["id"]
           },
           {
@@ -1831,6 +1841,7 @@ export type Database = {
           quantidade: number
           state_id: string | null
           status: string
+          subtopic_id: string | null
           tempo_gasto: number | null
           tipo: string
           topic_id: string | null
@@ -1854,6 +1865,7 @@ export type Database = {
           quantidade?: number
           state_id?: string | null
           status?: string
+          subtopic_id?: string | null
           tempo_gasto?: number | null
           tipo?: string
           topic_id?: string | null
@@ -1877,6 +1889,7 @@ export type Database = {
           quantidade?: number
           state_id?: string | null
           status?: string
+          subtopic_id?: string | null
           tempo_gasto?: number | null
           tipo?: string
           topic_id?: string | null
@@ -1932,6 +1945,13 @@ export type Database = {
             columns: ["state_id"]
             isOneToOne: false
             referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulados_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
             referencedColumns: ["id"]
           },
           {
@@ -2049,6 +2069,35 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subtopics: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtopics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
             referencedColumns: ["id"]
           },
         ]
