@@ -86,6 +86,7 @@ export default function Simulado() {
   const [esferas, setEsferas] = useState<FilterOption[]>([]);
   const [areas, setAreas] = useState<FilterOption[]>([]);
   const [topics, setTopics] = useState<FilterOption[]>([]);
+  const [subtopics, setSubtopics] = useState<FilterOption[]>([]);
 
   // Filter selections
   const [carreiraId, setCarreiraId] = useState("");
@@ -98,6 +99,7 @@ export default function Simulado() {
   const [areaEnem, setAreaEnem] = useState("");
   const [anoEnem, setAnoEnem] = useState("");
   const [topicId, setTopicId] = useState("");
+  const [subtopicId, setSubtopicId] = useState("");
 
   // Simulado type mode (concurso)
   const [tipoMode, setTipoMode] = useState<SimuladoTipoMode>("disciplina");
