@@ -55,6 +55,7 @@ interface SimuladoMeta {
   estado_nome?: string;
   materia_nome?: string;
   topic_nome?: string;
+  subtopic_nome?: string;
 }
 
 export default function Simulado() {
