@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   fetchAreas, fetchCarreiras, fetchBancas, fetchStates,
-  fetchEsferas, fetchTopics, fetchMateriasByArea, hasBancaDistribuicao,
+  fetchEsferas, fetchTopics, fetchSubtopics, fetchMateriasByArea, hasBancaDistribuicao,
   type FilterOption,
 } from "@/services/simuladoRepository";
 import {
@@ -55,6 +55,7 @@ interface SimuladoMeta {
   estado_nome?: string;
   materia_nome?: string;
   topic_nome?: string;
+  subtopic_nome?: string;
 }
 
 export default function Simulado() {
@@ -86,6 +87,7 @@ export default function Simulado() {
   const [esferas, setEsferas] = useState<FilterOption[]>([]);
   const [areas, setAreas] = useState<FilterOption[]>([]);
   const [topics, setTopics] = useState<FilterOption[]>([]);
+  const [subtopics, setSubtopics] = useState<FilterOption[]>([]);
 
   // Filter selections
   const [carreiraId, setCarreiraId] = useState("");
@@ -98,6 +100,7 @@ export default function Simulado() {
   const [areaEnem, setAreaEnem] = useState("");
   const [anoEnem, setAnoEnem] = useState("");
   const [topicId, setTopicId] = useState("");
+  const [subtopicId, setSubtopicId] = useState("");
 
   // Simulado type mode (concurso)
   const [tipoMode, setTipoMode] = useState<SimuladoTipoMode>("disciplina");
@@ -266,7 +269,7 @@ export default function Simulado() {
   // Cascading: área → matérias (concurso)
   useEffect(() => {
     if (continuarId) return;
-    setMateriaId(""); setTopicId(""); setTopics([]);
+    setMateriaId(""); setTopicId(""); setSubtopicId(""); setTopics([]); setSubtopics([]);
     if (!areaId) { setMaterias([]); return; }
     fetchMateriasByArea(areaId).then(setMaterias);
   }, [areaId, continuarId]);
@@ -274,10 +277,18 @@ export default function Simulado() {
   // Load topics when materia selected
   useEffect(() => {
     if (continuarId) return;
-    setTopicId("");
+    setTopicId(""); setSubtopicId(""); setSubtopics([]);
     if (!materiaId) { setTopics([]); return; }
     fetchTopics(materiaId).then(setTopics);
   }, [materiaId, continuarId]);
+
+  // Load subtopics when topic selected
+  useEffect(() => {
+    if (continuarId) return;
+    setSubtopicId("");
+    if (!topicId) { setSubtopics([]); return; }
+    fetchSubtopics(topicId).then(setSubtopics);
+  }, [topicId, continuarId]);
 
   // Check prova completa availability when banca + area selected (concurso)
   useEffect(() => {
@@ -402,6 +413,7 @@ export default function Simulado() {
         if (anoConcurso) meta.ano = anoConcurso;
         if (materiaId) meta.materia_nome = materias.find(m => m.id === materiaId)?.nome;
         if (topicId) meta.topic_nome = topics.find(t => t.id === topicId)?.nome;
+        if (subtopicId) meta.subtopic_nome = subtopics.find(s => s.id === subtopicId)?.nome;
       } else {
         if (areaEnem) meta.area_nome = ENEM_AREAS.find(a => a.id === areaEnem)?.nome;
         if (anoEnem) meta.ano = anoEnem;
@@ -437,6 +449,7 @@ export default function Simulado() {
           esfera: esferaId || undefined,
           ano: anoConcurso ? parseInt(anoConcurso) : undefined,
           topic: topicId || undefined,
+          subtopic: subtopicId || undefined,
           ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
         };
       } else {
@@ -529,6 +542,7 @@ export default function Simulado() {
         carreira_id: carreiraId || null, materia_id: materiaId || null, banca_id: bancaId || null,
         state_id: stateId || null, esfera_id: esferaId || null, area_id: areaId || null, modo,
         topic_id: topicId || null,
+        subtopic_id: subtopicId || null,
       }).select().single();
       if (sErr) throw sErr;
 
@@ -536,7 +550,7 @@ export default function Simulado() {
         enunciado: q.enunciado, alternativas: q.alternativas as any, resposta_correta: q.resposta_correta,
         explicacao: q.explicacao || null, modo, materia_id: materiaId || null,
         area_id: areaId || null,
-        topic_id: topicId || null, banca_id: bancaId || null, source: "ai_generated",
+        topic_id: topicId || null, banca_id: bancaId || null, subtopic_id: subtopicId || null, source: "ai_generated",
       }));
       const { data: savedQuestoes, error: qErr } = await supabase.from("questoes").insert(questoesInsert).select("id");
       if (qErr) console.error("Erro ao salvar questões:", qErr);
@@ -782,7 +796,10 @@ export default function Simulado() {
               <>
                 <div className="space-y-2"><Label>Matéria *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
                 {topics.length > 0 && (
-                  <div className="space-y-2"><Label>Assunto (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os assuntos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
+                )}
+                {subtopics.length > 0 && (
+                  <div className="space-y-2"><Label>Subtópico (opcional)</Label><Select value={subtopicId} onValueChange={setSubtopicId}><SelectTrigger><SelectValue placeholder="Todos os subtópicos" /></SelectTrigger><SelectContent>{subtopics.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent></Select></div>
                 )}
               </>
             )}
@@ -799,7 +816,7 @@ export default function Simulado() {
         </>)}
 
         {/* Common fields */}
-        <div className="space-y-2"><Label>Dificuldade</Label><Select value={nivel} onValueChange={setNivel}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="facil">Fácil</SelectItem><SelectItem value="medio">Médio</SelectItem><SelectItem value="dificil">Difícil</SelectItem></SelectContent></Select></div>
+        <div className="space-y-2"><Label>Dificuldade</Label><Select value={nivel} onValueChange={setNivel}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="misto">🎲 Misto (Fácil + Médio + Difícil)</SelectItem><SelectItem value="facil">Fácil</SelectItem><SelectItem value="medio">Médio</SelectItem><SelectItem value="dificil">Difícil</SelectItem></SelectContent></Select></div>
         
         {tipoMode === "livre" && (
           <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem><SelectItem value="30">30 questões</SelectItem><SelectItem value="50">50 questões</SelectItem><SelectItem value="100">100 questões</SelectItem></SelectContent></Select></div>

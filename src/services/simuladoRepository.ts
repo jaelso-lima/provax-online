@@ -48,6 +48,11 @@ export async function fetchTopics(materiaId: string): Promise<FilterOption[]> {
   return data || [];
 }
 
+export async function fetchSubtopics(topicId: string): Promise<FilterOption[]> {
+  const { data } = await supabase.from("subtopics").select("*").eq("topic_id", topicId).order("nome");
+  return data || [];
+}
+
 // ─── Cascading Relations ────────────────────────────────────────
 export async function fetchMateriasByArea(areaId: string): Promise<FilterOption[]> {
   const { data } = await supabase

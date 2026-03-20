@@ -12,7 +12,11 @@ function buildPrompt(params: {
 }): string {
   const { modo, quantidade, nivel, filterContext, ano } = params;
 
-  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} questões de múltipla escolha (A-E) de nível ${nivel}.`;
+  const nivelInstruction = nivel === "misto"
+    ? "mistura de dificuldades (30% fácil, 40% médio, 30% difícil)"
+    : `nível ${nivel}`;
+
+  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} questões de múltipla escolha (A-E) de ${nivelInstruction}.`;
 
   const modoInstructions: Record<string, string> = {
     concurso: `Padrão: concursos públicos brasileiros. As questões devem ser realistas, no padrão de bancas federais/estaduais/municipais, com alternativas plausíveis e pegadinhas típicas de provas oficiais.${ano ? ` Ano de referência: ${ano}.` : ""}`,
@@ -31,7 +35,8 @@ REGRAS OBRIGATÓRIAS:
 7. Linguagem formal e técnica adequada ao contexto
 8. Enunciados claros, sem ambiguidade
 9. OBRIGATÓRIO: Cada questão deve incluir o campo "materia_nome" com o nome da matéria/disciplina da questão
-10. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada (agrupe questões por matéria na mesma sequência)`;
+10. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada (agrupe questões por matéria na mesma sequência)
+11. OBRIGATÓRIO: Cada questão deve incluir o campo "dificuldade" com valor "facil", "medio" ou "dificil"${nivel === "misto" ? "\n12. Para modo MISTO, distribua as dificuldades: ~30% fácil, ~40% médio, ~30% difícil" : ""}`;
 
   return `${base}\n\n${modoInstructions[modo] || modoInstructions.concurso}\n\n${filterContext ? `Contexto dos filtros: ${filterContext}` : ""}\n\n${rules}`;
 }
@@ -111,7 +116,7 @@ serve(async (req) => {
 
     // --- Body & Sanitização ---
     const body = await req.json();
-    const allowedNiveis = ["facil", "medio", "media", "dificil"];
+    const allowedNiveis = ["facil", "medio", "media", "dificil", "misto"];
     const allowedModos = ["concurso", "enem"];
 
     // Allow any quantity up to 50 for all modes; prova_completa up to 60
@@ -129,6 +134,7 @@ serve(async (req) => {
     const state = typeof body.state === "string" ? body.state.slice(0, 100) : undefined;
     const esfera = typeof body.esfera === "string" ? body.esfera.slice(0, 100) : undefined;
     const topic = typeof body.topic === "string" ? body.topic.slice(0, 100) : undefined;
+    const subtopic = typeof body.subtopic === "string" ? body.subtopic.slice(0, 100) : undefined;
     const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
     const provaCompleta = body.provaCompleta === true;
     const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 2000) : undefined;
@@ -168,6 +174,7 @@ serve(async (req) => {
       resolveFilter("states", state, "Estado"),
       resolveFilter("esferas", esfera, "Esfera"),
       resolveFilter("topics", topic, "Tópico"),
+      resolveFilter("subtopics", subtopic, "Subtópico"),
       resolveFilter("cursos", curso, "Curso"),
     ]);
 
@@ -242,8 +249,9 @@ serve(async (req) => {
                           },
                           resposta_correta: { type: "string", enum: ["A", "B", "C", "D", "E"] },
                           explicacao: { type: "string", description: "Explicação detalhada da resposta correta" },
+                          dificuldade: { type: "string", enum: ["facil", "medio", "dificil"], description: "Nível de dificuldade da questão" },
                         },
-                        required: ["enunciado", "materia_nome", "alternativas", "resposta_correta", "explicacao"],
+                        required: ["enunciado", "materia_nome", "alternativas", "resposta_correta", "explicacao", "dificuldade"],
                         additionalProperties: false,
                       },
                     },
