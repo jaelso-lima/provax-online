@@ -541,6 +541,7 @@ export default function Simulado() {
         carreira_id: carreiraId || null, materia_id: materiaId || null, banca_id: bancaId || null,
         state_id: stateId || null, esfera_id: esferaId || null, area_id: areaId || null, modo,
         topic_id: topicId || null,
+        subtopic_id: subtopicId || null,
       }).select().single();
       if (sErr) throw sErr;
 
