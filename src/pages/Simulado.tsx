@@ -448,6 +448,7 @@ export default function Simulado() {
           esfera: esferaId || undefined,
           ano: anoConcurso ? parseInt(anoConcurso) : undefined,
           topic: topicId || undefined,
+          subtopic: subtopicId || undefined,
           ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
         };
       } else {
