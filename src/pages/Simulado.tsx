@@ -796,7 +796,10 @@ export default function Simulado() {
               <>
                 <div className="space-y-2"><Label>Matéria *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
                 {topics.length > 0 && (
-                  <div className="space-y-2"><Label>Assunto (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os assuntos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
+                )}
+                {subtopics.length > 0 && (
+                  <div className="space-y-2"><Label>Subtópico (opcional)</Label><Select value={subtopicId} onValueChange={setSubtopicId}><SelectTrigger><SelectValue placeholder="Todos os subtópicos" /></SelectTrigger><SelectContent>{subtopics.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent></Select></div>
                 )}
               </>
             )}
