@@ -174,6 +174,7 @@ serve(async (req) => {
       resolveFilter("states", state, "Estado"),
       resolveFilter("esferas", esfera, "Esfera"),
       resolveFilter("topics", topic, "Tópico"),
+      resolveFilter("subtopics", subtopic, "Subtópico"),
       resolveFilter("cursos", curso, "Curso"),
     ]);
 
