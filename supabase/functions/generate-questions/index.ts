@@ -116,7 +116,7 @@ serve(async (req) => {
 
     // --- Body & Sanitização ---
     const body = await req.json();
-    const allowedNiveis = ["facil", "medio", "media", "dificil"];
+    const allowedNiveis = ["facil", "medio", "media", "dificil", "misto"];
     const allowedModos = ["concurso", "enem"];
 
     // Allow any quantity up to 50 for all modes; prova_completa up to 60
@@ -134,6 +134,7 @@ serve(async (req) => {
     const state = typeof body.state === "string" ? body.state.slice(0, 100) : undefined;
     const esfera = typeof body.esfera === "string" ? body.esfera.slice(0, 100) : undefined;
     const topic = typeof body.topic === "string" ? body.topic.slice(0, 100) : undefined;
+    const subtopic = typeof body.subtopic === "string" ? body.subtopic.slice(0, 100) : undefined;
     const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
     const provaCompleta = body.provaCompleta === true;
     const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 2000) : undefined;
