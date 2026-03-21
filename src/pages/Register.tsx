@@ -77,10 +77,10 @@ export default function Register() {
       } else {
         trackFBEvent("CompleteRegistration", { content_name: "ProvaX Signup" });
         toast({ 
-          title: "Conta criada! 📧", 
-          description: "Enviamos um link de confirmação para seu email. Verifique sua caixa de entrada (e spam) para ativar sua conta.",
+          title: "Conta criada com sucesso! 🎉", 
+          description: "Bem-vindo ao ProvaX! Redirecionando...",
         });
-        navigate("/login");
+        navigate("/simulado");
       }
     } catch (err: any) {
       toast({ title: "Erro ao criar conta", description: err.message, variant: "destructive" });
