@@ -855,12 +855,25 @@ function QuestionCard({
   simuladoMeta: SimuladoMeta;
 }) {
   const [showAnswer, setShowAnswer] = useState(false);
+  const [struckOut, setStruckOut] = useState<Set<string>>(new Set());
   const isCorrect = selectedAnswer === question.resposta_correta;
 
-  // Reset showAnswer when question changes
+  // Reset showAnswer and strikethrough when question changes
   useEffect(() => {
     setShowAnswer(false);
+    setStruckOut(new Set());
   }, [currentIdx]);
+
+  const toggleStrike = (letra: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (showAnswer) return;
+    setStruckOut(prev => {
+      const next = new Set(prev);
+      if (next.has(letra)) next.delete(letra); else next.add(letra);
+      return next;
+    });
+  };
 
   return (
     <Card>
@@ -884,9 +897,13 @@ function QuestionCard({
           );
         })()}
         <p className="mb-6 text-sm leading-relaxed">{question.enunciado}</p>
+
+        <p className="mb-2 text-[10px] text-muted-foreground/50 select-none">💡 Clique direito (ou segure) numa alternativa para riscá-la</p>
+
         <div className="space-y-2">
           {question.alternativas.map(o => {
-            let classes = "w-full rounded-lg border p-3 text-left text-sm transition-colors ";
+            const isStruck = struckOut.has(o.letra);
+            let classes = "w-full rounded-lg border p-3 text-left text-sm transition-colors relative group ";
             if (showAnswer && selectedAnswer) {
               if (o.letra === question.resposta_correta) {
                 classes += "border-green-500 bg-green-500/10 font-medium text-green-700 dark:text-green-400";
@@ -897,6 +914,8 @@ function QuestionCard({
               }
             } else if (selectedAnswer === o.letra) {
               classes += "border-primary bg-primary/10 font-medium";
+            } else if (isStruck) {
+              classes += "opacity-40 border-dashed";
             } else {
               classes += "hover:bg-secondary";
             }
@@ -904,10 +923,21 @@ function QuestionCard({
               <button
                 key={o.letra}
                 className={classes}
-                onClick={() => !showAnswer && onAnswer(o.letra)}
+                onClick={() => !showAnswer && !isStruck && onAnswer(o.letra)}
+                onContextMenu={(e) => toggleStrike(o.letra, e)}
+                onTouchStart={(e) => {
+                  const timer = setTimeout(() => toggleStrike(o.letra, e as any), 500);
+                  (e.currentTarget as any)._lt = timer;
+                }}
+                onTouchEnd={(e) => { clearTimeout((e.currentTarget as any)._lt); }}
                 disabled={showAnswer}
               >
-                <span className="mr-2 font-semibold">{o.letra})</span>{o.texto}
+                <span className={`${isStruck ? "line-through decoration-2 decoration-destructive/60" : ""}`}>
+                  <span className="mr-2 font-semibold">{o.letra})</span>{o.texto}
+                </span>
+                {isStruck && !showAnswer && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/40">✕</span>
+                )}
                 {showAnswer && o.letra === question.resposta_correta && (
                   <CheckCircle2 className="inline ml-2 h-4 w-4 text-green-600" />
                 )}
