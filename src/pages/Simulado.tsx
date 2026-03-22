@@ -898,12 +898,12 @@ function QuestionCard({
         })()}
         <p className="mb-6 text-sm leading-relaxed">{question.enunciado}</p>
 
-        <p className="mb-2 text-[10px] text-muted-foreground/50 select-none">💡 Clique direito (ou segure) numa alternativa para riscá-la</p>
+        <p className="mb-2 text-[10px] text-muted-foreground/50 select-none">💡 Toque no ❌ ao lado da alternativa para eliminá-la</p>
 
         <div className="space-y-2">
           {question.alternativas.map(o => {
             const isStruck = struckOut.has(o.letra);
-            let classes = "w-full rounded-lg border p-3 text-left text-sm transition-colors relative group ";
+            let classes = "flex-1 rounded-lg border p-3 text-left text-sm transition-colors ";
             if (showAnswer && selectedAnswer) {
               if (o.letra === question.resposta_correta) {
                 classes += "border-green-500 bg-green-500/10 font-medium text-green-700 dark:text-green-400";
@@ -920,31 +920,40 @@ function QuestionCard({
               classes += "hover:bg-secondary";
             }
             return (
-              <button
-                key={o.letra}
-                className={classes}
-                onClick={() => !showAnswer && !isStruck && onAnswer(o.letra)}
-                onContextMenu={(e) => toggleStrike(o.letra, e)}
-                onTouchStart={(e) => {
-                  const timer = setTimeout(() => toggleStrike(o.letra, e as any), 500);
-                  (e.currentTarget as any)._lt = timer;
-                }}
-                onTouchEnd={(e) => { clearTimeout((e.currentTarget as any)._lt); }}
-                disabled={showAnswer}
-              >
-                <span className={`${isStruck ? "line-through decoration-2 decoration-destructive/60" : ""}`}>
-                  <span className="mr-2 font-semibold">{o.letra})</span>{o.texto}
-                </span>
-                {isStruck && !showAnswer && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/40">✕</span>
+              <div key={o.letra} className="flex items-stretch gap-1.5">
+                {/* Botão de eliminação */}
+                {!showAnswer && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleStrike(o.letra, e); }}
+                    className={`flex-shrink-0 w-8 h-auto flex items-center justify-center rounded-md border text-xs transition-colors ${
+                      isStruck
+                        ? "bg-destructive/15 border-destructive/30 text-destructive"
+                        : "bg-muted/50 border-border text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive"
+                    }`}
+                    aria-label={isStruck ? "Desmarcar eliminação" : "Eliminar alternativa"}
+                  >
+                    {isStruck ? "↩" : "✕"}
+                  </button>
                 )}
-                {showAnswer && o.letra === question.resposta_correta && (
-                  <CheckCircle2 className="inline ml-2 h-4 w-4 text-green-600" />
-                )}
-                {showAnswer && o.letra === selectedAnswer && !isCorrect && o.letra !== question.resposta_correta && (
-                  <XCircle className="inline ml-2 h-4 w-4 text-destructive" />
-                )}
-              </button>
+                {/* Alternativa */}
+                <button
+                  className={classes}
+                  onClick={() => !showAnswer && !isStruck && onAnswer(o.letra)}
+                  onContextMenu={(e) => { e.preventDefault(); toggleStrike(o.letra, e); }}
+                  disabled={showAnswer}
+                >
+                  <span className={`${isStruck ? "line-through decoration-2 decoration-destructive/60" : ""}`}>
+                    <span className="mr-2 font-semibold">{o.letra})</span>{o.texto}
+                  </span>
+                  {showAnswer && o.letra === question.resposta_correta && (
+                    <CheckCircle2 className="inline ml-2 h-4 w-4 text-green-600" />
+                  )}
+                  {showAnswer && o.letra === selectedAnswer && !isCorrect && o.letra !== question.resposta_correta && (
+                    <XCircle className="inline ml-2 h-4 w-4 text-destructive" />
+                  )}
+                </button>
+              </div>
             );
           })}
         </div>
