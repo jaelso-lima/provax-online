@@ -14,6 +14,7 @@ import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft, CheckCirc
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import QuestionComments from "@/components/QuestionComments";
 import {
   fetchAreas, fetchCarreiras, fetchBancas, fetchStates,
   fetchEsferas, fetchTopics, fetchSubtopics, fetchMateriasByArea, hasBancaDistribuicao,
@@ -69,7 +70,9 @@ export default function Simulado() {
   const paramAreaNome = searchParams.get("area_nome");
   const paramNivel = searchParams.get("nivel");
   const paramEstado = searchParams.get("estado");
+  const paramCadernoId = searchParams.get("caderno_id");
   const [autostartTriggered, setAutostartTriggered] = useState(false);
+  const [tipoResposta, setTipoResposta] = useState("multipla_escolha");
 
   const [nivel, setNivel] = useState("");
   const [quantidade, setQuantidade] = useState("5");
@@ -374,7 +377,7 @@ export default function Simulado() {
       }
 
       let qtd = tipoMode === "disciplina" ? 40 : parseInt(quantidade);
-      let bodyPayload: any = { quantidade: qtd, nivel: nivel || "medio", modo };
+      let bodyPayload: any = { quantidade: qtd, nivel: nivel || "medio", modo, tipo_resposta: tipoResposta };
       let provaCompletaContext = "";
 
       // Fetch previously answered question enunciados to avoid repeats
@@ -818,6 +821,8 @@ export default function Simulado() {
         {/* Common fields */}
         <div className="space-y-2"><Label>Dificuldade</Label><Select value={nivel} onValueChange={setNivel}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="misto">🎲 Misto (Fácil + Médio + Difícil)</SelectItem><SelectItem value="facil">Fácil</SelectItem><SelectItem value="medio">Médio</SelectItem><SelectItem value="dificil">Difícil</SelectItem></SelectContent></Select></div>
         
+        <div className="space-y-2"><Label>Tipo de Questão</Label><Select value={tipoResposta} onValueChange={setTipoResposta}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="multipla_escolha">📝 Múltipla Escolha (A, B, C, D, E)</SelectItem><SelectItem value="certo_errado">✅❌ Certo ou Errado</SelectItem><SelectItem value="ambos">🔀 Ambos (Misturado)</SelectItem></SelectContent></Select></div>
+        
         {tipoMode === "livre" && (
           <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem><SelectItem value="30">30 questões</SelectItem><SelectItem value="50">50 questões</SelectItem><SelectItem value="100">100 questões</SelectItem></SelectContent></Select></div>
         )}
@@ -976,6 +981,11 @@ function QuestionCard({
           <div className="mt-3 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground leading-relaxed border-l-2 border-primary/30">
             <span className="font-medium text-foreground">Explicação:</span> {question.explicacao}
           </div>
+        )}
+
+        {/* Comments section - show after answering */}
+        {showAnswer && question.id && (
+          <QuestionComments questaoId={question.id} />
         )}
       </CardContent>
     </Card>

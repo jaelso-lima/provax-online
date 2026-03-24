@@ -29,6 +29,7 @@ const ConcursosAbertos = lazy(() => import("./pages/ConcursosAbertos"));
 const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
 const AnalisarEdital = lazy(() => import("./pages/AnalisarEdital"));
 const EditalEstudoViewer = lazy(() => import("./pages/EditalEstudoViewer"));
+const Cadernos = lazy(() => import("./pages/Cadernos"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TermosDeUso = lazy(() => import("./pages/TermosDeUso"));
@@ -97,6 +98,7 @@ const App = () => (
               <Route path="/concursos" element={<ProtectedRoute><ConcursosAbertos /></ProtectedRoute>} />
               <Route path="/analisar-edital" element={<ProtectedRoute><AnalisarEdital /></ProtectedRoute>} />
               <Route path="/analisar-edital/:id" element={<ProtectedRoute><EditalEstudoViewer /></ProtectedRoute>} />
+              <Route path="/cadernos" element={<ProtectedRoute><Cadernos /></ProtectedRoute>} />
               <Route path="/funcionario" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
               <Route path="/termos" element={<TermosDeUso />} />
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { BookOpen, PenTool, Coins, Trophy, Share2, Copy, CheckCircle, Clock, XCircle, Link as LinkIcon, Gift, PlayCircle, Eye, Radar, Crown, Flame, Target, FileSearch } from "lucide-react";
+import { BookOpen, PenTool, Coins, Trophy, Share2, Copy, CheckCircle, Clock, XCircle, Link as LinkIcon, Gift, PlayCircle, Eye, Radar, Crown, Flame, Target, FileSearch, BookMarked } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
@@ -406,6 +406,22 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground">Envie o PDF e receba resumos, dicas e estratégias</p>
             </div>
             {isFreePlan && <Badge variant="secondary" className="shrink-0 text-xs gap-1"><Crown className="h-3 w-3" /> PRO</Badge>}
+          </CardContent>
+        </Card>
+
+        {/* Cadernos CTA */}
+        <Card
+          className="mb-6 cursor-pointer border-accent/20 bg-accent/5 transition-all hover:shadow-md active:scale-[0.99]"
+          onClick={() => navigate("/cadernos")}
+        >
+          <CardContent className="flex items-center gap-4 py-4 px-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 shrink-0">
+              <BookMarked className="h-5 w-5 text-accent-foreground" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">Meus Cadernos</p>
+              <p className="text-xs text-muted-foreground">Organize matérias e gere simulados personalizados</p>
+            </div>
           </CardContent>
         </Card>
 
