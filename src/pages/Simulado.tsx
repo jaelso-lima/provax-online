@@ -14,6 +14,7 @@ import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft, CheckCirc
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import QuestionComments from "@/components/QuestionComments";
 import {
   fetchAreas, fetchCarreiras, fetchBancas, fetchStates,
   fetchEsferas, fetchTopics, fetchSubtopics, fetchMateriasByArea, hasBancaDistribuicao,
