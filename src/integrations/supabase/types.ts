@@ -217,6 +217,119 @@ export type Database = {
         }
         Relationships: []
       }
+      caderno_itens: {
+        Row: {
+          area_id: string | null
+          caderno_id: string
+          carreira_id: string | null
+          created_at: string
+          id: string
+          materia_id: string | null
+          subcargo_id: string | null
+          subtopic_id: string | null
+          topic_id: string | null
+        }
+        Insert: {
+          area_id?: string | null
+          caderno_id: string
+          carreira_id?: string | null
+          created_at?: string
+          id?: string
+          materia_id?: string | null
+          subcargo_id?: string | null
+          subtopic_id?: string | null
+          topic_id?: string | null
+        }
+        Update: {
+          area_id?: string | null
+          caderno_id?: string
+          carreira_id?: string | null
+          created_at?: string
+          id?: string
+          materia_id?: string | null
+          subcargo_id?: string | null
+          subtopic_id?: string | null
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caderno_itens_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caderno_itens_caderno_id_fkey"
+            columns: ["caderno_id"]
+            isOneToOne: false
+            referencedRelation: "cadernos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caderno_itens_carreira_id_fkey"
+            columns: ["carreira_id"]
+            isOneToOne: false
+            referencedRelation: "carreiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caderno_itens_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caderno_itens_subcargo_id_fkey"
+            columns: ["subcargo_id"]
+            isOneToOne: false
+            referencedRelation: "subcargos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caderno_itens_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caderno_itens_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cadernos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       carreira_materias: {
         Row: {
           carreira_id: string
@@ -270,6 +383,86 @@ export type Database = {
           nome?: string
         }
         Relationships: []
+      }
+      comentario_likes: {
+        Row: {
+          comentario_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comentario_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comentario_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comentario_likes_comentario_id_fkey"
+            columns: ["comentario_id"]
+            isOneToOne: false
+            referencedRelation: "comentarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comentarios: {
+        Row: {
+          created_at: string
+          id: string
+          likes: number
+          questao_id: string
+          resposta_id: string | null
+          texto: string
+          tipo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          likes?: number
+          questao_id: string
+          resposta_id?: string | null
+          texto: string
+          tipo?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          likes?: number
+          questao_id?: string
+          resposta_id?: string | null
+          texto?: string
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comentarios_questao_id_fkey"
+            columns: ["questao_id"]
+            isOneToOne: false
+            referencedRelation: "questoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comentarios_resposta_id_fkey"
+            columns: ["resposta_id"]
+            isOneToOne: false
+            referencedRelation: "comentarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       concursos: {
         Row: {
@@ -1496,6 +1689,7 @@ export type Database = {
           ano: number | null
           area_id: string | null
           banca_id: string | null
+          carreira_id: string | null
           concurso_id: string | null
           created_at: string
           curso_id: string | null
@@ -1506,11 +1700,15 @@ export type Database = {
           id: string
           materia_id: string | null
           modo: string
+          nivel: string | null
+          orgao: string | null
           resposta_correta: string
           source: string | null
           state_id: string | null
           status_questao: string
+          subcargo_id: string | null
           subtopic_id: string | null
+          tipo_resposta: string | null
           topic_id: string | null
         }
         Insert: {
@@ -1518,6 +1716,7 @@ export type Database = {
           ano?: number | null
           area_id?: string | null
           banca_id?: string | null
+          carreira_id?: string | null
           concurso_id?: string | null
           created_at?: string
           curso_id?: string | null
@@ -1528,11 +1727,15 @@ export type Database = {
           id?: string
           materia_id?: string | null
           modo?: string
+          nivel?: string | null
+          orgao?: string | null
           resposta_correta: string
           source?: string | null
           state_id?: string | null
           status_questao?: string
+          subcargo_id?: string | null
           subtopic_id?: string | null
+          tipo_resposta?: string | null
           topic_id?: string | null
         }
         Update: {
@@ -1540,6 +1743,7 @@ export type Database = {
           ano?: number | null
           area_id?: string | null
           banca_id?: string | null
+          carreira_id?: string | null
           concurso_id?: string | null
           created_at?: string
           curso_id?: string | null
@@ -1550,11 +1754,15 @@ export type Database = {
           id?: string
           materia_id?: string | null
           modo?: string
+          nivel?: string | null
+          orgao?: string | null
           resposta_correta?: string
           source?: string | null
           state_id?: string | null
           status_questao?: string
+          subcargo_id?: string | null
           subtopic_id?: string | null
+          tipo_resposta?: string | null
           topic_id?: string | null
         }
         Relationships: [
@@ -1570,6 +1778,13 @@ export type Database = {
             columns: ["banca_id"]
             isOneToOne: false
             referencedRelation: "bancas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questoes_carreira_id_fkey"
+            columns: ["carreira_id"]
+            isOneToOne: false
+            referencedRelation: "carreiras"
             referencedColumns: ["id"]
           },
           {
@@ -1605,6 +1820,13 @@ export type Database = {
             columns: ["state_id"]
             isOneToOne: false
             referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questoes_subcargo_id_fkey"
+            columns: ["subcargo_id"]
+            isOneToOne: false
+            referencedRelation: "subcargos"
             referencedColumns: ["id"]
           },
           {
@@ -2013,6 +2235,35 @@ export type Database = {
           sigla?: string
         }
         Relationships: []
+      }
+      subcargos: {
+        Row: {
+          carreira_id: string
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          carreira_id: string
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          carreira_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcargos_carreira_id_fkey"
+            columns: ["carreira_id"]
+            isOneToOne: false
+            referencedRelation: "carreiras"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
