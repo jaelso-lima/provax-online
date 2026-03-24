@@ -70,7 +70,9 @@ export default function Simulado() {
   const paramAreaNome = searchParams.get("area_nome");
   const paramNivel = searchParams.get("nivel");
   const paramEstado = searchParams.get("estado");
+  const paramCadernoId = searchParams.get("caderno_id");
   const [autostartTriggered, setAutostartTriggered] = useState(false);
+  const [tipoResposta, setTipoResposta] = useState("multipla_escolha");
 
   const [nivel, setNivel] = useState("");
   const [quantidade, setQuantidade] = useState("5");
