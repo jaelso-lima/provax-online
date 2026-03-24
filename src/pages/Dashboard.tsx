@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
-import { BookOpen, PenTool, Coins, Trophy, Share2, Copy, CheckCircle, Clock, XCircle, Link as LinkIcon, Gift, PlayCircle, Eye, Radar, Crown, Flame, Target, FileSearch } from "lucide-react";
+import { BookOpen, PenTool, Coins, Trophy, Share2, Copy, CheckCircle, Clock, XCircle, Link as LinkIcon, Gift, PlayCircle, Eye, Radar, Crown, Flame, Target, FileSearch, BookMarked } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
