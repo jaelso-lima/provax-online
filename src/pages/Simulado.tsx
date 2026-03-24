@@ -982,6 +982,11 @@ function QuestionCard({
             <span className="font-medium text-foreground">Explicação:</span> {question.explicacao}
           </div>
         )}
+
+        {/* Comments section - show after answering */}
+        {showAnswer && question.id && (
+          <QuestionComments questaoId={question.id} />
+        )}
       </CardContent>
     </Card>
   );
