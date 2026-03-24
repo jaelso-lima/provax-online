@@ -821,6 +821,8 @@ export default function Simulado() {
         {/* Common fields */}
         <div className="space-y-2"><Label>Dificuldade</Label><Select value={nivel} onValueChange={setNivel}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent><SelectItem value="misto">🎲 Misto (Fácil + Médio + Difícil)</SelectItem><SelectItem value="facil">Fácil</SelectItem><SelectItem value="medio">Médio</SelectItem><SelectItem value="dificil">Difícil</SelectItem></SelectContent></Select></div>
         
+        <div className="space-y-2"><Label>Tipo de Questão</Label><Select value={tipoResposta} onValueChange={setTipoResposta}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="multipla_escolha">📝 Múltipla Escolha (A, B, C, D, E)</SelectItem><SelectItem value="certo_errado">✅❌ Certo ou Errado</SelectItem><SelectItem value="ambos">🔀 Ambos (Misturado)</SelectItem></SelectContent></Select></div>
+        
         {tipoMode === "livre" && (
           <div className="space-y-2"><Label>Quantidade</Label><Select value={quantidade} onValueChange={setQuantidade}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="5">5 questões</SelectItem><SelectItem value="10">10 questões</SelectItem><SelectItem value="20">20 questões</SelectItem><SelectItem value="30">30 questões</SelectItem><SelectItem value="50">50 questões</SelectItem><SelectItem value="100">100 questões</SelectItem></SelectContent></Select></div>
         )}
