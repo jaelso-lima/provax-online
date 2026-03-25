@@ -426,7 +426,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Stats — compact row */}
-        <div className="mb-6 grid grid-cols-3 gap-2.5">
+        <div className="mb-6 grid grid-cols-3 lg:grid-cols-3 gap-2.5 lg:gap-4">
           <Card>
             <CardContent className="py-3 text-center">
               <p className="text-2xl font-bold">{stats.totalSimulados}</p>
