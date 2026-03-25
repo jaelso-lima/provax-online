@@ -667,7 +667,7 @@ export default function Simulado() {
     const isLastQuestion = currentIdx === effectiveLimit - 1;
 
     return (
-      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
+      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl lg:max-w-3xl flex-1 py-8">
         <Button variant="ghost" className="mb-4 gap-2" onClick={handleVoltar}><ArrowLeft className="h-4 w-4" /> Voltar</Button>
         <div className="mb-4 space-y-2"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Questão {currentIdx+1} de {questoes.length}</span><span className="text-xs text-muted-foreground">{respondidas}/{questoes.length} respondidas</span></div><Progress value={progresso} className="h-2" /></div>
         
