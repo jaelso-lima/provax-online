@@ -10,6 +10,8 @@
 const ALLOWED_ORIGINS = [
   "https://provax-online.lovable.app",
   "https://id-preview--f77f69ee-d923-4f76-9fc7-4cc8cbcae1a4.lovable.app",
+  "https://provax.online",
+  "https://www.provax.online",
   "http://localhost:5173",
   "http://localhost:3000",
 ];
