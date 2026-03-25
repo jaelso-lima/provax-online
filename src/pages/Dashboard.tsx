@@ -340,8 +340,8 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Quick actions — 2x2 grid */}
-        <div className="mb-6 grid grid-cols-2 gap-2.5">
+        {/* Quick actions — 2x2 grid on mobile, 4-col on desktop */}
+        <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           <Card
             className="cursor-pointer border border-primary/20 transition-all hover:shadow-sm active:scale-[0.98]"
             onClick={() => navigate(`/simulado?modo=${modo}`)}
