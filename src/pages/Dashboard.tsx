@@ -271,7 +271,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
-      <main className="container flex-1 px-4 py-6 max-w-3xl">
+      <main className="container flex-1 px-4 py-6 max-w-3xl lg:max-w-5xl">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
