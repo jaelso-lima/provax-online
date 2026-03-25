@@ -630,7 +630,7 @@ export default function Simulado() {
   // ─── Render: Resultado ────────────────────────────────────────
   if (resultado) {
     return (
-      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-3xl flex-1 py-8">
+      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-3xl lg:max-w-4xl flex-1 py-8">
         <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard</Button>
         <Card><CardHeader className="text-center"><CardTitle className="font-display text-3xl">📊 Relatório do Simulado</CardTitle></CardHeader><CardContent className="space-y-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
