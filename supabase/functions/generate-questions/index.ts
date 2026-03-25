@@ -202,9 +202,10 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-    const BATCH_SIZE = 15; // Max questions per AI call — larger batches = fewer calls = faster
+    const BATCH_SIZE = 15;
+    const MODELS = ["google/gemini-2.5-flash", "openai/gpt-5-mini"];
 
-    const callAIBatch = async (batchQtd: number, batchContext: string): Promise<any[]> => {
+    const callAIWithModel = async (model: string, batchQtd: number, batchContext: string): Promise<any[]> => {
       const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano });
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -214,10 +215,10 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model,
           messages: [
             { role: "system", content: batchPrompt },
-            { role: "user", content: `Gere exatamente ${batchQtd} questões agora.` },
+            { role: "user", content: `Crie ${batchQtd} questões originais e inéditas sobre o tema solicitado. Cada questão deve ser única e criativa.` },
           ],
           tools: [
             {
@@ -269,20 +270,45 @@ serve(async (req) => {
       if (!aiResponse.ok) {
         const status = aiResponse.status;
         const errBody = await aiResponse.text();
-        console.error("AI gateway error:", status, errBody);
+        console.error(`AI gateway error (${model}):`, status, errBody);
         if (status === 429) throw { userMessage: "Muitas requisições. Aguarde um momento e tente novamente.", status: 429 };
         if (status === 402) throw { userMessage: "Créditos de IA esgotados. Entre em contato com o suporte.", status: 402 };
         throw { userMessage: "Erro ao gerar questões", status: 500 };
       }
 
       const aiData = await aiResponse.json();
+      const finishReason = aiData.choices?.[0]?.finish_reason;
+      const nativeReason = aiData.choices?.[0]?.native_finish_reason;
+
+      // Detect RECITATION or error finish reasons
+      if (finishReason === "error" || nativeReason === "RECITATION") {
+        console.warn(`Model ${model} returned ${nativeReason || finishReason}, will try fallback`);
+        throw { recitation: true, userMessage: "Modelo recusou gerar conteúdo", status: 500 };
+      }
+
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
       if (!toolCall?.function?.arguments) {
-        console.error("No tool call in response:", JSON.stringify(aiData));
-        throw { userMessage: "Resposta inesperada da IA", status: 500 };
+        console.error(`No tool call in response (${model}):`, JSON.stringify(aiData).slice(0, 500));
+        throw { recitation: true, userMessage: "Resposta inesperada da IA", status: 500 };
       }
 
       return JSON.parse(toolCall.function.arguments).questoes;
+    };
+
+    const callAIBatch = async (batchQtd: number, batchContext: string): Promise<any[]> => {
+      // Try each model in order; fallback on RECITATION errors
+      for (const model of MODELS) {
+        try {
+          return await callAIWithModel(model, batchQtd, batchContext);
+        } catch (e: any) {
+          if (e.recitation) {
+            console.log(`Falling back from ${model} due to RECITATION`);
+            continue;
+          }
+          throw e; // Rate limit or other hard errors
+        }
+      }
+      throw { userMessage: "Nenhum modelo conseguiu gerar as questões. Tente novamente.", status: 500 };
     };
 
     // --- Build batches for parallel execution ---
