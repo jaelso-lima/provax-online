@@ -271,7 +271,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
-      <main className="container flex-1 px-4 py-6 max-w-3xl">
+      <main className="container flex-1 px-4 py-6 max-w-3xl lg:max-w-5xl">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
@@ -340,8 +340,8 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Quick actions — 2x2 grid */}
-        <div className="mb-6 grid grid-cols-2 gap-2.5">
+        {/* Quick actions — 2x2 grid on mobile, 4-col on desktop */}
+        <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5">
           <Card
             className="cursor-pointer border border-primary/20 transition-all hover:shadow-sm active:scale-[0.98]"
             onClick={() => navigate(`/simulado?modo=${modo}`)}
@@ -426,7 +426,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Stats — compact row */}
-        <div className="mb-6 grid grid-cols-3 gap-2.5">
+        <div className="mb-6 grid grid-cols-3 lg:grid-cols-3 gap-2.5 lg:gap-4">
           <Card>
             <CardContent className="py-3 text-center">
               <p className="text-2xl font-bold">{stats.totalSimulados}</p>

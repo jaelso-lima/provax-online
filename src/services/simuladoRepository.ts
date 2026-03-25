@@ -79,9 +79,8 @@ export async function fetchBancaDistribuicao(
 
   if (carreiraId) {
     query = query.eq("carreira_id", carreiraId);
-  } else {
-    query = query.is("carreira_id", null);
   }
+  // When no carreiraId: don't filter by carreira_id at all — return all distributions for this banca+area
 
   const { data } = await query.order("quantidade", { ascending: false });
   return (data || []).map((d: any) => ({

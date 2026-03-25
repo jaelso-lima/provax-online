@@ -630,7 +630,7 @@ export default function Simulado() {
   // ─── Render: Resultado ────────────────────────────────────────
   if (resultado) {
     return (
-      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-3xl flex-1 py-8">
+      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-3xl lg:max-w-4xl flex-1 py-8">
         <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard</Button>
         <Card><CardHeader className="text-center"><CardTitle className="font-display text-3xl">📊 Relatório do Simulado</CardTitle></CardHeader><CardContent className="space-y-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -667,7 +667,7 @@ export default function Simulado() {
     const isLastQuestion = currentIdx === effectiveLimit - 1;
 
     return (
-      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl flex-1 py-8">
+      <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-2xl lg:max-w-3xl flex-1 py-8">
         <Button variant="ghost" className="mb-4 gap-2" onClick={handleVoltar}><ArrowLeft className="h-4 w-4" /> Voltar</Button>
         <div className="mb-4 space-y-2"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Questão {currentIdx+1} de {questoes.length}</span><span className="text-xs text-muted-foreground">{respondidas}/{questoes.length} respondidas</span></div><Progress value={progresso} className="h-2" /></div>
         
@@ -736,7 +736,7 @@ export default function Simulado() {
 
   // ─── Render: Configuration form ───────────────────────────────
   return (
-    <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg flex-1 py-8">
+    <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg lg:max-w-2xl flex-1 py-8">
       <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard</Button>
       <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : "🎯 Gerar Simulado"}</h1>
       <p className="mb-4 text-sm text-muted-foreground">Selecione os filtros abaixo para gerar um simulado personalizado.</p>
