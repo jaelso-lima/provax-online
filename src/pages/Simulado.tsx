@@ -736,7 +736,7 @@ export default function Simulado() {
 
   // ─── Render: Configuration form ───────────────────────────────
   return (
-    <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg flex-1 py-8">
+    <div className="flex min-h-screen flex-col bg-background"><AppHeader /><main className="container max-w-lg lg:max-w-2xl flex-1 py-8">
       <Button variant="ghost" className="mb-4 gap-2" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard</Button>
       <h1 className="mb-6 font-display text-2xl font-bold">{modo === "enem" ? "🎓 Simulado ENEM" : "🎯 Gerar Simulado"}</h1>
       <p className="mb-4 text-sm text-muted-foreground">Selecione os filtros abaixo para gerar um simulado personalizado.</p>
