@@ -40,7 +40,20 @@ export default function Ranking() {
           <Trophy className="h-6 w-6 text-coin" /> Ranking
         </h1>
 
-        {loading ? (
+        {!config.acesso_ranking ? (
+          <Card className="border-primary/30">
+            <CardContent className="pt-6 text-center space-y-4">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <Lock className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="font-display text-xl font-bold">🔒 Ranking</h3>
+              <p className="text-sm text-muted-foreground">Compare seu desempenho com outros alunos. Disponível nos planos pagos.</p>
+              <Button className="gap-2" onClick={() => navigate("/planos")}>
+                <Sparkles className="h-4 w-4" /> Desbloquear acesso
+              </Button>
+            </CardContent>
+          </Card>
+        ) : loading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : ranking.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">Nenhum estudante ainda.</p>
