@@ -9,12 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, BookOpen, Plus, Trash2, Play, Loader2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { usePlanConfig } from "@/hooks/usePlanConfig";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 interface Caderno {
   id: string;
@@ -30,7 +32,6 @@ interface CadernoItem {
   materia_id: string | null;
   topic_id: string | null;
   subtopic_id: string | null;
-  // joined names
   area_nome?: string;
   materia_nome?: string;
   topic_nome?: string;
@@ -40,24 +41,27 @@ interface CadernoItem {
 export default function Cadernos() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { config, isFreePlan } = usePlanConfig();
   const [cadernos, setCadernos] = useState<Caderno[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoDesc, setNovoDesc] = useState("");
   const [creating, setCreating] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeMsg, setUpgradeMsg] = useState("");
 
   // Detail view
   const [selectedCaderno, setSelectedCaderno] = useState<Caderno | null>(null);
   const [itens, setItens] = useState<CadernoItem[]>([]);
   const [loadingItens, setLoadingItens] = useState(false);
+  const [generatingSimulado, setGeneratingSimulado] = useState(false);
 
   // Add item form
   const [showAddItem, setShowAddItem] = useState(false);
   const [areas, setAreas] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
-  const [subtopics, setSubtopics] = useState<any[]>([]);
   const [selArea, setSelArea] = useState("");
   const [selMaterias, setSelMaterias] = useState<string[]>([]);
   const [selTopics, setSelTopics] = useState<string[]>([]);
@@ -83,6 +87,12 @@ export default function Cadernos() {
 
   const handleCreate = async () => {
     if (!novoNome.trim()) return;
+    // Check caderno limit
+    if (cadernos.length >= config.limite_cadernos) {
+      setUpgradeMsg(`Você atingiu o limite de ${config.limite_cadernos} caderno(s) do plano gratuito. Assine para criar mais.`);
+      setShowUpgrade(true);
+      return;
+    }
     setCreating(true);
     const { error } = await supabase.from("cadernos").insert({
       user_id: user!.id, nome: novoNome.trim(), descricao: novoDesc.trim() || null,
@@ -97,7 +107,7 @@ export default function Cadernos() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este caderno? Esta ação não pode ser desfeita.")) return;
+    if (!confirm("Tem certeza que deseja excluir este caderno?")) return;
     await supabase.from("cadernos").delete().eq("id", id);
     toast({ title: "Caderno excluído" });
     if (selectedCaderno?.id === id) setSelectedCaderno(null);
@@ -139,7 +149,7 @@ export default function Cadernos() {
 
   // Load materias when area selected
   useEffect(() => {
-    setSelMaterias([]); setSelTopics([]); setMaterias([]); setTopics([]); setSubtopics([]);
+    setSelMaterias([]); setSelTopics([]); setMaterias([]); setTopics([]);
     if (!selArea) return;
     supabase.from("area_materias").select("materia_id, materias(id, nome)").eq("area_id", selArea)
       .then(({ data }) => {
@@ -147,7 +157,7 @@ export default function Cadernos() {
       });
   }, [selArea]);
 
-  // Load topics when single materia is selected (for more granular selection)
+  // Load topics when single materia is selected
   useEffect(() => {
     setSelTopics([]); setTopics([]);
     if (selMaterias.length !== 1) return;
@@ -157,27 +167,32 @@ export default function Cadernos() {
 
   const handleAddItems = async () => {
     if (!selectedCaderno) return;
+
+    // Check item limit
+    const newItemsCount = selTopics.length > 0 ? selTopics.length : selMaterias.length > 0 ? selMaterias.length : selArea ? 1 : 0;
+    if (newItemsCount === 0) {
+      toast({ title: "Selecione pelo menos uma matéria ou tópico", variant: "destructive" });
+      return;
+    }
+    if (itens.length + newItemsCount > config.limite_itens_caderno) {
+      setUpgradeMsg(`O plano gratuito permite até ${config.limite_itens_caderno} itens por caderno. Assine para adicionar mais.`);
+      setShowUpgrade(true);
+      return;
+    }
+
     setAddingItem(true);
     const inserts: any[] = [];
 
     if (selTopics.length > 0) {
-      // Add specific topics
       for (const tid of selTopics) {
         inserts.push({ caderno_id: selectedCaderno.id, area_id: selArea || null, materia_id: selMaterias[0] || null, topic_id: tid });
       }
     } else if (selMaterias.length > 0) {
-      // Add entire materias
       for (const mid of selMaterias) {
         inserts.push({ caderno_id: selectedCaderno.id, area_id: selArea || null, materia_id: mid });
       }
     } else if (selArea) {
-      // Add entire area
       inserts.push({ caderno_id: selectedCaderno.id, area_id: selArea });
-    }
-
-    if (inserts.length === 0) {
-      toast({ title: "Selecione pelo menos uma matéria ou tópico", variant: "destructive" });
-      setAddingItem(false); return;
     }
 
     const { error } = await supabase.from("caderno_itens").insert(inserts);
@@ -191,12 +206,116 @@ export default function Cadernos() {
     setAddingItem(false);
   };
 
-  const handleGerarSimulado = () => {
+  const handleGerarSimulado = async () => {
     if (!selectedCaderno || itens.length === 0) {
-      toast({ title: "Adicione conteúdos ao caderno primeiro", variant: "destructive" }); return;
+      toast({ title: "Adicione conteúdos ao caderno primeiro", variant: "destructive" });
+      return;
     }
-    // Navigate to simulado with caderno param
-    navigate(`/simulado?modo=concurso&caderno_id=${selectedCaderno.id}`);
+
+    setGeneratingSimulado(true);
+    try {
+      // Build filter context from caderno items
+      const materiaIds = [...new Set(itens.filter(i => i.materia_id).map(i => i.materia_id!))];
+      const topicIds = [...new Set(itens.filter(i => i.topic_id).map(i => i.topic_id!))];
+      const areaIds = [...new Set(itens.filter(i => i.area_id).map(i => i.area_id!))];
+
+      // Build context description for AI
+      const contextParts: string[] = [];
+      for (const item of itens) {
+        const parts = [];
+        if (item.materia_nome) parts.push(item.materia_nome);
+        if (item.topic_nome) parts.push(item.topic_nome);
+        if (item.subtopic_nome) parts.push(item.subtopic_nome);
+        if (parts.length > 0) contextParts.push(parts.join(" > "));
+      }
+      const cadernoContext = contextParts.length > 0
+        ? `Gere questões focadas nos seguintes conteúdos do caderno personalizado:\n${contextParts.join("\n")}`
+        : "";
+
+      // Determine quantity: distribute across items
+      const qtd = Math.max(10, Math.min(itens.length * 5, 50));
+
+      // Check daily limit
+      const { data: limitData } = await supabase.rpc("check_daily_limit", { _user_id: user!.id });
+      const limit = limitData as any;
+      if (limit && !limit.pode_gerar) {
+        setUpgradeMsg("Você chegou ao limite diário 🔥 Alunos aprovados treinam todos os dias sem limite. Desbloqueie agora.");
+        setShowUpgrade(true);
+        setGeneratingSimulado(false);
+        return;
+      }
+
+      const bodyPayload: any = {
+        quantidade: qtd,
+        nivel: "misto",
+        modo: "concurso",
+        tipo_resposta: "multipla_escolha",
+        area: areaIds[0] || undefined,
+        caderno_context: cadernoContext,
+      };
+
+      // If caderno has specific materias/topics, pass them
+      if (materiaIds.length === 1) bodyPayload.materia = materiaIds[0];
+      if (topicIds.length === 1) bodyPayload.topic = topicIds[0];
+
+      const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-questions", {
+        body: bodyPayload,
+      });
+
+      if (aiError) throw new Error(typeof aiError === "string" ? aiError : aiError.message || "Erro ao gerar questões");
+      if (aiData?.error) throw new Error(aiData.error);
+
+      const generatedQuestoes = aiData?.questoes || [];
+      if (generatedQuestoes.length === 0) {
+        toast({ title: "IA não retornou questões", description: "Tente novamente.", variant: "destructive" });
+        setGeneratingSimulado(false);
+        return;
+      }
+
+      // Increment daily usage
+      await supabase.rpc("incrementar_uso_diario", { _user_id: user!.id, _quantidade: generatedQuestoes.length });
+
+      // Create simulado
+      const { data: sim, error: sErr } = await supabase.from("simulados").insert({
+        user_id: user!.id,
+        tipo: "normal",
+        quantidade: generatedQuestoes.length,
+        total_questoes: generatedQuestoes.length,
+        area_id: areaIds[0] || null,
+        materia_id: materiaIds.length === 1 ? materiaIds[0] : null,
+        modo: "concurso",
+      }).select().single();
+      if (sErr) throw sErr;
+
+      // Save questões
+      const questoesInsert = generatedQuestoes.map((q: any) => ({
+        enunciado: q.enunciado,
+        alternativas: q.alternativas,
+        resposta_correta: q.resposta_correta,
+        explicacao: q.explicacao || null,
+        modo: "concurso",
+        area_id: areaIds[0] || null,
+        materia_id: materiaIds.length === 1 ? materiaIds[0] : null,
+        source: "ai_generated",
+      }));
+      const { data: savedQuestoes } = await supabase.from("questoes").insert(questoesInsert).select("id");
+
+      // Create respostas
+      const respostasInsert = (savedQuestoes || []).map((q: any) => ({
+        simulado_id: sim.id,
+        questao_id: q.id,
+        resposta_usuario: null,
+        acertou: null,
+        tempo_resposta: 0,
+      }));
+      if (respostasInsert.length > 0) await supabase.from("respostas").insert(respostasInsert);
+
+      toast({ title: `Simulado gerado! ${generatedQuestoes.length} questões do caderno.` });
+      navigate(`/simulado?modo=concurso&continuar=${sim.id}`);
+    } catch (err: any) {
+      toast({ title: "Erro ao gerar simulado", description: err.message, variant: "destructive" });
+    }
+    setGeneratingSimulado(false);
   };
 
   // Detail view
@@ -214,15 +333,23 @@ export default function Cadernos() {
               <h1 className="font-display text-2xl font-bold">{selectedCaderno.nome}</h1>
               {selectedCaderno.descricao && <p className="text-sm text-muted-foreground">{selectedCaderno.descricao}</p>}
             </div>
-            <Button onClick={handleGerarSimulado} className="gap-2" disabled={itens.length === 0}>
-              <Play className="h-4 w-4" /> Gerar Simulado
+            <Button onClick={handleGerarSimulado} className="gap-2" disabled={itens.length === 0 || generatingSimulado}>
+              {generatingSimulado ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {generatingSimulado ? "Gerando..." : "Gerar Simulado"}
             </Button>
           </div>
 
           <Card className="mb-4">
             <CardHeader className="flex-row items-center justify-between pb-3">
-              <CardTitle className="text-lg">Conteúdos ({itens.length})</CardTitle>
-              <Button size="sm" variant="outline" onClick={() => setShowAddItem(true)} className="gap-1">
+              <CardTitle className="text-lg">Conteúdos ({itens.length}/{config.limite_itens_caderno})</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => {
+                if (itens.length >= config.limite_itens_caderno) {
+                  setUpgradeMsg(`O plano gratuito permite até ${config.limite_itens_caderno} itens por caderno.`);
+                  setShowUpgrade(true);
+                  return;
+                }
+                setShowAddItem(true);
+              }} className="gap-1">
                 <Plus className="h-3 w-3" /> Adicionar
               </Button>
             </CardHeader>
@@ -320,6 +447,8 @@ export default function Cadernos() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <UpgradePrompt open={showUpgrade} onOpenChange={setShowUpgrade} description={upgradeMsg} />
         <AppFooter />
       </div>
     );
@@ -336,10 +465,26 @@ export default function Cadernos() {
 
         <div className="mb-6 flex items-center justify-between">
           <h1 className="font-display text-2xl font-bold">📓 Meus Cadernos</h1>
-          <Button onClick={() => setShowCreate(true)} className="gap-2">
+          <Button onClick={() => {
+            if (cadernos.length >= config.limite_cadernos) {
+              setUpgradeMsg(`Você atingiu o limite de ${config.limite_cadernos} caderno(s). Assine para criar mais.`);
+              setShowUpgrade(true);
+              return;
+            }
+            setShowCreate(true);
+          }} className="gap-2">
             <Plus className="h-4 w-4" /> Novo Caderno
           </Button>
         </div>
+
+        {isFreePlan && (
+          <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+            📝 Plano gratuito: {config.limite_cadernos} caderno(s) com até {config.limite_itens_caderno} itens cada.
+            <Button variant="link" size="sm" className="ml-1 h-auto p-0 text-primary" onClick={() => navigate("/planos")}>
+              Upgrade para mais
+            </Button>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
@@ -401,6 +546,8 @@ export default function Cadernos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <UpgradePrompt open={showUpgrade} onOpenChange={setShowUpgrade} description={upgradeMsg} />
       <AppFooter />
     </div>
   );
