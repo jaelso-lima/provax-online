@@ -1,21 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePlanConfig } from "@/hooks/usePlanConfig";
 import AppHeader from "@/components/AppHeader";
 import AppFooter from "@/components/AppFooter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Medal, Award, Loader2, ArrowLeft } from "lucide-react";
+import { Trophy, Medal, Award, Loader2, ArrowLeft, Lock, Sparkles } from "lucide-react";
 
 export default function Ranking() {
   const navigate = useNavigate();
+  const { config } = usePlanConfig();
   const [ranking, setRanking] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!config.acesso_ranking) { setLoading(false); return; }
     supabase.rpc("get_ranking")
       .then(({ data }) => { if (data) setRanking(data); setLoading(false); });
-  }, []);
+  }, [config.acesso_ranking]);
 
   const getIcon = (pos: number) => {
     if (pos === 0) return <Trophy className="h-5 w-5 text-coin" />;
