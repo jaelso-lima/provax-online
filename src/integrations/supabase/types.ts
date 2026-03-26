@@ -1533,6 +1533,48 @@ export type Database = {
           },
         ]
       }
+      planos_config: {
+        Row: {
+          acesso_comentario: boolean
+          acesso_estatisticas_avancadas: boolean
+          acesso_filtro_banca: boolean
+          acesso_filtro_cargo: boolean
+          acesso_ranking: boolean
+          created_at: string
+          id: string
+          limite_cadernos: number
+          limite_itens_caderno: number
+          limite_questoes_dia: number
+          plano_slug: string
+        }
+        Insert: {
+          acesso_comentario?: boolean
+          acesso_estatisticas_avancadas?: boolean
+          acesso_filtro_banca?: boolean
+          acesso_filtro_cargo?: boolean
+          acesso_ranking?: boolean
+          created_at?: string
+          id?: string
+          limite_cadernos?: number
+          limite_itens_caderno?: number
+          limite_questoes_dia?: number
+          plano_slug: string
+        }
+        Update: {
+          acesso_comentario?: boolean
+          acesso_estatisticas_avancadas?: boolean
+          acesso_filtro_banca?: boolean
+          acesso_filtro_cargo?: boolean
+          acesso_ranking?: boolean
+          created_at?: string
+          id?: string
+          limite_cadernos?: number
+          limite_itens_caderno?: number
+          limite_questoes_dia?: number
+          plano_slug?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           ativo: boolean
