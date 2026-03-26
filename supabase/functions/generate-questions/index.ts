@@ -138,6 +138,7 @@ serve(async (req) => {
     const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
     const provaCompleta = body.provaCompleta === true;
     const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 2000) : undefined;
+    const cadernoContext = typeof body.caderno_context === "string" ? body.caderno_context.slice(0, 3000) : undefined;
     const excludeEnunciados: string[] = Array.isArray(body.exclude_enunciados)
       ? body.exclude_enunciados.slice(0, 200).map((e: any) => String(e).slice(0, 100))
       : [];
