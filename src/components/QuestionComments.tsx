@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlanConfig } from "@/hooks/usePlanConfig";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { MessageSquare, ThumbsUp, Send, Loader2, Reply, Trash2 } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, Loader2, Reply, Trash2, Lock } from "lucide-react";
 
 interface Comment {
   id: string;
@@ -26,6 +28,9 @@ interface QuestionCommentsProps {
 
 export default function QuestionComments({ questaoId }: QuestionCommentsProps) {
   const { user } = useAuth();
+  const { config, isFreePlan } = usePlanConfig();
+  const navigate = useNavigate();
+  const canComment = config.acesso_comentario;
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -229,7 +234,7 @@ export default function QuestionComments({ questaoId }: QuestionCommentsProps) {
               )}
 
               {/* New comment form */}
-              {user && (
+              {user && canComment ? (
                 <div className="flex gap-2 pt-2 border-t">
                   <Textarea
                     placeholder="Escreva seu comentário..."
@@ -242,7 +247,15 @@ export default function QuestionComments({ questaoId }: QuestionCommentsProps) {
                     {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   </Button>
                 </div>
-              )}
+              ) : user && !canComment ? (
+                <button
+                  onClick={() => navigate("/planos")}
+                  className="flex items-center gap-2 w-full rounded-lg border border-muted p-3 text-left hover:border-primary/30 hover:bg-primary/5 transition-colors mt-2"
+                >
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">🔒 Comentar — disponível nos planos pagos</span>
+                </button>
+              ) : null}
             </>
           )}
         </TabsContent>
