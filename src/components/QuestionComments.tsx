@@ -234,7 +234,7 @@ export default function QuestionComments({ questaoId }: QuestionCommentsProps) {
               )}
 
               {/* New comment form */}
-              {user && (
+              {user && canComment ? (
                 <div className="flex gap-2 pt-2 border-t">
                   <Textarea
                     placeholder="Escreva seu comentário..."
@@ -247,7 +247,15 @@ export default function QuestionComments({ questaoId }: QuestionCommentsProps) {
                     {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   </Button>
                 </div>
-              )}
+              ) : user && !canComment ? (
+                <button
+                  onClick={() => navigate("/planos")}
+                  className="flex items-center gap-2 w-full rounded-lg border border-muted p-3 text-left hover:border-primary/30 hover:bg-primary/5 transition-colors mt-2"
+                >
+                  <Lock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">🔒 Comentar — disponível nos planos pagos</span>
+                </button>
+              ) : null}
             </>
           )}
         </TabsContent>
