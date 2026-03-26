@@ -204,7 +204,20 @@ export default function Planos() {
                     )}
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {p.features.length > 0 && (
+                    {p.slug === "free" ? (
+                      <ul className="space-y-2">
+                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Simulado inteligente (15 questões/dia)</li>
+                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Comentário do professor</li>
+                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Filtro por matéria e assunto</li>
+                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> 1 caderno personalizado</li>
+                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Estatísticas básicas</li>
+                        <li className="mt-2 border-t pt-2 flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Simulado ilimitado</li>
+                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Filtro por cargo</li>
+                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Filtro completo por banca</li>
+                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Estatísticas avançadas</li>
+                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Ranking</li>
+                      </ul>
+                    ) : p.features.length > 0 ? (
                       <ul className="space-y-2">
                         {p.features.map((f: any) => (
                           <li key={f.text} className="flex items-center gap-2 text-sm">
@@ -219,7 +232,7 @@ export default function Planos() {
                           </li>
                         ))}
                       </ul>
-                    )}
+                    ) : null}
                     <Button
                       className={`w-full ${isDestaque ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
                       variant={p.isCurrent ? "outline" : "default"}

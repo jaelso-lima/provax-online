@@ -33,7 +33,7 @@ const ENEM_AREAS = [
 ];
 
 // Free daily limits
-const FREE_DAILY_LIMIT = 10;
+const FREE_DAILY_LIMIT = 15;
 // Prova completa: block at question 12 (index 11) for free users
 const FREE_PROVA_COMPLETA_LIMIT = 12;
 
