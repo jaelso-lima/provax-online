@@ -28,6 +28,9 @@ interface QuestionCommentsProps {
 
 export default function QuestionComments({ questaoId }: QuestionCommentsProps) {
   const { user } = useAuth();
+  const { config, isFreePlan } = usePlanConfig();
+  const navigate = useNavigate();
+  const canComment = config.acesso_comentario;
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(false);
   const [newComment, setNewComment] = useState("");
