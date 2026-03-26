@@ -184,6 +184,11 @@ serve(async (req) => {
       filterParts.push(distribuicao);
     }
 
+    // Add caderno context for personalized notebook-based generation
+    if (cadernoContext) {
+      filterParts.push(cadernoContext);
+    }
+
     // Add exclusion context to avoid repeating questions
     let excludeContext = "";
     if (excludeEnunciados.length > 0) {
