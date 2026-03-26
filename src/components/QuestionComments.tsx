@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlanConfig } from "@/hooks/usePlanConfig";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { MessageSquare, ThumbsUp, Send, Loader2, Reply, Trash2 } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, Loader2, Reply, Trash2, Lock } from "lucide-react";
 
 interface Comment {
   id: string;
