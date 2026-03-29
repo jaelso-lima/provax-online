@@ -193,6 +193,8 @@ serve(async (req) => {
     const excludeEnunciados: string[] = Array.isArray(body.exclude_enunciados)
       ? body.exclude_enunciados.slice(0, 200).map((e: any) => String(e).slice(0, 100))
       : [];
+    const allowedTipoResposta = ["multipla_escolha", "certo_errado", "ambos"];
+    const tipoResposta = allowedTipoResposta.includes(body.tipo_resposta) ? body.tipo_resposta : "multipla_escolha";
 
     // --- Rate Limiting ---
     const { data: allowed, error: rlError } = await supabase.rpc("check_rate_limit", {
