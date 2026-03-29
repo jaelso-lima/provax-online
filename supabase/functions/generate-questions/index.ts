@@ -285,7 +285,7 @@ serve(async (req) => {
               type: "function",
               function: {
                 name: "return_questions",
-                description: `Retorna um array de ${batchQtd} questões de múltipla escolha.`,
+                description: `Retorna um array de ${batchQtd} questões.`,
                 parameters: {
                   type: "object",
                   properties: {
@@ -301,16 +301,17 @@ serve(async (req) => {
                             items: {
                               type: "object",
                               properties: {
-                                letra: { type: "string", enum: ["A", "B", "C", "D", "E"] },
+                                letra: { type: "string" },
                                 texto: { type: "string" },
                               },
                               required: ["letra", "texto"],
                               additionalProperties: false,
                             },
                           },
-                          resposta_correta: { type: "string", enum: ["A", "B", "C", "D", "E"] },
+                          resposta_correta: { type: "string", description: tipoResposta === "certo_errado" ? "C ou E" : "A, B, C, D ou E" },
                           explicacao: { type: "string", description: "Explicação detalhada da resposta correta" },
-                          dificuldade: { type: "string", enum: ["facil", "medio", "dificil"], description: "Nível de dificuldade da questão" },
+                          dificuldade: { type: "string", enum: ["facil", "medio", "dificil"] },
+                          tipo_resposta: { type: "string", enum: ["multipla_escolha", "certo_errado"], description: "Tipo da questão" },
                         },
                         required: ["enunciado", "materia_nome", "alternativas", "resposta_correta", "explicacao", "dificuldade"],
                         additionalProperties: false,
