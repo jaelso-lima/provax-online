@@ -9,14 +9,24 @@ function buildPrompt(params: {
   nivel: string;
   filterContext: string;
   ano?: number;
+  tipoResposta?: string;
 }): string {
-  const { modo, quantidade, nivel, filterContext, ano } = params;
+  const { modo, quantidade, nivel, filterContext, ano, tipoResposta } = params;
 
   const nivelInstruction = nivel === "misto"
     ? "mistura de dificuldades (30% fácil, 40% médio, 30% difícil)"
     : `nível ${nivel}`;
 
-  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} questões de múltipla escolha (A-E) de ${nivelInstruction}.`;
+  const isCertoErrado = tipoResposta === "certo_errado";
+  const isAmbos = tipoResposta === "ambos";
+
+  const questionType = isCertoErrado
+    ? "questões do tipo CERTO ou ERRADO (julgamento de afirmativa)"
+    : isAmbos
+      ? "questões misturadas (metade múltipla escolha A-E, metade certo/errado)"
+      : "questões de múltipla escolha (A-E)";
+
+  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} ${questionType} de ${nivelInstruction}.`;
 
   const modoInstructions: Record<string, string> = {
     concurso: `Padrão: concursos públicos brasileiros. As questões devem ser realistas, no padrão de bancas federais/estaduais/municipais, com alternativas plausíveis e pegadinhas típicas de provas oficiais.${ano ? ` Ano de referência: ${ano}.` : ""}`,
@@ -24,7 +34,34 @@ function buildPrompt(params: {
     universidade: `Padrão: provas universitárias de graduação e pós-graduação. Exija raciocínio analítico, aplicação de conceitos teóricos e resolução de problemas com profundidade acadêmica. Inclua fundamentação teórica nas explicações.`,
   };
 
-  const rules = `
+  let rules: string;
+  if (isCertoErrado) {
+    rules = `
+REGRAS OBRIGATÓRIAS PARA QUESTÕES CERTO/ERRADO:
+1. Cada questão DEVE ter exatamente 2 alternativas: [{"letra":"C","texto":"Certo"},{"letra":"E","texto":"Errado"}]
+2. O enunciado deve ser uma AFIRMATIVA para ser julgada como Certa ou Errada
+3. A resposta_correta deve ser "C" (Certo) ou "E" (Errado)
+4. Distribuir ~50% certas e ~50% erradas
+5. Explicação detalhada obrigatória justificando por que é certo ou errado
+6. Não repetir padrões entre questões
+7. Linguagem formal e técnica adequada ao contexto
+8. Enunciados claros, sem ambiguidade
+9. OBRIGATÓRIO: Cada questão deve incluir o campo "materia_nome" com o nome da matéria/disciplina
+10. OBRIGATÓRIO: Cada questão deve incluir o campo "dificuldade" com valor "facil", "medio" ou "dificil"
+11. OBRIGATÓRIO: Cada questão deve incluir o campo "tipo_resposta" com valor "certo_errado"`;
+  } else if (isAmbos) {
+    rules = `
+REGRAS OBRIGATÓRIAS PARA QUESTÕES MISTAS:
+1. Metade das questões devem ser de múltipla escolha (5 alternativas A-E) e metade do tipo certo/errado (2 alternativas: C=Certo, E=Errado)
+2. Para múltipla escolha: exatamente 5 alternativas (A, B, C, D, E), apenas UMA correta
+3. Para certo/errado: exatamente 2 alternativas [{"letra":"C","texto":"Certo"},{"letra":"E","texto":"Errado"}], enunciado como afirmativa
+4. Explicação detalhada obrigatória para cada questão
+5. Não repetir padrões entre questões
+6. Linguagem formal e técnica adequada ao contexto
+7. OBRIGATÓRIO: Cada questão deve incluir "materia_nome", "dificuldade" e "tipo_resposta" ("multipla_escolha" ou "certo_errado")
+8. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada`;
+  } else {
+    rules = `
 REGRAS OBRIGATÓRIAS:
 1. Cada questão DEVE ter exatamente 5 alternativas (A, B, C, D, E)
 2. Apenas UMA alternativa correta por questão
@@ -37,6 +74,7 @@ REGRAS OBRIGATÓRIAS:
 9. OBRIGATÓRIO: Cada questão deve incluir o campo "materia_nome" com o nome da matéria/disciplina da questão
 10. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada (agrupe questões por matéria na mesma sequência)
 11. OBRIGATÓRIO: Cada questão deve incluir o campo "dificuldade" com valor "facil", "medio" ou "dificil"${nivel === "misto" ? "\n12. Para modo MISTO, distribua as dificuldades: ~30% fácil, ~40% médio, ~30% difícil" : ""}`;
+  }
 
   return `${base}\n\n${modoInstructions[modo] || modoInstructions.concurso}\n\n${filterContext ? `Contexto dos filtros: ${filterContext}` : ""}\n\n${rules}`;
 }
