@@ -80,32 +80,45 @@ REGRAS OBRIGATÓRIAS:
 }
 
 // ── Validação de output ───────────────────────────────────────────
-function normalizeQuestion(q: any): any | null {
+function normalizeQuestion(q: any, tipoResposta?: string): any | null {
   if (!q.enunciado || typeof q.enunciado !== "string") return null;
-  if (!Array.isArray(q.alternativas) || q.alternativas.length < 4) return null;
+  if (!Array.isArray(q.alternativas) || q.alternativas.length < 2) return null;
 
+  const isCertoErrado = q.tipo_resposta === "certo_errado" || tipoResposta === "certo_errado" ||
+    (q.alternativas.length === 2 && q.alternativas.some((a: any) => ["C", "E"].includes(String(a.letra).toUpperCase())));
+
+  if (isCertoErrado) {
+    const normalized = [
+      { letra: "C", texto: "Certo" },
+      { letra: "E", texto: "Errado" },
+    ];
+    let resposta = String(q.resposta_correta || "").trim().toUpperCase();
+    if (!["C", "E"].includes(resposta)) {
+      // Try to infer from text
+      if (resposta === "CERTO" || resposta === "TRUE" || resposta === "V") resposta = "C";
+      else if (resposta === "ERRADO" || resposta === "FALSE" || resposta === "F") resposta = "E";
+      else return null;
+    }
+    return { ...q, alternativas: normalized, resposta_correta: resposta, tipo_resposta: "certo_errado" };
+  }
+
+  // Multiple choice
   const validLetters = ["A", "B", "C", "D", "E"];
-  
-  // Try to fix alternativas: normalize letra field
   const normalized = q.alternativas.slice(0, 5).map((a: any, i: number) => ({
     letra: validLetters[i],
     texto: a.texto || a.text || a.content || String(a.letra === undefined ? a : ""),
   }));
-  
-  // Pad to 5 if only 4
   while (normalized.length < 5) {
     normalized.push({ letra: validLetters[normalized.length], texto: "Nenhuma das anteriores" });
   }
 
-  // Normalize resposta_correta
   let resposta = String(q.resposta_correta || "").trim().toUpperCase();
   if (!validLetters.includes(resposta)) {
-    // Try to match by index or content
     if (resposta.length > 1) resposta = resposta.charAt(0);
     if (!validLetters.includes(resposta)) return null;
   }
 
-  return { ...q, alternativas: normalized, resposta_correta: resposta };
+  return { ...q, alternativas: normalized, resposta_correta: resposta, tipo_resposta: "multipla_escolha" };
 }
 
 function validateQuestions(questoes: any[], expectedCount: number): { valid: boolean; cleaned: any[] } {
