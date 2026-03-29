@@ -24,6 +24,7 @@ import {
   Settings,
   UserCheck,
   Wallet,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
@@ -49,6 +50,7 @@ const allNavItems = [
   { href: "/admin/cms", label: "Página de Venda", icon: ShoppingBag, roles: ["admin", "owner", "partner"], permission: "gerenciar_conteudo" },
   { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"], permission: "ver_relatorios" },
   { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner", "partner"], permission: "ver_logs" },
+  { href: "/admin/promocoes", label: "Promoções", icon: Megaphone, roles: ["admin", "owner"], permission: null },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {

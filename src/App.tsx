@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import ChatProfessor from "@/components/ChatProfessor";
+import PromoPopup from "@/components/PromoPopup";
 import { Loader2 } from "lucide-react";
 
 // Critical path - eager load
@@ -53,6 +54,7 @@ const AdminPartnerPermissions = lazy(() => import("./pages/admin/AdminPartnerPer
 const AdminPartnerFinancial = lazy(() => import("./pages/admin/AdminPartnerFinancial"));
 const AdminEmployees = lazy(() => import("./pages/admin/AdminEmployees"));
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
+const AdminPromocoes = lazy(() => import("./pages/admin/AdminPromocoes"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -119,11 +121,13 @@ const App = () => (
               <Route path="/admin/partner-financial" element={<AdminRoute><AdminPartnerFinancial /></AdminRoute>} />
               <Route path="/admin/employees" element={<AdminRoute><AdminEmployees /></AdminRoute>} />
               <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+              <Route path="/admin/promocoes" element={<AdminRoute><AdminPromocoes /></AdminRoute>} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           <ChatProfessor />
+          <PromoPopup />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

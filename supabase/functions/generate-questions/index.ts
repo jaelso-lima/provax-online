@@ -9,14 +9,24 @@ function buildPrompt(params: {
   nivel: string;
   filterContext: string;
   ano?: number;
+  tipoResposta?: string;
 }): string {
-  const { modo, quantidade, nivel, filterContext, ano } = params;
+  const { modo, quantidade, nivel, filterContext, ano, tipoResposta } = params;
 
   const nivelInstruction = nivel === "misto"
     ? "mistura de dificuldades (30% fácil, 40% médio, 30% difícil)"
     : `nível ${nivel}`;
 
-  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} questões de múltipla escolha (A-E) de ${nivelInstruction}.`;
+  const isCertoErrado = tipoResposta === "certo_errado";
+  const isAmbos = tipoResposta === "ambos";
+
+  const questionType = isCertoErrado
+    ? "questões do tipo CERTO ou ERRADO (julgamento de afirmativa)"
+    : isAmbos
+      ? "questões misturadas (metade múltipla escolha A-E, metade certo/errado)"
+      : "questões de múltipla escolha (A-E)";
+
+  const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} ${questionType} de ${nivelInstruction}.`;
 
   const modoInstructions: Record<string, string> = {
     concurso: `Padrão: concursos públicos brasileiros. As questões devem ser realistas, no padrão de bancas federais/estaduais/municipais, com alternativas plausíveis e pegadinhas típicas de provas oficiais.${ano ? ` Ano de referência: ${ano}.` : ""}`,
@@ -24,7 +34,34 @@ function buildPrompt(params: {
     universidade: `Padrão: provas universitárias de graduação e pós-graduação. Exija raciocínio analítico, aplicação de conceitos teóricos e resolução de problemas com profundidade acadêmica. Inclua fundamentação teórica nas explicações.`,
   };
 
-  const rules = `
+  let rules: string;
+  if (isCertoErrado) {
+    rules = `
+REGRAS OBRIGATÓRIAS PARA QUESTÕES CERTO/ERRADO:
+1. Cada questão DEVE ter exatamente 2 alternativas: [{"letra":"C","texto":"Certo"},{"letra":"E","texto":"Errado"}]
+2. O enunciado deve ser uma AFIRMATIVA para ser julgada como Certa ou Errada
+3. A resposta_correta deve ser "C" (Certo) ou "E" (Errado)
+4. Distribuir ~50% certas e ~50% erradas
+5. Explicação detalhada obrigatória justificando por que é certo ou errado
+6. Não repetir padrões entre questões
+7. Linguagem formal e técnica adequada ao contexto
+8. Enunciados claros, sem ambiguidade
+9. OBRIGATÓRIO: Cada questão deve incluir o campo "materia_nome" com o nome da matéria/disciplina
+10. OBRIGATÓRIO: Cada questão deve incluir o campo "dificuldade" com valor "facil", "medio" ou "dificil"
+11. OBRIGATÓRIO: Cada questão deve incluir o campo "tipo_resposta" com valor "certo_errado"`;
+  } else if (isAmbos) {
+    rules = `
+REGRAS OBRIGATÓRIAS PARA QUESTÕES MISTAS:
+1. Metade das questões devem ser de múltipla escolha (5 alternativas A-E) e metade do tipo certo/errado (2 alternativas: C=Certo, E=Errado)
+2. Para múltipla escolha: exatamente 5 alternativas (A, B, C, D, E), apenas UMA correta
+3. Para certo/errado: exatamente 2 alternativas [{"letra":"C","texto":"Certo"},{"letra":"E","texto":"Errado"}], enunciado como afirmativa
+4. Explicação detalhada obrigatória para cada questão
+5. Não repetir padrões entre questões
+6. Linguagem formal e técnica adequada ao contexto
+7. OBRIGATÓRIO: Cada questão deve incluir "materia_nome", "dificuldade" e "tipo_resposta" ("multipla_escolha" ou "certo_errado")
+8. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada`;
+  } else {
+    rules = `
 REGRAS OBRIGATÓRIAS:
 1. Cada questão DEVE ter exatamente 5 alternativas (A, B, C, D, E)
 2. Apenas UMA alternativa correta por questão
@@ -37,43 +74,57 @@ REGRAS OBRIGATÓRIAS:
 9. OBRIGATÓRIO: Cada questão deve incluir o campo "materia_nome" com o nome da matéria/disciplina da questão
 10. Para provas completas, siga EXATAMENTE a ordem de matérias da distribuição informada (agrupe questões por matéria na mesma sequência)
 11. OBRIGATÓRIO: Cada questão deve incluir o campo "dificuldade" com valor "facil", "medio" ou "dificil"${nivel === "misto" ? "\n12. Para modo MISTO, distribua as dificuldades: ~30% fácil, ~40% médio, ~30% difícil" : ""}`;
+  }
 
   return `${base}\n\n${modoInstructions[modo] || modoInstructions.concurso}\n\n${filterContext ? `Contexto dos filtros: ${filterContext}` : ""}\n\n${rules}`;
 }
 
 // ── Validação de output ───────────────────────────────────────────
-function normalizeQuestion(q: any): any | null {
+function normalizeQuestion(q: any, tipoResposta?: string): any | null {
   if (!q.enunciado || typeof q.enunciado !== "string") return null;
-  if (!Array.isArray(q.alternativas) || q.alternativas.length < 4) return null;
+  if (!Array.isArray(q.alternativas) || q.alternativas.length < 2) return null;
 
+  const isCertoErrado = q.tipo_resposta === "certo_errado" || tipoResposta === "certo_errado" ||
+    (q.alternativas.length === 2 && q.alternativas.some((a: any) => ["C", "E"].includes(String(a.letra).toUpperCase())));
+
+  if (isCertoErrado) {
+    const normalized = [
+      { letra: "C", texto: "Certo" },
+      { letra: "E", texto: "Errado" },
+    ];
+    let resposta = String(q.resposta_correta || "").trim().toUpperCase();
+    if (!["C", "E"].includes(resposta)) {
+      // Try to infer from text
+      if (resposta === "CERTO" || resposta === "TRUE" || resposta === "V") resposta = "C";
+      else if (resposta === "ERRADO" || resposta === "FALSE" || resposta === "F") resposta = "E";
+      else return null;
+    }
+    return { ...q, alternativas: normalized, resposta_correta: resposta, tipo_resposta: "certo_errado" };
+  }
+
+  // Multiple choice
   const validLetters = ["A", "B", "C", "D", "E"];
-  
-  // Try to fix alternativas: normalize letra field
   const normalized = q.alternativas.slice(0, 5).map((a: any, i: number) => ({
     letra: validLetters[i],
     texto: a.texto || a.text || a.content || String(a.letra === undefined ? a : ""),
   }));
-  
-  // Pad to 5 if only 4
   while (normalized.length < 5) {
     normalized.push({ letra: validLetters[normalized.length], texto: "Nenhuma das anteriores" });
   }
 
-  // Normalize resposta_correta
   let resposta = String(q.resposta_correta || "").trim().toUpperCase();
   if (!validLetters.includes(resposta)) {
-    // Try to match by index or content
     if (resposta.length > 1) resposta = resposta.charAt(0);
     if (!validLetters.includes(resposta)) return null;
   }
 
-  return { ...q, alternativas: normalized, resposta_correta: resposta };
+  return { ...q, alternativas: normalized, resposta_correta: resposta, tipo_resposta: "multipla_escolha" };
 }
 
-function validateQuestions(questoes: any[], expectedCount: number): { valid: boolean; cleaned: any[] } {
+function validateQuestions(questoes: any[], expectedCount: number, tipoResposta?: string): { valid: boolean; cleaned: any[] } {
   if (!Array.isArray(questoes) || questoes.length === 0) return { valid: false, cleaned: [] };
 
-  const cleaned = questoes.map(normalizeQuestion).filter(Boolean);
+  const cleaned = questoes.map(q => normalizeQuestion(q, tipoResposta)).filter(Boolean);
   return { valid: cleaned.length >= Math.ceil(expectedCount * 0.5), cleaned };
 }
 
@@ -142,6 +193,8 @@ serve(async (req) => {
     const excludeEnunciados: string[] = Array.isArray(body.exclude_enunciados)
       ? body.exclude_enunciados.slice(0, 200).map((e: any) => String(e).slice(0, 100))
       : [];
+    const allowedTipoResposta = ["multipla_escolha", "certo_errado", "ambos"];
+    const tipoResposta = allowedTipoResposta.includes(body.tipo_resposta) ? body.tipo_resposta : "multipla_escolha";
 
     // --- Rate Limiting ---
     const { data: allowed, error: rlError } = await supabase.rpc("check_rate_limit", {
@@ -202,6 +255,7 @@ serve(async (req) => {
       nivel,
       filterContext: filterParts.join(". "),
       ano,
+      tipoResposta,
     }) + excludeContext;
 
     // --- AI Gateway com tool calling ---
@@ -212,7 +266,7 @@ serve(async (req) => {
     const MODELS = ["google/gemini-2.5-flash", "openai/gpt-5-mini"];
 
     const callAIWithModel = async (model: string, batchQtd: number, batchContext: string): Promise<any[]> => {
-      const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano });
+      const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano, tipoResposta });
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -231,7 +285,7 @@ serve(async (req) => {
               type: "function",
               function: {
                 name: "return_questions",
-                description: `Retorna um array de ${batchQtd} questões de múltipla escolha.`,
+                description: `Retorna um array de ${batchQtd} questões.`,
                 parameters: {
                   type: "object",
                   properties: {
@@ -247,16 +301,17 @@ serve(async (req) => {
                             items: {
                               type: "object",
                               properties: {
-                                letra: { type: "string", enum: ["A", "B", "C", "D", "E"] },
+                                letra: { type: "string" },
                                 texto: { type: "string" },
                               },
                               required: ["letra", "texto"],
                               additionalProperties: false,
                             },
                           },
-                          resposta_correta: { type: "string", enum: ["A", "B", "C", "D", "E"] },
+                          resposta_correta: { type: "string", description: tipoResposta === "certo_errado" ? "C ou E" : "A, B, C, D ou E" },
                           explicacao: { type: "string", description: "Explicação detalhada da resposta correta" },
-                          dificuldade: { type: "string", enum: ["facil", "medio", "dificil"], description: "Nível de dificuldade da questão" },
+                          dificuldade: { type: "string", enum: ["facil", "medio", "dificil"] },
+                          tipo_resposta: { type: "string", enum: ["multipla_escolha", "certo_errado"], description: "Tipo da questão" },
                         },
                         required: ["enunciado", "materia_nome", "alternativas", "resposta_correta", "explicacao", "dificuldade"],
                         additionalProperties: false,
@@ -367,7 +422,7 @@ serve(async (req) => {
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
               const raw = await callAIBatch(batch.qtd, batch.context);
-              const { valid, cleaned } = validateQuestions(raw, batch.qtd);
+              const { valid, cleaned } = validateQuestions(raw, batch.qtd, tipoResposta);
               if (valid) return cleaned;
               console.warn(`Batch validation: ${cleaned.length}/${batch.qtd} valid, retrying...`);
               if (cleaned.length > 0) return cleaned; // Accept partial on retry

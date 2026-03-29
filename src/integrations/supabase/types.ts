@@ -1677,6 +1677,57 @@ export type Database = {
         }
         Relationships: []
       }
+      promocoes_popup: {
+        Row: {
+          ativo: boolean
+          checkout_url: string | null
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          descricao: string
+          duracao_timer_minutos: number
+          exibir_para: string
+          id: string
+          mostrar_apenas_uma_vez: boolean
+          plano_destino: string
+          preco_original: number
+          preco_promocional: number
+          titulo: string
+        }
+        Insert: {
+          ativo?: boolean
+          checkout_url?: string | null
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string
+          duracao_timer_minutos?: number
+          exibir_para?: string
+          id?: string
+          mostrar_apenas_uma_vez?: boolean
+          plano_destino?: string
+          preco_original?: number
+          preco_promocional?: number
+          titulo: string
+        }
+        Update: {
+          ativo?: boolean
+          checkout_url?: string | null
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string
+          duracao_timer_minutos?: number
+          exibir_para?: string
+          id?: string
+          mostrar_apenas_uma_vez?: boolean
+          plano_destino?: string
+          preco_original?: number
+          preco_promocional?: number
+          titulo?: string
+        }
+        Relationships: []
+      }
       question_embeddings: {
         Row: {
           created_at: string
@@ -2458,6 +2509,44 @@ export type Database = {
             columns: ["materia_id"]
             isOneToOne: false
             referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_popup_controle: {
+        Row: {
+          convertido: boolean
+          created_at: string
+          data_visualizacao: string | null
+          id: string
+          popup_id: string
+          user_id: string
+          visualizado: boolean
+        }
+        Insert: {
+          convertido?: boolean
+          created_at?: string
+          data_visualizacao?: string | null
+          id?: string
+          popup_id: string
+          user_id: string
+          visualizado?: boolean
+        }
+        Update: {
+          convertido?: boolean
+          created_at?: string
+          data_visualizacao?: string | null
+          id?: string
+          popup_id?: string
+          user_id?: string
+          visualizado?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_popup_controle_popup_id_fkey"
+            columns: ["popup_id"]
+            isOneToOne: false
+            referencedRelation: "promocoes_popup"
             referencedColumns: ["id"]
           },
         ]
