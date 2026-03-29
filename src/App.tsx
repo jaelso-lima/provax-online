@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import ChatProfessor from "@/components/ChatProfessor";
+import PromoPopup from "@/components/PromoPopup";
 import { Loader2 } from "lucide-react";
 
 // Critical path - eager load
