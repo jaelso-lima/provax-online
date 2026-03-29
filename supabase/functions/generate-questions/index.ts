@@ -266,7 +266,7 @@ serve(async (req) => {
     const MODELS = ["google/gemini-2.5-flash", "openai/gpt-5-mini"];
 
     const callAIWithModel = async (model: string, batchQtd: number, batchContext: string): Promise<any[]> => {
-      const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano });
+      const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano, tipoResposta });
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
