@@ -121,11 +121,13 @@ const App = () => (
               <Route path="/admin/partner-financial" element={<AdminRoute><AdminPartnerFinancial /></AdminRoute>} />
               <Route path="/admin/employees" element={<AdminRoute><AdminEmployees /></AdminRoute>} />
               <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
+              <Route path="/admin/promocoes" element={<AdminRoute><AdminPromocoes /></AdminRoute>} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           <ChatProfessor />
+          <PromoPopup />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

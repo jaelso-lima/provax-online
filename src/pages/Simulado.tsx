@@ -907,6 +907,7 @@ function QuestionCard({
 
         <div className="space-y-2">
           {question.alternativas.map(o => {
+            const isCertoErrado = question.alternativas.length === 2 && ["C", "E"].includes(question.alternativas[0]?.letra);
             const isStruck = struckOut.has(o.letra);
             let classes = "flex-1 rounded-lg border p-3 text-left text-sm transition-colors ";
             if (showAnswer && selectedAnswer) {
@@ -924,10 +925,15 @@ function QuestionCard({
             } else {
               classes += "hover:bg-secondary";
             }
+
+            const displayText = isCertoErrado
+              ? (o.letra === "C" ? "✅ Certo" : "❌ Errado")
+              : `${o.letra}) ${o.texto}`;
+
             return (
               <div key={o.letra} className="flex items-stretch gap-1.5">
                 {/* Botão de eliminação */}
-                {!showAnswer && (
+                {!showAnswer && !isCertoErrado && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); toggleStrike(o.letra, e); }}
@@ -945,11 +951,15 @@ function QuestionCard({
                 <button
                   className={classes}
                   onClick={() => !showAnswer && !isStruck && onAnswer(o.letra)}
-                  onContextMenu={(e) => { e.preventDefault(); toggleStrike(o.letra, e); }}
+                  onContextMenu={(e) => { e.preventDefault(); if (!isCertoErrado) toggleStrike(o.letra, e); }}
                   disabled={showAnswer}
                 >
                   <span className={`${isStruck ? "line-through decoration-2 decoration-destructive/60" : ""}`}>
-                    <span className="mr-2 font-semibold">{o.letra})</span>{o.texto}
+                    {isCertoErrado ? (
+                      <span className="font-semibold">{displayText}</span>
+                    ) : (
+                      <><span className="mr-2 font-semibold">{o.letra})</span>{o.texto}</>
+                    )}
                   </span>
                   {showAnswer && o.letra === question.resposta_correta && (
                     <CheckCircle2 className="inline ml-2 h-4 w-4 text-green-600" />
