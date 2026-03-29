@@ -422,7 +422,7 @@ serve(async (req) => {
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
               const raw = await callAIBatch(batch.qtd, batch.context);
-              const { valid, cleaned } = validateQuestions(raw, batch.qtd);
+              const { valid, cleaned } = validateQuestions(raw, batch.qtd, tipoResposta);
               if (valid) return cleaned;
               console.warn(`Batch validation: ${cleaned.length}/${batch.qtd} valid, retrying...`);
               if (cleaned.length > 0) return cleaned; // Accept partial on retry
