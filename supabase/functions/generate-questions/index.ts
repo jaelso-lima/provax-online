@@ -121,10 +121,10 @@ function normalizeQuestion(q: any, tipoResposta?: string): any | null {
   return { ...q, alternativas: normalized, resposta_correta: resposta, tipo_resposta: "multipla_escolha" };
 }
 
-function validateQuestions(questoes: any[], expectedCount: number): { valid: boolean; cleaned: any[] } {
+function validateQuestions(questoes: any[], expectedCount: number, tipoResposta?: string): { valid: boolean; cleaned: any[] } {
   if (!Array.isArray(questoes) || questoes.length === 0) return { valid: false, cleaned: [] };
 
-  const cleaned = questoes.map(normalizeQuestion).filter(Boolean);
+  const cleaned = questoes.map(q => normalizeQuestion(q, tipoResposta)).filter(Boolean);
   return { valid: cleaned.length >= Math.ceil(expectedCount * 0.5), cleaned };
 }
 
