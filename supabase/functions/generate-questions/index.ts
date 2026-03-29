@@ -255,6 +255,7 @@ serve(async (req) => {
       nivel,
       filterContext: filterParts.join(". "),
       ano,
+      tipoResposta,
     }) + excludeContext;
 
     // --- AI Gateway com tool calling ---
