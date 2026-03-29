@@ -24,6 +24,7 @@ import {
   Settings,
   UserCheck,
   Wallet,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
