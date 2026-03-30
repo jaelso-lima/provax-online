@@ -190,12 +190,54 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Match plan by checkout link
+    // Match plan by checkout link (exact match)
     let matched = CHECKOUT_MAP[checkoutLink];
 
-    // Fallback: try to match by amount
+    // Strategy 2: Partial match on checkout link (handles coupon params, query strings)
+    if (!matched && checkoutLink) {
+      const cleanLink = checkoutLink.split("?")[0].split("#")[0];
+      matched = CHECKOUT_MAP[cleanLink];
+
+      // Try matching if the webhook link contains one of our known links
+      if (!matched) {
+        for (const [knownLink, plan] of Object.entries(CHECKOUT_MAP)) {
+          if (checkoutLink.includes(knownLink) || knownLink.includes(cleanLink)) {
+            matched = plan;
+            break;
+          }
+        }
+      }
+    }
+
+    // Strategy 3: Match by product name keywords
+    if (!matched && productName) {
+      const nameLower = productName.toLowerCase();
+      if (nameLower.includes("pro")) {
+        // Determine period from product name or default to mensal
+        if (nameLower.includes("anual") || nameLower.includes("12")) {
+          matched = { slug: "pro", periodo: "anual" };
+        } else if (nameLower.includes("trimestral") || nameLower.includes("3 meses")) {
+          matched = { slug: "pro", periodo: "trimestral" };
+        } else {
+          matched = { slug: "pro", periodo: "mensal" };
+        }
+      } else if (nameLower.includes("start")) {
+        if (nameLower.includes("anual") || nameLower.includes("12")) {
+          matched = { slug: "start", periodo: "anual" };
+        } else if (nameLower.includes("trimestral") || nameLower.includes("3 meses")) {
+          matched = { slug: "start", periodo: "trimestral" };
+        } else {
+          matched = { slug: "start", periodo: "mensal" };
+        }
+      } else if (nameLower.includes("provax")) {
+        matched = { slug: "provax-x", periodo: "mensal" };
+      }
+      if (matched) log("Matched by product name", { productName, matched });
+    }
+
+    // Strategy 4: Fallback - match by original amount (before discount)
     if (!matched) {
-      const amount = body.Commissions?.charge_amount || body.order_value || body.amount || 0;
+      const amount = body.Commissions?.charge_amount || body.Commissions?.product_base_price || body.order_value || body.amount || 0;
       const amountNum = typeof amount === "string" ? parseFloat(amount) : amount;
       log("Trying amount match", { amount: amountNum, checkoutLink });
 
