@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { handleCors, getResponseHeaders, corsHeaders } from "../_shared/security-headers.ts";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { corsHeaders } from "../_shared/security-headers.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -10,7 +11,6 @@ Deno.serve(async (req) => {
     const body = await req.text();
     const event = JSON.parse(body);
 
-    // We handle checkout.session.completed from Stripe Payment Links
     if (event.type !== "checkout.session.completed") {
       return new Response(JSON.stringify({ received: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -28,8 +28,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get amount paid to match the plan
-    const amountPaid = (session.amount_total || 0) / 100; // Convert from cents
+    const amountPaid = (session.amount_total || 0) / 100;
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -46,42 +45,103 @@ Deno.serve(async (req) => {
       console.error("User not found for email:", customerEmail, profileError);
       return new Response(
         JSON.stringify({ error: "User not found", email: customerEmail }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const userId = profile.id;
-
-    // Find which plan and period matches the amount
     const { data: plans } = await supabase.from("plans").select("*").eq("ativo", true);
 
     let matchedPlan: any = null;
     let matchedPeriodo = "mensal";
 
-    for (const plan of plans || []) {
-      if (Number(plan.preco_mensal) > 0 && Math.abs(Number(plan.preco_mensal) - amountPaid) < 0.5) {
-        matchedPlan = plan;
-        matchedPeriodo = "mensal";
-        break;
+    // Strategy 1: Use Stripe API to get original price (works with coupons)
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (stripeKey) {
+      try {
+        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+        const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+          expand: ["line_items.data.price"],
+        });
+
+        const lineItem = fullSession.line_items?.data?.[0];
+        const originalUnitAmount = lineItem?.price?.unit_amount;
+        const priceId = lineItem?.price?.id;
+
+        console.log("Stripe line item:", { priceId, originalUnitAmount, amountPaid });
+
+        if (originalUnitAmount) {
+          const originalPrice = originalUnitAmount / 100;
+
+          // Match by original price (before discount)
+          for (const plan of plans || []) {
+            if (Number(plan.preco_mensal) > 0 && Math.abs(Number(plan.preco_mensal) - originalPrice) < 0.5) {
+              matchedPlan = plan;
+              matchedPeriodo = "mensal";
+              break;
+            }
+            if (Number(plan.preco_semestral) > 0 && Math.abs(Number(plan.preco_semestral) - originalPrice) < 0.5) {
+              matchedPlan = plan;
+              matchedPeriodo = "semestral";
+              break;
+            }
+            if (Number(plan.preco_anual) > 0 && Math.abs(Number(plan.preco_anual) - originalPrice) < 0.5) {
+              matchedPlan = plan;
+              matchedPeriodo = "anual";
+              break;
+            }
+          }
+        }
+
+        // Strategy 2: Match by Stripe Payment Link ID
+        if (!matchedPlan && session.payment_link) {
+          const paymentLinkId = session.payment_link;
+          for (const plan of plans || []) {
+            if (plan.stripe_link_mensal && plan.stripe_link_mensal.includes(paymentLinkId)) {
+              matchedPlan = plan;
+              matchedPeriodo = "mensal";
+              break;
+            }
+            if (plan.stripe_link_semestral && plan.stripe_link_semestral.includes(paymentLinkId)) {
+              matchedPlan = plan;
+              matchedPeriodo = "semestral";
+              break;
+            }
+            if (plan.stripe_link_anual && plan.stripe_link_anual.includes(paymentLinkId)) {
+              matchedPlan = plan;
+              matchedPeriodo = "anual";
+              break;
+            }
+          }
+        }
+      } catch (stripeErr) {
+        console.error("Stripe API error, falling back to amount match:", stripeErr);
       }
-      if (Number(plan.preco_semestral) > 0 && Math.abs(Number(plan.preco_semestral) - amountPaid) < 0.5) {
-        matchedPlan = plan;
-        matchedPeriodo = "semestral";
-        break;
-      }
-      if (Number(plan.preco_anual) > 0 && Math.abs(Number(plan.preco_anual) - amountPaid) < 0.5) {
-        matchedPlan = plan;
-        matchedPeriodo = "anual";
-        break;
+    }
+
+    // Strategy 3: Fallback - match by paid amount (original logic)
+    if (!matchedPlan) {
+      for (const plan of plans || []) {
+        if (Number(plan.preco_mensal) > 0 && Math.abs(Number(plan.preco_mensal) - amountPaid) < 0.5) {
+          matchedPlan = plan;
+          matchedPeriodo = "mensal";
+          break;
+        }
+        if (Number(plan.preco_semestral) > 0 && Math.abs(Number(plan.preco_semestral) - amountPaid) < 0.5) {
+          matchedPlan = plan;
+          matchedPeriodo = "semestral";
+          break;
+        }
+        if (Number(plan.preco_anual) > 0 && Math.abs(Number(plan.preco_anual) - amountPaid) < 0.5) {
+          matchedPlan = plan;
+          matchedPeriodo = "anual";
+          break;
+        }
       }
     }
 
     if (!matchedPlan) {
       console.error("No plan matched for amount:", amountPaid);
-      // Log it but don't fail — admin can manually activate
       await supabase.from("audit_logs").insert({
         user_id: userId,
         acao: "STRIPE_PAGAMENTO_SEM_PLANO",
@@ -94,7 +154,6 @@ Deno.serve(async (req) => {
     }
 
     // Calculate expiration
-    let expiresAt: string;
     const now = new Date();
     if (matchedPeriodo === "mensal") {
       now.setMonth(now.getMonth() + 1);
@@ -103,7 +162,7 @@ Deno.serve(async (req) => {
     } else {
       now.setFullYear(now.getFullYear() + 1);
     }
-    expiresAt = now.toISOString();
+    const expiresAt = now.toISOString();
 
     // Cancel existing active subscriptions
     await supabase
@@ -124,7 +183,7 @@ Deno.serve(async (req) => {
       payment_gateway_id: session.id,
     });
 
-    // Update profile plan via secure function
+    // Update profile plan
     await supabase.rpc("activate_plan_from_stripe", {
       _user_id: userId,
       _plan_slug: matchedPlan.slug,
@@ -139,13 +198,14 @@ Deno.serve(async (req) => {
         plan: matchedPlan.nome,
         slug: matchedPlan.slug,
         periodo: matchedPeriodo,
-        amount: amountPaid,
+        amount_paid: amountPaid,
+        had_coupon: amountPaid !== ((session.amount_subtotal || 0) / 100),
         session_id: session.id,
         expires_at: expiresAt,
       },
     });
 
-    console.log(`Plan ${matchedPlan.slug} activated for ${customerEmail} (${matchedPeriodo})`);
+    console.log(`Plan ${matchedPlan.slug} activated for ${customerEmail} (${matchedPeriodo}, paid: ${amountPaid})`);
 
     return new Response(JSON.stringify({ success: true, plan: matchedPlan.slug }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
