@@ -29,7 +29,7 @@ function buildPrompt(params: {
   const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} ${questionType} de ${nivelInstruction}.`;
 
   const modoInstructions: Record<string, string> = {
-    concurso: `Padrão: concursos públicos brasileiros. As questões devem ser realistas, no padrão de bancas federais/estaduais/municipais, com alternativas plausíveis e pegadinhas típicas de provas oficiais.${ano ? ` Ano de referência: ${ano}.` : ""}`,
+    concurso: `Padrão: concursos públicos brasileiros. As questões DEVEM ser realistas e IDÊNTICAS ao estilo de provas anteriores da banca indicada. Use o mesmo formato de enunciado, linguagem técnica, pegadinhas típicas e nível de dificuldade das provas oficiais. Quando uma banca for informada, SIMULE fielmente o estilo dessa banca específica (ex: CESPE/CEBRASPE usa assertivas para julgar, FCC prioriza gramática e literalidade, VUNESP explora interpretação). As alternativas devem ser plausíveis com distratores inteligentes.${ano ? ` Ano de referência: ${ano}.` : ""}`,
     enem: `Padrão: ENEM (Exame Nacional do Ensino Médio). Use textos motivadores curtos, gráficos descritos textualmente quando aplicável, alternativas plausíveis e distratores inteligentes. Priorize competências e habilidades da matriz do ENEM.${ano ? ` Baseadas no estilo do ENEM ${ano}.` : ""}`,
     universidade: `Padrão: provas universitárias de graduação e pós-graduação. Exija raciocínio analítico, aplicação de conceitos teóricos e resolução de problemas com profundidade acadêmica. Inclua fundamentação teórica nas explicações.`,
   };
