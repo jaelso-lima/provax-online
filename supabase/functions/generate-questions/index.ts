@@ -29,7 +29,7 @@ function buildPrompt(params: {
   const base = `Você é um professor especialista brasileiro. Gere exatamente ${quantidade} ${questionType} de ${nivelInstruction}.`;
 
   const modoInstructions: Record<string, string> = {
-    concurso: `Padrão: concursos públicos brasileiros. As questões devem ser realistas, no padrão de bancas federais/estaduais/municipais, com alternativas plausíveis e pegadinhas típicas de provas oficiais.${ano ? ` Ano de referência: ${ano}.` : ""}`,
+    concurso: `Padrão: concursos públicos brasileiros. As questões DEVEM ser realistas e IDÊNTICAS ao estilo de provas anteriores da banca indicada. Use o mesmo formato de enunciado, linguagem técnica, pegadinhas típicas e nível de dificuldade das provas oficiais. Quando uma banca for informada, SIMULE fielmente o estilo dessa banca específica (ex: CESPE/CEBRASPE usa assertivas para julgar, FCC prioriza gramática e literalidade, VUNESP explora interpretação). As alternativas devem ser plausíveis com distratores inteligentes.${ano ? ` Ano de referência: ${ano}.` : ""}`,
     enem: `Padrão: ENEM (Exame Nacional do Ensino Médio). Use textos motivadores curtos, gráficos descritos textualmente quando aplicável, alternativas plausíveis e distratores inteligentes. Priorize competências e habilidades da matriz do ENEM.${ano ? ` Baseadas no estilo do ENEM ${ano}.` : ""}`,
     universidade: `Padrão: provas universitárias de graduação e pós-graduação. Exija raciocínio analítico, aplicação de conceitos teóricos e resolução de problemas com profundidade acadêmica. Inclua fundamentação teórica nas explicações.`,
   };
@@ -248,6 +248,37 @@ serve(async (req) => {
       excludeContext = `\n\nIMPORTANTE: NÃO repita questões similares a estas já respondidas pelo aluno (primeiros 100 caracteres de cada):\n${excludeEnunciados.map((e, i) => `${i + 1}. "${e}"`).join("\n")}\n\nGere questões DIFERENTES e ORIGINAIS sobre o mesmo tema.`;
     }
 
+    // --- Buscar questões reais do banco (PDFs importados e questões oficiais) como referência ---
+    let referenceContext = "";
+    try {
+      let refQuery = supabase
+        .from("questoes")
+        .select("enunciado, alternativas, resposta_correta, explicacao, source")
+        .in("source", ["pdf_imported", "manual", "pdf_extraction"])
+        .eq("status_questao", "ativa")
+        .limit(8);
+
+      if (materia) refQuery = refQuery.eq("materia_id", materia);
+      else if (area) refQuery = refQuery.eq("area_id", area);
+      if (banca) refQuery = refQuery.eq("banca_id", banca);
+      if (topic) refQuery = refQuery.eq("topic_id", topic);
+
+      const { data: refQuestoes } = await refQuery;
+
+      if (refQuestoes && refQuestoes.length > 0) {
+        const examples = refQuestoes.slice(0, 5).map((q: any, i: number) => {
+          const alts = Array.isArray(q.alternativas)
+            ? q.alternativas.map((a: any) => `${a.letra}) ${a.texto}`).join(" | ")
+            : "";
+          return `Exemplo ${i + 1}: "${q.enunciado?.slice(0, 200)}" [Alternativas: ${alts.slice(0, 300)}] [Resposta: ${q.resposta_correta}]`;
+        });
+        referenceContext = `\n\nREFERÊNCIA DE PROVAS ANTERIORES REAIS (use como base de estilo, dificuldade e formato — NÃO copie, mas SIGA O PADRÃO da banca):\n${examples.join("\n")}\n\nGere questões NO MESMO ESTILO e PADRÃO dessas provas anteriores, mas com conteúdo ORIGINAL e INÉDITO.`;
+        filterParts.push("Baseado em questões reais de provas anteriores da banca");
+      }
+    } catch (e) {
+      console.warn("Erro ao buscar questões de referência:", e);
+    }
+
     // --- Build prompt universal ---
     const systemPrompt = buildPrompt({
       modo,
@@ -256,7 +287,7 @@ serve(async (req) => {
       filterContext: filterParts.join(". "),
       ano,
       tipoResposta,
-    }) + excludeContext;
+    }) + excludeContext + referenceContext;
 
     // --- AI Gateway com tool calling ---
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
