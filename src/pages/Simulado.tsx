@@ -795,9 +795,10 @@ export default function Simulado() {
             {/* Livre / Disciplina: filtros completos */}
             <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
             
-            {tipoMode === "disciplina" && (
+            {/* Matéria filter — available for both livre and disciplina */}
+            {(tipoMode === "disciplina" || tipoMode === "livre") && (
               <>
-                <div className="space-y-2"><Label>Matéria *</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? "Selecione" : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-2"><Label>{tipoMode === "disciplina" ? "Matéria *" : "Matéria (opcional)"}</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? (tipoMode === "livre" ? "Todas as matérias" : "Selecione") : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
                 {topics.length > 0 && (
                   <div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
                 )}
