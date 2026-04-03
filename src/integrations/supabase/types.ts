@@ -1137,16 +1137,19 @@ export type Database = {
           created_at: string
           id: string
           nome: string
+          slug_normalizado: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
+          slug_normalizado?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
+          slug_normalizado?: string | null
         }
         Relationships: []
       }
@@ -2422,18 +2425,21 @@ export type Database = {
           created_at: string
           id: string
           nome: string
+          slug_normalizado: string | null
           topic_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
+          slug_normalizado?: string | null
           topic_id: string
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
+          slug_normalizado?: string | null
           topic_id?: string
         }
         Relationships: [
@@ -2490,18 +2496,21 @@ export type Database = {
           id: string
           materia_id: string
           nome: string
+          slug_normalizado: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           materia_id: string
           nome: string
+          slug_normalizado?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           materia_id?: string
           nome?: string
+          slug_normalizado?: string | null
         }
         Relationships: [
           {
@@ -2722,6 +2731,7 @@ export type Database = {
       is_employee: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
       is_partner: { Args: never; Returns: boolean }
+      normalize_slug: { Args: { input: string }; Returns: string }
       reactivate_account: {
         Args: { _target_user_id: string }
         Returns: boolean
@@ -2733,6 +2743,7 @@ export type Database = {
         Args: { _reason: string; _target_user_id: string }
         Returns: boolean
       }
+      sync_edital_content: { Args: { p_materias: Json }; Returns: Json }
       update_own_profile: {
         Args: { _avatar_url?: string; _nome?: string; _telefone?: string }
         Returns: boolean
