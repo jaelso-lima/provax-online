@@ -466,6 +466,42 @@ REGRAS:
         updated_at: new Date().toISOString(),
       }).eq("id", analysis_id);
 
+      // === Sync content to DB (non-blocking) ===
+      try {
+        const res = resultado as any;
+        if (res?.materias && Array.isArray(res.materias)) {
+          // Build structured payload: materia -> topicos (from conteudos_principais) -> subtopicos
+          const syncPayload = res.materias.map((mat: any) => {
+            const topicos: any[] = [];
+            // Use conteudos_principais as topics
+            if (Array.isArray(mat.conteudos_principais)) {
+              for (const cp of mat.conteudos_principais) {
+                if (typeof cp === 'string' && cp.trim()) {
+                  topicos.push({ nome: cp.trim(), subtopicos: [] });
+                }
+              }
+            }
+            return {
+              nome: mat.nome || '',
+              topicos,
+            };
+          }).filter((m: any) => m.nome);
+
+          if (syncPayload.length > 0) {
+            const { data: syncResult, error: syncErr } = await supabaseAdmin.rpc('sync_edital_content', {
+              p_materias: syncPayload,
+            });
+            if (syncErr) {
+              console.error("Content sync error:", syncErr.message);
+            } else {
+              console.log("Content sync result:", JSON.stringify(syncResult));
+            }
+          }
+        }
+      } catch (syncErr: any) {
+        console.error("Content sync error (non-blocking):", syncErr.message);
+      }
+
       // === Feed into pipeline (non-blocking) ===
       try {
         const hashBytes = new Uint8Array(await crypto.subtle.digest("SHA-256", pdfArrayBuffer));
