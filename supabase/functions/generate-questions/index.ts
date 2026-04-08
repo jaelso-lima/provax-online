@@ -34,6 +34,20 @@ function buildPrompt(params: {
     universidade: `Padrão: provas universitárias de graduação e pós-graduação. Exija raciocínio analítico, aplicação de conceitos teóricos e resolução de problemas com profundidade acadêmica. Inclua fundamentação teórica nas explicações.`,
   };
 
+  // CRITICAL: Math/calculation validation rules
+  const mathValidation = `
+
+⚠️ REGRAS CRÍTICAS DE VALIDAÇÃO (OBRIGATÓRIO):
+1. ANTES de finalizar cada questão, REFAÇA o cálculo passo a passo e CONFIRA que a resposta está correta.
+2. Se o enunciado pede "regra de três SIMPLES", gere APENAS regra de três simples (2 grandezas, proporção direta ou inversa). NÃO gere regra de três composta.
+3. Se o enunciado pede "regra de três COMPOSTA", gere APENAS regra de três composta (3+ grandezas).
+4. Para QUALQUER questão de matemática/raciocínio lógico: resolva o cálculo manualmente, verifique o resultado, e SÓ ENTÃO atribua a resposta correta.
+5. A explicação DEVE conter o cálculo completo passo a passo que comprove a resposta.
+6. Se a questão envolve porcentagem, juros, proporção ou qualquer cálculo numérico, a alternativa correta DEVE conter o valor exato do cálculo.
+7. NUNCA gere uma questão cujo subtópico/assunto seja diferente do solicitado nos filtros.
+8. Se o filtro pede "regra de três simples", NÃO gere questões de "regra de três composta", "equação do 1º grau", ou qualquer outro assunto.
+9. VERIFIQUE: a resposta marcada como correta é realmente a resposta certa? Refaça o cálculo antes de confirmar.`;
+
   let rules: string;
   if (isCertoErrado) {
     rules = `
@@ -76,7 +90,7 @@ REGRAS OBRIGATÓRIAS:
 11. OBRIGATÓRIO: Cada questão deve incluir o campo "dificuldade" com valor "facil", "medio" ou "dificil"${nivel === "misto" ? "\n12. Para modo MISTO, distribua as dificuldades: ~30% fácil, ~40% médio, ~30% difícil" : ""}`;
   }
 
-  return `${base}\n\n${modoInstructions[modo] || modoInstructions.concurso}\n\n${filterContext ? `Contexto dos filtros: ${filterContext}` : ""}\n\n${rules}`;
+  return `${base}\n\n${modoInstructions[modo] || modoInstructions.concurso}\n\n${filterContext ? `Contexto dos filtros: ${filterContext}` : ""}\n\n${rules}${mathValidation}`;
 }
 
 // ── Validação de output ───────────────────────────────────────────
