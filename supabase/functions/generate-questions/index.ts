@@ -499,6 +499,113 @@ serve(async (req) => {
       return errorResponse(lastError?.userMessage || "Erro ao gerar questões", lastError?.status || 500);
     }
 
+    // --- Post-generation validation for math/calculation questions ---
+    const mathKeywords = ["regra de três", "porcentagem", "juros", "proporção", "equação", "cálculo", "razão", "fração", "probabilidade", "progressão", "logaritmo", "raiz", "potência", "média", "mediana"];
+    const mathQuestionIndices: number[] = [];
+    for (let i = 0; i < questoes.length; i++) {
+      const enunciado = (questoes[i].enunciado || "").toLowerCase();
+      const materiaNome = (questoes[i].materia_nome || "").toLowerCase();
+      if (mathKeywords.some(kw => enunciado.includes(kw) || materiaNome.includes("matemát") || materiaNome.includes("raciocínio"))) {
+        mathQuestionIndices.push(i);
+      }
+    }
+
+    if (mathQuestionIndices.length > 0) {
+      try {
+        const questionsToValidate = mathQuestionIndices.slice(0, 10).map(i => ({
+          index: i,
+          enunciado: questoes[i].enunciado,
+          alternativas: questoes[i].alternativas,
+          resposta_correta: questoes[i].resposta_correta,
+          explicacao: questoes[i].explicacao,
+        }));
+
+        const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "system",
+                content: `Você é um verificador matemático rigoroso. Analise cada questão abaixo e verifique:
+1. O cálculo está correto? Refaça o cálculo passo a passo.
+2. A resposta marcada como correta é realmente a correta?
+3. O assunto da questão corresponde ao que foi pedido no enunciado? (ex: se pede regra de três simples, não pode ser composta)
+
+Retorne APENAS as questões que têm ERRO, com a correção.`,
+              },
+              {
+                role: "user",
+                content: JSON.stringify(questionsToValidate),
+              },
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "report_errors",
+                  description: "Reporta questões com erros de cálculo ou resposta incorreta",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      erros: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            index: { type: "number", description: "Index da questão com erro" },
+                            tipo_erro: { type: "string", enum: ["calculo_errado", "resposta_errada", "assunto_errado"] },
+                            resposta_corrigida: { type: "string", description: "Letra da resposta correta" },
+                            explicacao_corrigida: { type: "string", description: "Explicação com cálculo correto" },
+                          },
+                          required: ["index", "tipo_erro"],
+                        },
+                      },
+                    },
+                    required: ["erros"],
+                  },
+                },
+              },
+            ],
+            tool_choice: { type: "function", function: { name: "report_errors" } },
+          }),
+        });
+
+        if (validationResponse.ok) {
+          const valData = await validationResponse.json();
+          const toolCall = valData.choices?.[0]?.message?.tool_calls?.[0];
+          if (toolCall?.function?.arguments) {
+            const { erros } = JSON.parse(toolCall.function.arguments);
+            if (Array.isArray(erros) && erros.length > 0) {
+              console.log(`Validation found ${erros.length} errors in math questions`);
+              for (const erro of erros) {
+                const qi = erro.index;
+                if (typeof qi !== "number" || qi < 0 || qi >= questoes.length) continue;
+                if (erro.tipo_erro === "assunto_errado") {
+                  // Remove question entirely — wrong topic
+                  questoes[qi] = null;
+                } else if (erro.resposta_corrigida) {
+                  // Fix the answer
+                  questoes[qi].resposta_correta = erro.resposta_corrigida;
+                  if (erro.explicacao_corrigida) {
+                    questoes[qi].explicacao = erro.explicacao_corrigida;
+                  }
+                  console.log(`Corrected question ${qi}: ${erro.tipo_erro} → ${erro.resposta_corrigida}`);
+                }
+              }
+              questoes = questoes.filter(Boolean);
+            }
+          }
+        }
+      } catch (valError) {
+        console.warn("Math validation failed (non-blocking):", valError);
+      }
+    }
+
     return new Response(JSON.stringify({ questoes }), { headers });
   } catch (e: any) {
     console.error("generate-questions error:", e);
