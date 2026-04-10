@@ -812,8 +812,18 @@ export default function Simulado() {
             </RadioGroup>
           </div>
 
-          {/* Prova Completa: filtros simplificados */}
-          {tipoMode === "prova_completa" ? (<>
+          {/* Adaptativo: minimal config */}
+          {tipoMode === "adaptativo" ? (<>
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+              <p className="text-sm font-medium">🧠 Como funciona o Simulado Adaptativo?</p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                <li><strong>60%</strong> das questões focam nos seus pontos fracos</li>
+                <li><strong>30%</strong> em temas de desempenho médio</li>
+                <li><strong>10%</strong> em áreas já dominadas (revisão)</li>
+              </ul>
+              <p className="text-xs text-muted-foreground italic">Quanto mais simulados você fizer, mais inteligente ele fica!</p>
+            </div>
+          </>) : tipoMode === "prova_completa" ? (<>
             <div className="space-y-2"><Label>Estado *</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({(s as any).sigla})</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Esfera</Label><Select value={esferaId} onValueChange={setEsferaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{esferas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>
