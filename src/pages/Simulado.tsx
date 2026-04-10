@@ -22,7 +22,7 @@ import {
 } from "@/services/simuladoRepository";
 import {
   getProvaCompletaConfig, buildProvaCompletaPromptContext,
-  type SimuladoTipoMode,
+  type SimuladoTipoMode, type AdaptativoTipoMode,
 } from "@/services/simuladoService";
 
 const ENEM_AREAS = [
