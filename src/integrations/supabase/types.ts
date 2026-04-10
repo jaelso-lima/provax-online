@@ -708,6 +708,83 @@ export type Database = {
         }
         Relationships: []
       }
+      desempenho_usuario: {
+        Row: {
+          created_at: string
+          id: string
+          materia_id: string | null
+          microtopico_id: string | null
+          nivel_dominio: string
+          subtopic_id: string | null
+          taxa_acerto: number
+          topic_id: string | null
+          total_acertos: number
+          total_questoes: number
+          ultima_pratica: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          materia_id?: string | null
+          microtopico_id?: string | null
+          nivel_dominio?: string
+          subtopic_id?: string | null
+          taxa_acerto?: number
+          topic_id?: string | null
+          total_acertos?: number
+          total_questoes?: number
+          ultima_pratica?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          materia_id?: string | null
+          microtopico_id?: string | null
+          nivel_dominio?: string
+          subtopic_id?: string | null
+          taxa_acerto?: number
+          topic_id?: string | null
+          total_acertos?: number
+          total_questoes?: number
+          ultima_pratica?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "desempenho_usuario_materia_id_fkey"
+            columns: ["materia_id"]
+            isOneToOne: false
+            referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desempenho_usuario_microtopico_id_fkey"
+            columns: ["microtopico_id"]
+            isOneToOne: false
+            referencedRelation: "microtopicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desempenho_usuario_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "desempenho_usuario_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_chunks: {
         Row: {
           assunto: string | null
@@ -1152,6 +1229,38 @@ export type Database = {
           slug_normalizado?: string | null
         }
         Relationships: []
+      }
+      microtopicos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          slug_normalizado: string | null
+          subtopic_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          slug_normalizado?: string | null
+          subtopic_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          slug_normalizado?: string | null
+          subtopic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "microtopicos_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       moeda_transacoes: {
         Row: {
@@ -1795,6 +1904,7 @@ export type Database = {
           explicacao: string | null
           id: string
           materia_id: string | null
+          microtopico_id: string | null
           modo: string
           nivel: string | null
           orgao: string | null
@@ -1822,6 +1932,7 @@ export type Database = {
           explicacao?: string | null
           id?: string
           materia_id?: string | null
+          microtopico_id?: string | null
           modo?: string
           nivel?: string | null
           orgao?: string | null
@@ -1849,6 +1960,7 @@ export type Database = {
           explicacao?: string | null
           id?: string
           materia_id?: string | null
+          microtopico_id?: string | null
           modo?: string
           nivel?: string | null
           orgao?: string | null
@@ -1909,6 +2021,13 @@ export type Database = {
             columns: ["materia_id"]
             isOneToOne: false
             referencedRelation: "materias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questoes_microtopico_id_fkey"
+            columns: ["microtopico_id"]
+            isOneToOne: false
+            referencedRelation: "microtopicos"
             referencedColumns: ["id"]
           },
           {
@@ -2280,6 +2399,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      simulados_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          id: string
+          parametros: Json
+          questao_ids: string[]
+          total_questoes: number
+          uso_count: number
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          parametros?: Json
+          questao_ids: string[]
+          total_questoes?: number
+          uso_count?: number
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          parametros?: Json
+          questao_ids?: string[]
+          total_questoes?: number
+          uso_count?: number
+        }
+        Relationships: []
       }
       site_content: {
         Row: {
@@ -2668,6 +2820,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      atualizar_desempenho: {
+        Args: {
+          _acertou?: boolean
+          _materia_id: string
+          _microtopico_id?: string
+          _subtopic_id?: string
+          _topic_id?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       atualizar_plano: {
         Args: { _novo_plano: string; _user_id: string }
         Returns: boolean
@@ -2707,6 +2870,23 @@ export type Database = {
       get_admin_stats: { Args: never; Returns: Json }
       get_partner_dashboard: { Args: { _user_id: string }; Returns: Json }
       get_partner_stats: { Args: never; Returns: Json }
+      get_pontos_fracos: {
+        Args: { _limit?: number; _user_id: string }
+        Returns: {
+          materia_nome: string
+          nivel_dominio: string
+          subtopic_nome: string
+          taxa_acerto: number
+          topic_nome: string
+          total_questoes: number
+        }[]
+      }
+      get_questoes_adaptativas: {
+        Args: { _modo?: string; _quantidade?: number; _user_id: string }
+        Returns: {
+          questao_id: string
+        }[]
+      }
       get_ranking: {
         Args: never
         Returns: {
