@@ -22,7 +22,7 @@ import {
 } from "@/services/simuladoRepository";
 import {
   getProvaCompletaConfig, buildProvaCompletaPromptContext,
-  type SimuladoTipoMode,
+  type SimuladoTipoMode, type AdaptativoTipoMode,
 } from "@/services/simuladoService";
 
 const ENEM_AREAS = [
@@ -318,6 +318,10 @@ export default function Simulado() {
 
   const validarFiltros = () => {
     if (modo === "concurso") {
+      if (tipoMode === "adaptativo") {
+        // Adaptive mode needs no filters — uses performance data
+        return true;
+      }
       if (tipoMode === "prova_completa") {
         if (!stateId) { toast({ title: "Selecione o estado", variant: "destructive" }); return false; }
         if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
@@ -441,6 +445,23 @@ export default function Simulado() {
           provaCompleta: true,
           distribuicao: provaCompletaContext,
         };
+      } else if (tipoMode === "adaptativo" && modo === "concurso") {
+        // Adaptive mode: fetch weak areas and generate questions targeting them
+        const { data: pontosFrageis } = await supabase.rpc("get_pontos_fracos", { _user_id: user!.id, _limit: 5 });
+        const weakAreas = (pontosFrageis as any[]) || [];
+        const adaptiveContext = weakAreas.length > 0
+          ? `FOQUE NAS SEGUINTES ÁREAS FRACAS DO ALUNO (priorize questões desses assuntos):\n${weakAreas.map((p: any) => `- ${p.materia_nome}${p.topic_nome ? ' > ' + p.topic_nome : ''}${p.subtopic_nome ? ' > ' + p.subtopic_nome : ''} (taxa de acerto: ${p.taxa_acerto}%)`).join('\n')}`
+          : '';
+        bodyPayload = {
+          ...bodyPayload,
+          quantidade: parseInt(quantidade),
+          area: areaId || undefined,
+          adaptativo: true,
+          adaptive_context: adaptiveContext,
+        };
+        // Set metadata
+        const adaptMeta: SimuladoMeta = { area_nome: "Simulado Adaptativo" };
+        setSimuladoMeta(adaptMeta);
       } else if (modo === "concurso") {
         bodyPayload = {
           ...bodyPayload,
@@ -599,10 +620,22 @@ export default function Simulado() {
       if (xpGanho > 0) await supabase.rpc("adicionar_xp", { _user_id: user!.id, _xp_ganho: xpGanho });
       await supabase.from("simulados").update({ pontuacao: nota, acertos, tempo_gasto: tempoTotal, status: "finalizado", finished_at: new Date().toISOString(), ultima_questao_respondida: questoes.length }).eq("id", simuladoId!);
 
+      // Update performance tracking per question
       for (let i = 0; i < questoes.length; i++) {
         const q = questoes[i];
         if (q?.id) {
-          await supabase.from("respostas").update({ resposta_usuario: respostas[i] || null, acertou: respostas[i] === q.resposta_correta }).eq("simulado_id", simuladoId!).eq("questao_id", q.id);
+          const acertou = respostas[i] === q.resposta_correta;
+          await supabase.from("respostas").update({ resposta_usuario: respostas[i] || null, acertou }).eq("simulado_id", simuladoId!).eq("questao_id", q.id);
+          // Track performance - fire and forget
+          if (materiaId) {
+            supabase.rpc("atualizar_desempenho", {
+              _user_id: user!.id,
+              _materia_id: materiaId,
+              _topic_id: topicId || null,
+              _subtopic_id: subtopicId || null,
+              _acertou: acertou,
+            }).then(() => {});
+          }
         }
       }
 
@@ -769,11 +802,28 @@ export default function Simulado() {
                   <p className="text-xs text-muted-foreground">Distribuição realista baseada em editais</p>
                 </Label>
               </div>
+              <div className="flex items-center space-x-2 rounded-lg border border-primary/30 bg-primary/5 p-3 cursor-pointer hover:bg-primary/10" onClick={() => setTipoMode("adaptativo")}>
+                <RadioGroupItem value="adaptativo" id="tipo-adaptativo" />
+                <Label htmlFor="tipo-adaptativo" className="cursor-pointer flex-1">
+                  <span className="font-medium">🧠 Simulado Adaptativo</span>
+                  <p className="text-xs text-muted-foreground">IA foca nos seus pontos fracos (60% fraco, 30% médio, 10% forte)</p>
+                </Label>
+              </div>
             </RadioGroup>
           </div>
 
-          {/* Prova Completa: filtros simplificados */}
-          {tipoMode === "prova_completa" ? (<>
+          {/* Adaptativo: minimal config */}
+          {tipoMode === "adaptativo" ? (<>
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+              <p className="text-sm font-medium">🧠 Como funciona o Simulado Adaptativo?</p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                <li><strong>60%</strong> das questões focam nos seus pontos fracos</li>
+                <li><strong>30%</strong> em temas de desempenho médio</li>
+                <li><strong>10%</strong> em áreas já dominadas (revisão)</li>
+              </ul>
+              <p className="text-xs text-muted-foreground italic">Quanto mais simulados você fizer, mais inteligente ele fica!</p>
+            </div>
+          </>) : tipoMode === "prova_completa" ? (<>
             <div className="space-y-2"><Label>Estado *</Label><Select value={stateId} onValueChange={setStateId}><SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger><SelectContent>{states.map(s => <SelectItem key={s.id} value={s.id}>{s.nome} ({(s as any).sigla})</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Esfera</Label><Select value={esferaId} onValueChange={setEsferaId}><SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger><SelectContent>{esferas.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Área *</Label><Select value={areaId} onValueChange={setAreaId}><SelectTrigger><SelectValue placeholder="Selecione a área" /></SelectTrigger><SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>)}</SelectContent></Select></div>

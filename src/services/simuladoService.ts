@@ -16,7 +16,8 @@ export interface ProvaCompletaConfig {
   isFallback: boolean;
 }
 
-export type SimuladoTipoMode = "livre" | "disciplina" | "prova_completa";
+export type SimuladoTipoMode = "livre" | "disciplina" | "prova_completa" | "adaptativo";
+export type AdaptativoTipoMode = "adaptativo";
 
 // ─── Default question count for fallback distribution ───────────
 const DEFAULT_PROVA_TOTAL = 40;
