@@ -620,10 +620,22 @@ export default function Simulado() {
       if (xpGanho > 0) await supabase.rpc("adicionar_xp", { _user_id: user!.id, _xp_ganho: xpGanho });
       await supabase.from("simulados").update({ pontuacao: nota, acertos, tempo_gasto: tempoTotal, status: "finalizado", finished_at: new Date().toISOString(), ultima_questao_respondida: questoes.length }).eq("id", simuladoId!);
 
+      // Update performance tracking per question
       for (let i = 0; i < questoes.length; i++) {
         const q = questoes[i];
         if (q?.id) {
-          await supabase.from("respostas").update({ resposta_usuario: respostas[i] || null, acertou: respostas[i] === q.resposta_correta }).eq("simulado_id", simuladoId!).eq("questao_id", q.id);
+          const acertou = respostas[i] === q.resposta_correta;
+          await supabase.from("respostas").update({ resposta_usuario: respostas[i] || null, acertou }).eq("simulado_id", simuladoId!).eq("questao_id", q.id);
+          // Track performance - fire and forget
+          if (materiaId) {
+            supabase.rpc("atualizar_desempenho", {
+              _user_id: user!.id,
+              _materia_id: materiaId,
+              _topic_id: topicId || null,
+              _subtopic_id: subtopicId || null,
+              _acertou: acertou,
+            }).then(() => {}).catch(() => {});
+          }
         }
       }
 
