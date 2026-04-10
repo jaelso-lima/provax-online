@@ -769,6 +769,13 @@ export default function Simulado() {
                   <p className="text-xs text-muted-foreground">Distribuição realista baseada em editais</p>
                 </Label>
               </div>
+              <div className="flex items-center space-x-2 rounded-lg border border-primary/30 bg-primary/5 p-3 cursor-pointer hover:bg-primary/10" onClick={() => setTipoMode("adaptativo")}>
+                <RadioGroupItem value="adaptativo" id="tipo-adaptativo" />
+                <Label htmlFor="tipo-adaptativo" className="cursor-pointer flex-1">
+                  <span className="font-medium">🧠 Simulado Adaptativo</span>
+                  <p className="text-xs text-muted-foreground">IA foca nos seus pontos fracos (60% fraco, 30% médio, 10% forte)</p>
+                </Label>
+              </div>
             </RadioGroup>
           </div>
 
