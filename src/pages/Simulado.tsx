@@ -445,6 +445,23 @@ export default function Simulado() {
           provaCompleta: true,
           distribuicao: provaCompletaContext,
         };
+      } else if (tipoMode === "adaptativo" && modo === "concurso") {
+        // Adaptive mode: fetch weak areas and generate questions targeting them
+        const { data: pontosFrageis } = await supabase.rpc("get_pontos_fracos", { _user_id: user!.id, _limit: 5 });
+        const weakAreas = (pontosFrageis as any[]) || [];
+        const adaptiveContext = weakAreas.length > 0
+          ? `FOQUE NAS SEGUINTES ÁREAS FRACAS DO ALUNO (priorize questões desses assuntos):\n${weakAreas.map((p: any) => `- ${p.materia_nome}${p.topic_nome ? ' > ' + p.topic_nome : ''}${p.subtopic_nome ? ' > ' + p.subtopic_nome : ''} (taxa de acerto: ${p.taxa_acerto}%)`).join('\n')}`
+          : '';
+        bodyPayload = {
+          ...bodyPayload,
+          quantidade: parseInt(quantidade),
+          area: areaId || undefined,
+          adaptativo: true,
+          adaptive_context: adaptiveContext,
+        };
+        // Set metadata
+        const adaptMeta: SimuladoMeta = { area_nome: "Simulado Adaptativo" };
+        setSimuladoMeta(adaptMeta);
       } else if (modo === "concurso") {
         bodyPayload = {
           ...bodyPayload,
