@@ -318,6 +318,10 @@ export default function Simulado() {
 
   const validarFiltros = () => {
     if (modo === "concurso") {
+      if (tipoMode === "adaptativo") {
+        // Adaptive mode needs no filters — uses performance data
+        return true;
+      }
       if (tipoMode === "prova_completa") {
         if (!stateId) { toast({ title: "Selecione o estado", variant: "destructive" }); return false; }
         if (!areaId) { toast({ title: "Selecione a área", variant: "destructive" }); return false; }
