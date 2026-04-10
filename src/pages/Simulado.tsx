@@ -634,7 +634,7 @@ export default function Simulado() {
               _topic_id: topicId || null,
               _subtopic_id: subtopicId || null,
               _acertou: acertou,
-            }).then(() => {}).catch(() => {});
+            }).then(() => {});
           }
         }
       }
