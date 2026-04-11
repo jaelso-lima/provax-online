@@ -76,7 +76,7 @@ export default function AdminSettings() {
   ];
 
   return (
-    <AdminLayout title="Configurações de Vídeos" subtitle="Gerencie os vídeos exibidos no sistema">
+    <AdminLayout>
       <div className="space-y-6">
         {videoSettings.map((vs) => {
           const currentUrl = getVal(vs.chave);
