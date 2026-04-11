@@ -104,6 +104,7 @@ const App = () => (
               <Route path="/analisar-edital/:id" element={<ProtectedRoute><EditalEstudoViewer /></ProtectedRoute>} />
               <Route path="/cadernos" element={<ProtectedRoute><Cadernos /></ProtectedRoute>} />
               <Route path="/funcionario" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/termos" element={<TermosDeUso />} />
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
