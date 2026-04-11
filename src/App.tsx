@@ -34,6 +34,7 @@ const Cadernos = lazy(() => import("./pages/Cadernos"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TermosDeUso = lazy(() => import("./pages/TermosDeUso"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 // Admin - always lazy
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));

@@ -51,6 +51,7 @@ const allNavItems = [
   { href: "/admin/report", label: "Relatório PDF", icon: FileText, roles: ["admin", "owner", "partner"], permission: "ver_relatorios" },
   { href: "/admin/logs", label: "Logs", icon: ClipboardList, roles: ["admin", "owner", "partner"], permission: "ver_logs" },
   { href: "/admin/promocoes", label: "Promoções", icon: Megaphone, roles: ["admin", "owner"], permission: null },
+  { href: "/admin/settings", label: "Configurações", icon: Settings, roles: ["admin", "owner"], permission: null },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {
