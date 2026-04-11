@@ -45,6 +45,19 @@ export default function Index() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: landingVideoUrl } = useQuery({
+    queryKey: ["site-setting-landing-video"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("valor")
+        .eq("chave", "video_landing_url")
+        .maybeSingle();
+      return data?.valor || "";
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
   const getLink = (slug: string, periodo: "mensal" | "trimestral" | "anual" = "mensal") => {
     const plan = dbPlans?.find(p => p.slug === slug);
     if (!plan) return null;
