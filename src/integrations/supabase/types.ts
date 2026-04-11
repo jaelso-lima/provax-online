@@ -1747,6 +1747,7 @@ export type Database = {
           last_credit_reset: string | null
           nivel: number
           nome: string
+          onboarding_completo: boolean
           plano: string
           saldo_moedas: number
           telefone: string | null
@@ -1764,6 +1765,7 @@ export type Database = {
           last_credit_reset?: string | null
           nivel?: number
           nome?: string
+          onboarding_completo?: boolean
           plano?: string
           saldo_moedas?: number
           telefone?: string | null
@@ -1781,6 +1783,7 @@ export type Database = {
           last_credit_reset?: string | null
           nivel?: number
           nome?: string
+          onboarding_completo?: boolean
           plano?: string
           saldo_moedas?: number
           telefone?: string | null
@@ -2460,6 +2463,33 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          chave: string
+          created_at: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: string
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
       states: {
         Row: {
           created_at: string
@@ -2673,6 +2703,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_onboarding: {
+        Row: {
+          created_at: string
+          dificuldade: string | null
+          id: string
+          ja_estuda: boolean | null
+          meta: string | null
+          nivel: string | null
+          objetivo: string | null
+          onboarding_completo: boolean
+          step_atual: number
+          tempo_diario: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dificuldade?: string | null
+          id?: string
+          ja_estuda?: boolean | null
+          meta?: string | null
+          nivel?: string | null
+          objetivo?: string | null
+          onboarding_completo?: boolean
+          step_atual?: number
+          tempo_diario?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dificuldade?: string | null
+          id?: string
+          ja_estuda?: boolean | null
+          meta?: string | null
+          nivel?: string | null
+          objetivo?: string | null
+          onboarding_completo?: boolean
+          step_atual?: number
+          tempo_diario?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_popup_controle: {
         Row: {

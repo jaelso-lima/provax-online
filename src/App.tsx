@@ -34,6 +34,7 @@ const Cadernos = lazy(() => import("./pages/Cadernos"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TermosDeUso = lazy(() => import("./pages/TermosDeUso"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 // Admin - always lazy
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -55,6 +56,7 @@ const AdminPartnerFinancial = lazy(() => import("./pages/admin/AdminPartnerFinan
 const AdminEmployees = lazy(() => import("./pages/admin/AdminEmployees"));
 const AdminCourses = lazy(() => import("./pages/admin/AdminCourses"));
 const AdminPromocoes = lazy(() => import("./pages/admin/AdminPromocoes"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -102,6 +104,7 @@ const App = () => (
               <Route path="/analisar-edital/:id" element={<ProtectedRoute><EditalEstudoViewer /></ProtectedRoute>} />
               <Route path="/cadernos" element={<ProtectedRoute><Cadernos /></ProtectedRoute>} />
               <Route path="/funcionario" element={<ProtectedRoute><EmployeeDashboard /></ProtectedRoute>} />
+              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
               <Route path="/termos" element={<TermosDeUso />} />
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
@@ -122,6 +125,7 @@ const App = () => (
               <Route path="/admin/employees" element={<AdminRoute><AdminEmployees /></AdminRoute>} />
               <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
               <Route path="/admin/promocoes" element={<AdminRoute><AdminPromocoes /></AdminRoute>} />
+              <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>

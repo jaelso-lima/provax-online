@@ -17,6 +17,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
+const getYouTubeEmbedUrl = (url: string) => {
+  if (!url) return "";
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0` : "";
+};
+
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
 const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true } };
 
@@ -37,6 +43,19 @@ export default function Index() {
       return data;
     },
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: landingVideoUrl } = useQuery({
+    queryKey: ["site-setting-landing-video"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("valor")
+        .eq("chave", "video_landing_url")
+        .maybeSingle();
+      return data?.valor || "";
+    },
+    staleTime: 10 * 60 * 1000,
   });
 
   const getLink = (slug: string, periodo: "mensal" | "trimestral" | "anual" = "mensal") => {
@@ -119,6 +138,28 @@ export default function Index() {
             <p className="mt-4 text-sm text-muted-foreground">
               Resultado em menos de 1 minuto • Sem cartão de crédito • 100% gratuito
             </p>
+
+            {/* Dynamic Video */}
+            {landingVideoUrl && getYouTubeEmbedUrl(landingVideoUrl) && (
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="mt-12 mx-auto max-w-3xl"
+              >
+                <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 ring-1 ring-border" style={{ paddingBottom: "56.25%" }}>
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={getYouTubeEmbedUrl(landingVideoUrl)}
+                    title="ProvaX - Simulados Inteligentes"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </section>
