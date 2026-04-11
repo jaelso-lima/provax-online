@@ -160,6 +160,7 @@ export default function Index() {
                 </div>
               </motion.div>
             )}
+          </motion.div>
         </div>
       </section>
 
