@@ -12,6 +12,7 @@ export interface Profile {
   last_credit_reset: string | null;
   telefone: string | null;
   account_status: 'active' | 'suspended';
+  onboarding_completo: boolean;
   created_at: string;
   updated_at: string;
 }
