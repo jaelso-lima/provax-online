@@ -138,7 +138,28 @@ export default function Index() {
             <p className="mt-4 text-sm text-muted-foreground">
               Resultado em menos de 1 minuto • Sem cartão de crédito • 100% gratuito
             </p>
-          </motion.div>
+
+            {/* Dynamic Video */}
+            {landingVideoUrl && getYouTubeEmbedUrl(landingVideoUrl) && (
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="mt-12 mx-auto max-w-3xl"
+              >
+                <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 ring-1 ring-border" style={{ paddingBottom: "56.25%" }}>
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={getYouTubeEmbedUrl(landingVideoUrl)}
+                    title="ProvaX - Simulados Inteligentes"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                </div>
+              </motion.div>
+            )}
         </div>
       </section>
 
