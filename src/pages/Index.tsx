@@ -165,6 +165,33 @@ export default function Index() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
+          CARROSSEL DE AUTORIDADE
+      ═══════════════════════════════════════════════════════════════ */}
+      <section className="border-t bg-card/50 py-10 overflow-hidden">
+        <div className="container text-center mb-6">
+          <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Tecnologias e metodologias utilizadas por</p>
+        </div>
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-card/50 to-transparent z-10" />
+          <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-card/50 to-transparent z-10" />
+          <div className="flex animate-[scroll_25s_linear_infinite] gap-12 items-center w-max">
+            {[...Array(2)].map((_, loop) => (
+              <div key={loop} className="flex gap-12 items-center">
+                {["Google", "Microsoft", "Meta", "Amazon", "Apple", "IBM", "Oracle", "Cisco", "Intel", "Samsung"].map((brand) => (
+                  <div
+                    key={`${loop}-${brand}`}
+                    className="flex items-center justify-center px-6 py-3 rounded-lg opacity-40 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0"
+                  >
+                    <span className="text-xl md:text-2xl font-bold text-foreground tracking-tight whitespace-nowrap">{brand}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
           2. IMPACTO RÁPIDO — Reduzir fricção imediata
       ═══════════════════════════════════════════════════════════════ */}
       <section className="border-t bg-accent/5 py-10">

@@ -5,10 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Target, BookOpen, Clock, Brain, Trophy, Flame, CheckCircle, Play } from "lucide-react";
+import { ArrowRight, ArrowLeft, Target, BookOpen, Clock, Brain, Trophy, Flame, CheckCircle, Play, Crown, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { trackFBEvent } from "@/lib/fbPixel";
 
 const STEPS = [
   {
@@ -77,6 +79,14 @@ const STEPS = [
   },
 ];
 
+const getYouTubeEmbedUrl = (url: string) => {
+  if (!url) return "";
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match
+    ? `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1&controls=1&disablekb=1&fs=0`
+    : "";
+};
+
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -85,7 +95,6 @@ export default function Onboarding() {
   const [showVSL, setShowVSL] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Load existing onboarding state
   const { data: onboardingData } = useQuery({
     queryKey: ["user-onboarding", user?.id],
     queryFn: async () => {
@@ -100,7 +109,6 @@ export default function Onboarding() {
     enabled: !!user,
   });
 
-  // Load VSL video URL
   const { data: vslUrl } = useQuery({
     queryKey: ["site-setting-vsl"],
     queryFn: async () => {
@@ -129,7 +137,6 @@ export default function Onboarding() {
         }
       });
       setAnswers(saved);
-      // If all quiz steps done, show VSL
       if (onboardingData.step_atual >= STEPS.length) {
         setShowVSL(true);
       } else {
@@ -169,7 +176,6 @@ export default function Onboarding() {
       setStep(nextStep);
       await saveProgress(newAnswers, nextStep);
     } else {
-      // Quiz complete → show VSL
       await saveProgress(newAnswers, STEPS.length);
       setShowVSL(true);
     }
@@ -179,24 +185,19 @@ export default function Onboarding() {
     if (step > 0) setStep(step - 1);
   };
 
-  const handleFinishOnboarding = async () => {
+  const handleFinishFree = async () => {
     setSaving(true);
     try {
       await saveProgress(answers, STEPS.length, true);
-
-      // Update profile
       const { error } = await supabase
         .from("profiles")
         .update({ onboarding_completo: true })
         .eq("id", user!.id);
-
       if (error) {
-        // Try with bypass
         await supabase.rpc("update_own_profile" as any, {});
       }
-
       await refreshProfile();
-      toast({ title: "Bem-vindo ao ProvaX! 🎉", description: "Seu plano de estudo personalizado está pronto." });
+      toast({ title: "Bem-vindo ao ProvaX! 🎉", description: "Seu acesso gratuito foi liberado." });
       navigate("/dashboard", { replace: true });
     } catch (e) {
       console.error(e);
@@ -206,80 +207,42 @@ export default function Onboarding() {
     }
   };
 
-  const getYouTubeEmbedUrl = (url: string) => {
-    if (!url) return "";
-    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    return match ? `https://www.youtube.com/embed/${match[1]}?rel=0` : url;
+  const handleGoPremium = async () => {
+    // First complete onboarding, then redirect to plans
+    setSaving(true);
+    try {
+      await saveProgress(answers, STEPS.length, true);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ onboarding_completo: true })
+        .eq("id", user!.id);
+      if (error) {
+        await supabase.rpc("update_own_profile" as any, {});
+      }
+      await refreshProfile();
+      trackFBEvent("InitiateCheckout", { content_name: "Premium from VSL" });
+      navigate("/planos", { replace: true });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Erro", description: "Tente novamente.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const progress = showVSL ? 100 : ((step) / STEPS.length) * 100;
 
-  // VSL Screen
-  if (showVSL) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-3xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Play className="h-8 w-8 text-primary" />
-            </div>
-            <h1 className="font-display text-2xl md:text-3xl font-bold mb-2">
-              Assista antes de começar
-            </h1>
-            <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-              Veja como o ProvaX vai transformar seu método de estudo e acelerar sua aprovação.
-            </p>
-
-            {vslUrl ? (
-              <div className="relative w-full mb-8 rounded-xl overflow-hidden shadow-2xl bg-black" style={{ paddingBottom: "56.25%" }}>
-                <iframe
-                  className="absolute inset-0 w-full h-full"
-                  src={getYouTubeEmbedUrl(vslUrl)}
-                  title="ProvaX - Como funciona"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  loading="lazy"
-                />
-              </div>
-            ) : (
-              <Card className="mb-8 border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <Play className="h-12 w-12 text-muted-foreground/40 mb-3" />
-                  <p className="text-muted-foreground">Vídeo em breve</p>
-                </CardContent>
-              </Card>
-            )}
-
-            <Button
-              size="lg"
-              className="h-14 text-lg px-10 group shadow-lg shadow-primary/25"
-              onClick={handleFinishOnboarding}
-              disabled={saving}
-            >
-              {saving ? "Preparando..." : "Liberar acesso ao sistema"}
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Button>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Seu plano personalizado está pronto
-            </p>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
-
-  // Quiz Screen
   const currentStep = STEPS[step];
-  const StepIcon = currentStep.icon;
+  const StepIcon = currentStep?.icon;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Progress bar */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b px-4 py-3">
+      <div className="sticky top-0 z-40 bg-card/95 backdrop-blur-md border-b px-4 py-3">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground font-medium">
-              Passo {step + 1} de {STEPS.length}
+              Passo {Math.min(step + 1, STEPS.length)} de {STEPS.length}
             </span>
             <span className="text-xs text-muted-foreground">
               {Math.round(progress)}%
@@ -290,60 +253,152 @@ export default function Onboarding() {
       </div>
 
       {/* Quiz content */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              transition={{ duration: 0.25 }}
-            >
-              <div className="text-center mb-8">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <StepIcon className="h-7 w-7 text-primary" />
+      {!showVSL && (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-lg">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="text-center mb-8">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <StepIcon className="h-7 w-7 text-primary" />
+                  </div>
+                  <h2 className="font-display text-xl md:text-2xl font-bold">
+                    {currentStep.question}
+                  </h2>
                 </div>
-                <h2 className="font-display text-xl md:text-2xl font-bold">
-                  {currentStep.question}
-                </h2>
-              </div>
 
-              <div className="space-y-3">
-                {currentStep.options.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleSelect(opt.value)}
-                    className={`w-full text-left rounded-xl border-2 p-4 transition-all hover:border-primary hover:bg-primary/5 ${
-                      answers[currentStep.key] === opt.value
-                        ? "border-primary bg-primary/10"
-                        : "border-border bg-card"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm md:text-base">{opt.label}</span>
-                      {answers[currentStep.key] === opt.value && (
-                        <CheckCircle className="h-5 w-5 text-primary shrink-0" />
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
+                <div className="space-y-3">
+                  {currentStep.options.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleSelect(opt.value)}
+                      className={`w-full text-left rounded-xl border-2 p-4 transition-all hover:border-primary hover:bg-primary/5 ${
+                        answers[currentStep.key] === opt.value
+                          ? "border-primary bg-primary/10"
+                          : "border-border bg-card"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm md:text-base">{opt.label}</span>
+                        {answers[currentStep.key] === opt.value && (
+                          <CheckCircle className="h-5 w-5 text-primary shrink-0" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
 
-              {step > 0 && (
-                <Button
-                  variant="ghost"
-                  className="mt-6"
-                  onClick={handleBack}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Voltar
-                </Button>
-              )}
-            </motion.div>
-          </AnimatePresence>
+                {step > 0 && (
+                  <Button variant="ghost" className="mt-6" onClick={handleBack}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Voltar
+                  </Button>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Placeholder when VSL modal is open */}
+      {showVSL && (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle className="h-8 w-8 text-primary" />
+            </div>
+            <h2 className="font-display text-xl font-bold mb-2">Quiz finalizado!</h2>
+            <p className="text-muted-foreground text-sm">Assista ao vídeo de boas-vindas para continuar.</p>
+          </div>
+        </div>
+      )}
+
+      {/* VSL Modal */}
+      <Dialog open={showVSL} onOpenChange={(open) => {
+        if (!open) handleFinishFree();
+      }}>
+        <DialogContent className="max-w-3xl w-[95vw] p-0 gap-0 overflow-hidden border-0 bg-card shadow-2xl [&>button]:hidden">
+          {/* Custom close button */}
+          <button
+            onClick={handleFinishFree}
+            disabled={saving}
+            className="absolute right-3 top-3 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 hover:bg-muted transition-colors"
+            aria-label="Fechar"
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+
+          <div className="p-6 pb-0">
+            <DialogHeader className="text-center space-y-2">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Play className="h-6 w-6 text-primary" />
+              </div>
+              <DialogTitle className="font-display text-xl md:text-2xl">
+                Assista ao vídeo de boas-vindas
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Veja como o ProvaX vai transformar seu método de estudo e acelerar sua aprovação.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          {/* Video with overlay to block external clicks */}
+          <div className="px-6 pt-4">
+            {vslUrl && getYouTubeEmbedUrl(vslUrl) ? (
+              <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src={getYouTubeEmbedUrl(vslUrl)}
+                  title="ProvaX - Boas-vindas"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  loading="lazy"
+                />
+                {/* Invisible overlay to block YouTube external links */}
+                <div className="absolute inset-0 pointer-events-none" />
+                {/* Block bottom YouTube bar links */}
+                <div className="absolute bottom-0 left-0 right-0 h-14 bg-transparent" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed">
+                <Play className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                <p className="text-muted-foreground">Vídeo em breve</p>
+              </div>
+            )}
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="p-6 space-y-3">
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/25 group"
+              onClick={handleGoPremium}
+              disabled={saving}
+            >
+              <Crown className="mr-2 h-5 w-5" />
+              {saving ? "Preparando..." : "Quero me tornar Premium"}
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Simulados ilimitados • Sistema adaptativo • Análise completa
+            </p>
+            <div className="text-center pt-1">
+              <button
+                onClick={handleFinishFree}
+                disabled={saving}
+                className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+              >
+                Continuar com acesso gratuito
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
