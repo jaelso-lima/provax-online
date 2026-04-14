@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Target, BookOpen, Clock, Brain, Trophy, Flame, CheckCircle, Play, Crown, X } from "lucide-react";
+import { ArrowRight, ArrowLeft, Target, Brain, Clock, Flame, CheckCircle, Play, Crown, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { trackFBEvent } from "@/lib/fbPixel";
@@ -29,19 +28,9 @@ const STEPS = [
     question: "Qual seu nível atual de conhecimento?",
     icon: Brain,
     options: [
-      { value: "iniciante", label: "Iniciante — estou começando agora" },
+      { value: "iniciante", label: "Iniciante — estou começando" },
       { value: "intermediario", label: "Intermediário — já estudei um pouco" },
       { value: "avancado", label: "Avançado — estudo há bastante tempo" },
-    ],
-  },
-  {
-    key: "ja_estuda",
-    question: "Você já estuda atualmente?",
-    icon: BookOpen,
-    options: [
-      { value: "sim", label: "Sim, estudo regularmente" },
-      { value: "as_vezes", label: "Às vezes, sem rotina fixa" },
-      { value: "nao", label: "Não, quero começar agora" },
     ],
   },
   {
@@ -67,24 +56,23 @@ const STEPS = [
     ],
   },
   {
-    key: "meta",
-    question: "Qual sua meta de aprovação?",
-    icon: Trophy,
+    key: "origem",
+    question: "Como você conheceu o ProvaX?",
+    icon: Target,
     options: [
-      { value: "6meses", label: "Quero passar em até 6 meses" },
-      { value: "1ano", label: "Quero passar em até 1 ano" },
-      { value: "2anos", label: "Quero passar em até 2 anos" },
-      { value: "sem_pressa", label: "Sem pressa, quero evoluir" },
+      { value: "facebook", label: "Facebook" },
+      { value: "instagram", label: "Instagram" },
+      { value: "youtube", label: "YouTube" },
+      { value: "google", label: "Google" },
+      { value: "amigo", label: "Indicação de amigo" },
+      { value: "outros", label: "Outros" },
     ],
   },
 ];
 
-const getYouTubeEmbedUrl = (url: string) => {
-  if (!url) return "";
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return match
-    ? `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1&controls=1&disablekb=1&fs=0`
-    : "";
+const getYouTubeId = (url: string) => {
+  const match = url?.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
 };
 
 export default function Onboarding() {
@@ -94,6 +82,14 @@ export default function Onboarding() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showVSL, setShowVSL] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [vslReady, setVslReady] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
+  const [canCloseFree, setCanCloseFree] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const playerRef = useRef<any>(null);
+  const vslTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const buttonTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const progressCheckRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: onboardingData } = useQuery({
     queryKey: ["user-onboarding", user?.id],
@@ -145,6 +141,82 @@ export default function Onboarding() {
     }
   }, [onboardingData, navigate]);
 
+  // VSL: wait 4 seconds then autoplay, show buttons after 30s, allow free after 40%
+  useEffect(() => {
+    if (showVSL) {
+      vslTimerRef.current = setTimeout(() => setVslReady(true), 4000);
+      buttonTimerRef.current = setTimeout(() => setShowButtons(true), 30000);
+      
+      // Check 40% progress via YouTube API polling
+      progressCheckRef.current = setInterval(() => {
+        if (playerRef.current) {
+          try {
+            const duration = playerRef.current.getDuration?.();
+            const current = playerRef.current.getCurrentTime?.();
+            if (duration && current && current / duration >= 0.4) {
+              setCanCloseFree(true);
+            }
+            if (duration && current && current >= duration - 1) {
+              setVideoEnded(true);
+              setShowButtons(true);
+              setCanCloseFree(true);
+            }
+          } catch {}
+        }
+      }, 2000);
+    }
+    return () => {
+      if (vslTimerRef.current) clearTimeout(vslTimerRef.current);
+      if (buttonTimerRef.current) clearTimeout(buttonTimerRef.current);
+      if (progressCheckRef.current) clearInterval(progressCheckRef.current);
+    };
+  }, [showVSL]);
+
+  // Load YouTube IFrame API
+  useEffect(() => {
+    if (!showVSL || !vslReady || !vslUrl) return;
+    const videoId = getYouTubeId(vslUrl);
+    if (!videoId) return;
+
+    const loadAPI = () => {
+      if ((window as any).YT?.Player) {
+        createPlayer(videoId);
+        return;
+      }
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+      (window as any).onYouTubeIframeAPIReady = () => createPlayer(videoId);
+    };
+
+    const createPlayer = (id: string) => {
+      playerRef.current = new (window as any).YT.Player("vsl-player", {
+        videoId: id,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0,
+          iv_load_policy: 3,
+        },
+        events: {
+          onStateChange: (event: any) => {
+            if (event.data === 0) {
+              setVideoEnded(true);
+              setShowButtons(true);
+              setCanCloseFree(true);
+            }
+          },
+        },
+      });
+    };
+
+    loadAPI();
+  }, [showVSL, vslReady, vslUrl]);
+
   const saveProgress = async (newAnswers: Record<string, string>, currentStep: number, complete = false) => {
     if (!user) return;
     const payload: any = {
@@ -153,10 +225,11 @@ export default function Onboarding() {
       onboarding_completo: complete,
       objetivo: newAnswers.objetivo || null,
       nivel: newAnswers.nivel || null,
-      ja_estuda: newAnswers.ja_estuda === "sim" ? true : newAnswers.ja_estuda === "nao" ? false : null,
+      ja_estuda: null,
       tempo_diario: newAnswers.tempo_diario || null,
       dificuldade: newAnswers.dificuldade || null,
-      meta: newAnswers.meta || null,
+      meta: null,
+      origem: newAnswers.origem || null,
     };
 
     const { error } = await supabase
@@ -186,16 +259,14 @@ export default function Onboarding() {
   };
 
   const handleFinishFree = async () => {
+    if (!canCloseFree && showButtons) {
+      toast({ title: "Aguarde um pouco mais", description: "Assista pelo menos 40% do vídeo para continuar.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       await saveProgress(answers, STEPS.length, true);
-      const { error } = await supabase
-        .from("profiles")
-        .update({ onboarding_completo: true })
-        .eq("id", user!.id);
-      if (error) {
-        await supabase.rpc("update_own_profile" as any, {});
-      }
+      await supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id);
       await refreshProfile();
       toast({ title: "Bem-vindo ao ProvaX! 🎉", description: "Seu acesso gratuito foi liberado." });
       navigate("/dashboard", { replace: true });
@@ -208,17 +279,10 @@ export default function Onboarding() {
   };
 
   const handleGoPremium = async () => {
-    // First complete onboarding, then redirect to plans
     setSaving(true);
     try {
       await saveProgress(answers, STEPS.length, true);
-      const { error } = await supabase
-        .from("profiles")
-        .update({ onboarding_completo: true })
-        .eq("id", user!.id);
-      if (error) {
-        await supabase.rpc("update_own_profile" as any, {});
-      }
+      await supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id);
       await refreshProfile();
       trackFBEvent("InitiateCheckout", { content_name: "Premium from VSL" });
       navigate("/planos", { replace: true });
@@ -231,7 +295,6 @@ export default function Onboarding() {
   };
 
   const progress = showVSL ? 100 : ((step) / STEPS.length) * 100;
-
   const currentStep = STEPS[step];
   const StepIcon = currentStep?.icon;
 
@@ -264,6 +327,11 @@ export default function Onboarding() {
                 exit={{ opacity: 0, x: -30 }}
                 transition={{ duration: 0.25 }}
               >
+                {step === 0 && (
+                  <p className="text-center text-sm text-muted-foreground mb-6">
+                    Responda rápido para personalizar sua experiência
+                  </p>
+                )}
                 <div className="text-center mb-8">
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                     <StepIcon className="h-7 w-7 text-primary" />
@@ -285,7 +353,7 @@ export default function Onboarding() {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm md:text-base">{opt.label}</span>
+                        <span className="font-medium text-sm md:text-base text-foreground">{opt.label}</span>
                         {answers[currentStep.key] === opt.value && (
                           <CheckCircle className="h-5 w-5 text-primary shrink-0" />
                         )}
@@ -320,20 +388,8 @@ export default function Onboarding() {
       )}
 
       {/* VSL Modal */}
-      <Dialog open={showVSL} onOpenChange={(open) => {
-        if (!open) handleFinishFree();
-      }}>
+      <Dialog open={showVSL} onOpenChange={() => {}}>
         <DialogContent className="max-w-3xl w-[95vw] p-0 gap-0 overflow-hidden border-0 bg-card shadow-2xl [&>button]:hidden">
-          {/* Custom close button */}
-          <button
-            onClick={handleFinishFree}
-            disabled={saving}
-            className="absolute right-3 top-3 z-50 flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 hover:bg-muted transition-colors"
-            aria-label="Fechar"
-          >
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
-
           <div className="p-6 pb-0">
             <DialogHeader className="text-center space-y-2">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -348,21 +404,24 @@ export default function Onboarding() {
             </DialogHeader>
           </div>
 
-          {/* Video with overlay to block external clicks */}
+          {/* Video with YouTube IFrame API - no seek, no controls */}
           <div className="px-6 pt-4">
-            {vslUrl && getYouTubeEmbedUrl(vslUrl) ? (
+            {vslUrl && getYouTubeId(vslUrl) ? (
               <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
-                <iframe
-                  className="absolute inset-0 w-full h-full"
-                  src={getYouTubeEmbedUrl(vslUrl)}
-                  title="ProvaX - Boas-vindas"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  loading="lazy"
-                />
-                {/* Invisible overlay to block YouTube external links */}
-                <div className="absolute inset-0 pointer-events-none" />
-                {/* Block bottom YouTube bar links */}
-                <div className="absolute bottom-0 left-0 right-0 h-14 bg-transparent" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} />
+                {!vslReady ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="mx-auto mb-3 h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+                      <p className="text-sm text-muted-foreground">Preparando vídeo...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div id="vsl-player" className="absolute inset-0 w-full h-full" />
+                    {/* Block all interaction with the video */}
+                    <div className="absolute inset-0" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} />
+                  </>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed">
@@ -372,30 +431,51 @@ export default function Onboarding() {
             )}
           </div>
 
-          {/* CTA Buttons */}
+          {/* CTA Buttons - appear after 30s or video end */}
           <div className="p-6 space-y-3">
-            <Button
-              size="lg"
-              className="w-full h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/25 group"
-              onClick={handleGoPremium}
-              disabled={saving}
-            >
-              <Crown className="mr-2 h-5 w-5" />
-              {saving ? "Preparando..." : "Quero me tornar Premium"}
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-              Simulados ilimitados • Sistema adaptativo • Análise completa
-            </p>
-            <div className="text-center pt-1">
-              <button
-                onClick={handleFinishFree}
-                disabled={saving}
-                className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
-              >
-                Continuar com acesso gratuito
-              </button>
-            </div>
+            {videoEnded && !showButtons && setShowButtons(true) && null}
+            
+            <AnimatePresence>
+              {showButtons ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-3"
+                >
+                  <Button
+                    size="lg"
+                    className="w-full h-14 text-lg bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/25 group"
+                    onClick={handleGoPremium}
+                    disabled={saving}
+                  >
+                    <Crown className="mr-2 h-5 w-5" />
+                    {saving ? "Preparando..." : "Assinar Premium"}
+                    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Simulados ilimitados • Sistema adaptativo • Análise completa
+                  </p>
+                  <div className="text-center pt-1">
+                    <button
+                      onClick={handleFinishFree}
+                      disabled={saving || !canCloseFree}
+                      className={`text-sm underline underline-offset-4 transition-colors ${
+                        canCloseFree
+                          ? "text-muted-foreground hover:text-foreground"
+                          : "text-muted-foreground/40 cursor-not-allowed"
+                      }`}
+                    >
+                      {canCloseFree ? "Continuar gratuito" : "Assista mais um pouco para continuar grátis..."}
+                    </button>
+                  </div>
+                </motion.div>
+              ) : (
+                <p className="text-center text-xs text-muted-foreground animate-pulse">
+                  Aguarde o vídeo para ver as opções...
+                </p>
+              )}
+            </AnimatePresence>
           </div>
         </DialogContent>
       </Dialog>
