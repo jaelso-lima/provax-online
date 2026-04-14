@@ -433,7 +433,7 @@ export default function Onboarding() {
 
           {/* CTA Buttons - appear after 30s or video end */}
           <div className="p-6 space-y-3">
-            {videoEnded && !showButtons && setShowButtons(true) && null}
+            
             
             <AnimatePresence>
               {showButtons ? (
