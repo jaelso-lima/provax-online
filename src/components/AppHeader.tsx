@@ -51,6 +51,7 @@ export default function AppHeader() {
             <Coins className="h-3.5 w-3.5 text-coin" />
             <span className="text-foreground">{profile?.saldo_moedas ?? 0}</span>
           </div>
+          <ThemeSelector />
           <ThemeToggle />
           {isEmployee && (
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/funcionario")} title="Painel Funcionário">
@@ -93,6 +94,7 @@ export default function AppHeader() {
       {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
         <div className="sm:hidden border-t bg-card px-4 py-3 space-y-1 animate-in slide-in-from-top-2 duration-200">
+          <ThemeSelector />
           <ThemeToggle />
           {isEmployee && (
             <button
