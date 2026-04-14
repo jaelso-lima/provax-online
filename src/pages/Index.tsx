@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOptionalAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
+import ThemeSelector from "@/components/ThemeSelector";
 import {
   ArrowRight, CheckCircle, Zap, Brain, Target, BarChart3,
   Shield, Lock, Star, Crown, Mail, Instagram, MessageCircle
@@ -14,10 +15,10 @@ import { trackFBEvent } from "@/lib/fbPixel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const getYouTubeEmbedUrl = (url: string) => {
+const getYouTubeEmbedUrl = (url: string, autoplay = false) => {
   if (!url) return "";
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1` : "";
+  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1${autoplay ? '&autoplay=1&mute=1&loop=1&playlist=' + match[1] : ''}` : "";
 };
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
@@ -86,7 +87,8 @@ export default function Index() {
             <span className="text-accent">X</span>{" "}
             <span className="hidden sm:inline text-foreground">ProvaX</span>
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <ThemeSelector />
             <ThemeToggle />
             {user ? (
               <Button asChild size="sm"><Link to="/dashboard">Dashboard</Link></Button>
@@ -136,7 +138,7 @@ export default function Index() {
                 <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 ring-1 ring-border" style={{ paddingBottom: "56.25%" }}>
                   <iframe
                     className="absolute inset-0 w-full h-full"
-                    src={getYouTubeEmbedUrl(landingVideoUrl)}
+                    src={getYouTubeEmbedUrl(landingVideoUrl, true)}
                     title="ProvaX"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen

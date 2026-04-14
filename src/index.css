@@ -114,6 +114,71 @@
     --sidebar-border: 228 12% 20%;
     --sidebar-ring: 245 65% 65%;
   }
+  }
+
+  /* ══ COLOR THEMES ══ */
+  [data-color-theme="black"] {
+    --primary: 0 0% 15%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 0 0% 40%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 0 0% 15%;
+    --chart-1: 0 0% 15%;
+    --sidebar-primary: 0 0% 15%;
+    --sidebar-ring: 0 0% 15%;
+  }
+  [data-color-theme="black"].dark {
+    --primary: 0 0% 75%;
+    --primary-foreground: 0 0% 5%;
+    --accent: 0 0% 55%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 0 0% 75%;
+    --chart-1: 0 0% 75%;
+    --sidebar-primary: 0 0% 75%;
+    --sidebar-ring: 0 0% 75%;
+  }
+
+  [data-color-theme="pink"] {
+    --primary: 330 65% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 300 50% 45%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 330 65% 50%;
+    --chart-1: 330 65% 50%;
+    --sidebar-primary: 330 65% 50%;
+    --sidebar-ring: 330 65% 50%;
+  }
+  [data-color-theme="pink"].dark {
+    --primary: 330 70% 65%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 300 55% 58%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 330 70% 65%;
+    --chart-1: 330 70% 65%;
+    --sidebar-primary: 330 70% 65%;
+    --sidebar-ring: 330 70% 65%;
+  }
+
+  [data-color-theme="green"] {
+    --primary: 152 60% 35%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 168 72% 40%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 152 60% 35%;
+    --chart-1: 152 60% 35%;
+    --sidebar-primary: 152 60% 35%;
+    --sidebar-ring: 152 60% 35%;
+  }
+  [data-color-theme="green"].dark {
+    --primary: 152 55% 55%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 168 65% 50%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 152 55% 55%;
+    --chart-1: 152 55% 55%;
+    --sidebar-primary: 152 55% 55%;
+    --sidebar-ring: 152 55% 55%;
+  }
 }
 
 @layer base {
