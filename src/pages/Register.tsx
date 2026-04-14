@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { generateFingerprint } from "@/lib/fingerprint";
 import { trackFBEvent } from "@/lib/fbPixel";
+import { lovable } from "@/integrations/lovable";
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -22,8 +23,29 @@ export default function Register() {
   const [codigoIndicacao, setCodigoIndicacao] = useState(refCode);
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({ title: "Erro ao entrar com Google", description: String(result.error), variant: "destructive" });
+      }
+      if (result.redirected) return;
+      trackFBEvent("CompleteRegistration", { content_name: "ProvaX Google Signup" });
+      toast({ title: "Conta criada com sucesso! 🎉" });
+      navigate("/simulado");
+    } catch (e: any) {
+      toast({ title: "Erro ao entrar com Google", description: e.message, variant: "destructive" });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   // Phone mask and validation
   const formatPhone = (value: string) => {
