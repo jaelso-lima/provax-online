@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Palette } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useOptionalAuth } from "@/contexts/AuthContext";
 
 const THEMES = [
   { id: "blue", label: "Azul", color: "hsl(245 60% 45%)" },
@@ -14,7 +14,7 @@ const THEMES = [
 
 export default function ThemeSelector() {
   const { colorTheme, setColorTheme } = useTheme();
-  const { user } = useAuth();
+  const { user } = useOptionalAuth();
 
   const handleSelect = async (themeId: string) => {
     setColorTheme(themeId);
