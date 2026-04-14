@@ -1751,6 +1751,7 @@ export type Database = {
           plano: string
           saldo_moedas: number
           telefone: string | null
+          tema_preferido: string
           updated_at: string
           xp: number
         }
@@ -1769,6 +1770,7 @@ export type Database = {
           plano?: string
           saldo_moedas?: number
           telefone?: string | null
+          tema_preferido?: string
           updated_at?: string
           xp?: number
         }
@@ -1787,6 +1789,7 @@ export type Database = {
           plano?: string
           saldo_moedas?: number
           telefone?: string | null
+          tema_preferido?: string
           updated_at?: string
           xp?: number
         }
@@ -2714,6 +2717,7 @@ export type Database = {
           nivel: string | null
           objetivo: string | null
           onboarding_completo: boolean
+          origem: string | null
           step_atual: number
           tempo_diario: string | null
           updated_at: string
@@ -2728,6 +2732,7 @@ export type Database = {
           nivel?: string | null
           objetivo?: string | null
           onboarding_completo?: boolean
+          origem?: string | null
           step_atual?: number
           tempo_diario?: string | null
           updated_at?: string
@@ -2742,6 +2747,7 @@ export type Database = {
           nivel?: string | null
           objetivo?: string | null
           onboarding_completo?: boolean
+          origem?: string | null
           step_atual?: number
           tempo_diario?: string | null
           updated_at?: string
