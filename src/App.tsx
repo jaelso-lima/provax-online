@@ -79,7 +79,6 @@ function PageLoader() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
@@ -127,7 +126,6 @@ const App = () => (
               <Route path="/admin/courses" element={<AdminRoute><AdminCourses /></AdminRoute>} />
               <Route path="/admin/promocoes" element={<AdminRoute><AdminPromocoes /></AdminRoute>} />
               <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
-              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
@@ -136,7 +134,6 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
-    </ThemeProvider>
   </QueryClientProvider>
 );
 
