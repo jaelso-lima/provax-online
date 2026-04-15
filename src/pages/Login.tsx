@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -22,13 +23,25 @@ export default function Login() {
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
       if (result.error) {
         toast({ title: "Erro ao entrar com Google", description: String(result.error), variant: "destructive" });
+        return;
       }
       if (result.redirected) return;
-      toast({ title: "Bem-vindo de volta!" });
-      navigate("/dashboard");
+
+      // Check onboarding status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from("profiles").select("onboarding_completo").eq("id", user.id).single();
+        if (profile && profile.onboarding_completo) {
+          toast({ title: "Bem-vindo de volta!" });
+          navigate("/dashboard");
+        } else {
+          navigate("/onboarding");
+        }
+      }
     } catch (e: any) {
       toast({ title: "Erro ao entrar com Google", description: e.message, variant: "destructive" });
     } finally {

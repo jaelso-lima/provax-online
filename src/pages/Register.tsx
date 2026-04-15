@@ -32,14 +32,28 @@ export default function Register() {
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
       if (result.error) {
         toast({ title: "Erro ao entrar com Google", description: String(result.error), variant: "destructive" });
+        return;
       }
       if (result.redirected) return;
+
       trackFBEvent("CompleteRegistration", { content_name: "ProvaX Google Signup" });
-      toast({ title: "Conta criada com sucesso! 🎉" });
-      navigate("/simulado");
+
+      // Check onboarding status
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from("profiles").select("onboarding_completo").eq("id", user.id).single();
+        if (profile && profile.onboarding_completo) {
+          toast({ title: "Bem-vindo de volta!" });
+          navigate("/dashboard");
+        } else {
+          toast({ title: "Conta criada com sucesso! 🎉" });
+          navigate("/onboarding");
+        }
+      }
     } catch (e: any) {
       toast({ title: "Erro ao entrar com Google", description: e.message, variant: "destructive" });
     } finally {
