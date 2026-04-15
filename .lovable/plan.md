@@ -1,32 +1,24 @@
 
 
-## Plan: Fix Google OAuth Flow and Onboarding Redirect
+## Plan: Set `provax.online` as Primary Domain
 
-### What needs to change
+All references to `provax-online.lovable.app` in the codebase need to be replaced with `provax.online`. The custom domain is already in the CORS allowlist (`security-headers.ts`), so the backend already accepts it.
 
-**Problem**: Currently, Google OAuth works for both login and signup but doesn't show the Google account picker, and after Google auth the user is redirected to `/dashboard` or `/simulado` instead of going through the onboarding funnel for new users.
+Additionally, you need to set `provax.online` as the **Primary** domain in **Project Settings → Domains** so that `provax-online.lovable.app` redirects to it.
 
-### Changes
+### Code changes (5 files)
 
-**1. Add `prompt: "select_account"` to all Google OAuth calls**
-- In `Login.tsx` and `Register.tsx`, add `extraParams: { prompt: "select_account" }` to the `signInWithOAuth` call so users can choose which Google account to use.
+1. **`index.html`** — Update canonical URL, og:url, and JSON-LD url from `provax-online.lovable.app` to `provax.online`
 
-**2. Fix post-Google-auth redirect logic**
-- In both `Login.tsx` and `Register.tsx`, after successful Google auth:
-  - Fetch the user's profile to check `onboarding_completo`
-  - If `onboarding_completo` is `false` or no onboarding record exists → redirect to `/onboarding`
-  - If `onboarding_completo` is `true` → redirect to `/dashboard`
-- This ensures new Google users always go through the quiz → VSL → buttons flow.
+2. **`public/robots.txt`** — Update Sitemap URL to `https://provax.online/sitemap.xml`
 
-**3. Ensure ProtectedRoute still enforces onboarding**
-- The existing `ProtectedRoute.tsx` already redirects users with incomplete onboarding to `/onboarding` — no changes needed here.
+3. **`src/components/ShareResultCard.tsx`** — Replace share card text references to `provax.online`
 
-**4. Confirm VSL button behavior (already correct)**
-- "Assinar Premium" → marks onboarding complete → `/planos` (checkout)
-- "Continuar gratuito" → marks onboarding complete → `/dashboard`
-- Both buttons already work as described. No changes needed to `Onboarding.tsx`.
+4. **`src/lib/editalPdf.ts`** — Replace PDF footer text to `provax.online`
 
-### Files to edit
-- `src/pages/Login.tsx` — add `prompt: "select_account"`, check onboarding status after Google login
-- `src/pages/Register.tsx` — add `prompt: "select_account"`, check onboarding status after Google signup
+5. **`supabase/functions/_shared/security-headers.ts`** — Keep `provax.online` (already there), remove or keep the lovable.app entry as fallback
+
+### Manual step
+
+Go to **Project Settings → Domains**, find `provax.online`, and set it as **Primary**. This ensures all traffic to the `.lovable.app` URL redirects to `provax.online`.
 
