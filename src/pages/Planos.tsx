@@ -3,8 +3,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, Star, Zap, Crown, Percent, Shield, AlertTriangle, Clock } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle, XCircle, Crown, Shield, Lock, Zap, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -12,36 +11,41 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackFBEvent } from "@/lib/fbPixel";
 
-type Periodo = "mensal" | "trimestral" | "anual";
+const FREE_FEATURES = [
+  { text: "15 questões por dia", enabled: true },
+  { text: "Simulados básicos", enabled: true },
+  { text: "Filtro por matéria e assunto", enabled: true },
+  { text: "Comentário do professor", enabled: true },
+  { text: "Estatísticas básicas", enabled: true },
+  { text: "Histórico de erros", enabled: true },
+  { text: "2 cadernos personalizados", enabled: true },
+  { text: "Radar de concursos abertos", enabled: true },
+  // Locked features
+  { text: "Simulados ilimitados", enabled: false },
+  { text: "Sistema adaptativo inteligente", enabled: false },
+  { text: "Professor IA 24h", enabled: false },
+  { text: "Correção de redação por IA", enabled: false },
+  { text: "Análise de edital por IA", enabled: false },
+  { text: "Filtro por banca e cargo", enabled: false },
+  { text: "Ranking completo", enabled: false },
+  { text: "Estatísticas avançadas", enabled: false },
+];
 
-const FEATURE_LABELS: Record<string, string> = {
-  simulado_basico: "Simulado básico",
-  simulado_reverso: "Simulado reverso inteligente",
-  estatisticas_basicas: "Estatísticas básicas",
-  estatisticas_avancadas: "Estatísticas avançadas",
-  historico_erros: "Histórico de erros",
-  filtro_banca: "Filtro por banca",
-  filtro_estado: "Filtro por estado",
-  filtro_concurso_real: "Filtro por concurso real",
-  ranking: "Ranking completo",
-  professor_ia: "Professor IA 24h (Professor PX)",
-  correcao_redacao: "Correção de redação por IA",
-  analisar_edital: "Análise de edital por IA",
-  concursos_abertos: "Radar de concursos abertos",
-};
-
-const SLUG_ICONS: Record<string, any> = {
-  free: Zap,
-  "provax-x": Zap,
-  start: Star,
-  pro: Crown,
-};
-
-function calcDesconto(mensal: number, total: number, meses: number) {
-  if (mensal === 0) return 0;
-  const semDesconto = mensal * meses;
-  return Math.round(((semDesconto - total) / semDesconto) * 100);
-}
+const PREMIUM_FEATURES = [
+  { text: "Simulados ilimitados", enabled: true },
+  { text: "Sistema adaptativo inteligente", enabled: true },
+  { text: "Professor IA 24h (Professor PX)", enabled: true },
+  { text: "Correção de redação por IA", enabled: true },
+  { text: "Análise de edital por IA", enabled: true },
+  { text: "Filtro completo (banca, cargo, estado)", enabled: true },
+  { text: "Ranking completo", enabled: true },
+  { text: "Estatísticas avançadas", enabled: true },
+  { text: "Cadernos ilimitados", enabled: true },
+  { text: "Radar de concursos abertos", enabled: true },
+  { text: "Histórico completo de erros", enabled: true },
+  { text: "Simulado reverso inteligente", enabled: true },
+  { text: "Comentários e discussões", enabled: true },
+];
 
 function formatPreco(valor: number) {
   if (valor === 0) return "R$ 0";
@@ -49,7 +53,6 @@ function formatPreco(valor: number) {
 }
 
 export default function Planos() {
-  const [periodo, setPeriodo] = useState<Periodo>("mensal");
   const { user, profile } = useAuth();
 
   const { data: dbPlans } = useQuery({
@@ -57,7 +60,7 @@ export default function Planos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("plans")
-        .select("*, plan_features(*)")
+        .select("*")
         .eq("ativo", true)
         .order("preco_mensal");
       if (error) throw error;
@@ -70,7 +73,7 @@ export default function Planos() {
       toast({ title: "Em breve!", description: "Link de pagamento ainda não configurado." });
       return;
     }
-    trackFBEvent("InitiateCheckout", { content_name: planName || "Plano", currency: "BRL" });
+    trackFBEvent("InitiateCheckout", { content_name: planName || "Premium", currency: "BRL", value: 29.90 });
     const url = new URL(stripeLink);
     if (user?.email) {
       url.searchParams.set("email", user.email);
@@ -78,200 +81,134 @@ export default function Planos() {
     window.open(url.toString(), "_blank");
   };
 
-  const planos = (dbPlans || []).map((p) => {
-    const features = (p.plan_features || []).map((f: any) => ({
-      text: FEATURE_LABELS[f.feature] || f.feature,
-      enabled: f.enabled,
-    }));
+  // Find the premium plan from DB
+  const premiumPlan = dbPlans?.find(p => 
+    p.slug === "start" || p.slug === "premium" || p.slug === "pro" || p.slug === "provax-x"
+  );
+  const freePlan = dbPlans?.find(p => p.slug === "free");
 
-    return {
-      ...p,
-      icon: SLUG_ICONS[p.slug] || Star,
-      features,
-      prices: {
-        mensal: Number(p.preco_mensal) || 0,
-        trimestral: Number(p.preco_semestral) || 0,
-        anual: Number(p.preco_anual) || 0,
-      },
-      stripeLinks: {
-        mensal: p.stripe_link_mensal || null,
-        trimestral: p.stripe_link_semestral || null,
-        anual: p.stripe_link_anual || null,
-      },
-      isCurrent: profile?.plano === p.slug,
-    };
-  });
+  const isCurrentFree = profile?.plano === "free" || !profile?.plano;
+  const isCurrentPremium = premiumPlan && profile?.plano === premiumPlan.slug;
 
-  const gridCols = planos.length <= 2 ? "md:grid-cols-2" : planos.length === 3 ? "md:grid-cols-3" : "md:grid-cols-4";
+  const premiumPrice = premiumPlan ? Number(premiumPlan.preco_mensal) || 29.90 : 29.90;
+  const premiumLink = premiumPlan?.stripe_link_mensal || null;
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6 text-center">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/5 px-4 py-1.5 text-sm font-medium text-destructive">
-              <AlertTriangle className="h-4 w-4" />
-              Cada mês sem método certo = mais uma prova perdida
-            </div>
             <h1 className="mb-2 font-display text-3xl font-bold">
-              Invista na sua aprovação, não na sua reprovação
+              Escolha seu plano
             </h1>
             <p className="text-muted-foreground max-w-lg mx-auto">
-              O custo de uma reprovação é muito maior: inscrição perdida, meses de estudo sem rumo, materiais parados.
-              O ProvaX custa menos que um cafezinho por dia.
+              Comece grátis e faça upgrade quando quiser. O ProvaX custa menos que um cafezinho por dia.
             </p>
           </motion.div>
         </div>
 
-        <div className="mb-8 flex justify-center">
-          <Tabs value={periodo} onValueChange={(v) => setPeriodo(v as Periodo)}>
-            <TabsList>
-              <TabsTrigger value="mensal">Mensal</TabsTrigger>
-              <TabsTrigger value="trimestral">Trimestral</TabsTrigger>
-              <TabsTrigger value="anual" className="relative gap-1">
-                Anual
-                <Badge variant="secondary" className="ml-1 bg-accent text-accent-foreground text-[10px] px-1.5 py-0">
-                  🔥 Melhor valor
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <div className={`grid gap-6 ${gridCols}`}>
-          {planos.filter((p) => {
-            if (periodo !== "mensal" && p.slug === "provax-x") return false;
-            return true;
-          }).map((p, i) => {
-            const preco = p.prices[periodo];
-            const desconto = periodo !== "mensal"
-              ? calcDesconto(p.prices.mensal, preco, periodo === "trimestral" ? 3 : 12)
-              : 0;
-            const Icon = p.icon;
-            const isDestaque = p.slug === "provax-x" || p.slug === "pro";
-            const stripeLink = p.stripeLinks[periodo];
-
-            return (
-              <motion.div
-                key={p.slug}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card
-                  className={`relative transition-shadow hover:shadow-lg h-full ${
-                    isDestaque
-                      ? "border-2 border-accent ring-2 ring-accent/20"
-                      : ""
-                  }`}
-                >
-                  {isDestaque && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="bg-accent text-accent-foreground gap-1">
-                        {p.slug === "provax-x" ? (
-                          <><Zap className="h-3 w-3" /> Mais popular</>
-                        ) : (
-                          <><Crown className="h-3 w-3" /> Aprovação máxima</>
-                        )}
-                      </Badge>
-                    </div>
-                  )}
-                  <CardHeader className="text-center pt-8">
-                    <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                      <Icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <CardTitle className="font-display text-xl">{p.nome}</CardTitle>
-                    {p.descricao && (
-                      <p className="text-xs text-muted-foreground">{p.descricao}</p>
-                    )}
-                    <div className="mt-3">
-                      <span className="text-3xl font-bold text-foreground">{formatPreco(preco)}</span>
-                      {preco > 0 && (
-                        <span className="text-sm text-muted-foreground">
-                          /{periodo === "mensal" ? "mês" : periodo === "trimestral" ? "trimestre" : "ano"}
-                        </span>
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* FREE PLAN */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0 }}
+          >
+            <Card className="relative transition-shadow hover:shadow-lg h-full">
+              <CardHeader className="text-center pt-8">
+                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="font-display text-xl">Free</CardTitle>
+                <p className="text-xs text-muted-foreground">Para sempre gratuito</p>
+                <div className="mt-3">
+                  <span className="text-3xl font-bold text-foreground">R$ 0</span>
+                  <span className="text-sm text-muted-foreground">/mês</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2">
+                  {FREE_FEATURES.map((f) => (
+                    <li key={f.text} className="flex items-center gap-2 text-sm">
+                      {f.enabled ? (
+                        <CheckCircle className="h-4 w-4 shrink-0 text-accent" />
+                      ) : (
+                        <Lock className="h-4 w-4 shrink-0 text-muted-foreground/40" />
                       )}
-                    </div>
-                    {desconto > 0 && (
-                      <div className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-accent">
-                        <Percent className="h-3 w-3" /> Economia de {desconto}% vs mensal
-                      </div>
-                    )}
-                    {periodo !== "mensal" && preco > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        ≈ {formatPreco(preco / (periodo === "trimestral" ? 3 : 12))}/mês
-                      </p>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {p.slug === "free" ? (
-                      <ul className="space-y-2">
-                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Simulado inteligente (15 questões/dia)</li>
-                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Comentário do professor</li>
-                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Filtro por matéria e assunto</li>
-                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> 1 caderno personalizado</li>
-                        <li className="flex items-center gap-2 text-sm"><CheckCircle className="h-4 w-4 shrink-0 text-accent" /> Estatísticas básicas</li>
-                        <li className="mt-2 border-t pt-2 flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Simulado ilimitado</li>
-                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Filtro por cargo</li>
-                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Filtro completo por banca</li>
-                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Estatísticas avançadas</li>
-                        <li className="flex items-center gap-2 text-sm text-muted-foreground/60"><XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" /> 🔒 Ranking</li>
-                      </ul>
-                    ) : p.features.length > 0 ? (
-                      <ul className="space-y-2">
-                        {p.features.map((f: any) => (
-                          <li key={f.text} className="flex items-center gap-2 text-sm">
-                            {f.enabled ? (
-                              <CheckCircle className="h-4 w-4 shrink-0 text-accent" />
-                            ) : (
-                              <XCircle className="h-4 w-4 shrink-0 text-muted-foreground/40" />
-                            )}
-                            <span className={f.enabled ? "" : "text-muted-foreground/60"}>
-                              {f.text}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    <Button
-                      className={`w-full ${isDestaque ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-                      variant={p.isCurrent ? "outline" : "default"}
-                      disabled={p.isCurrent}
-                      onClick={() => !p.isCurrent && handleAssinar(stripeLink, p.nome)}
-                    >
-                      {p.isCurrent ? "Seu plano atual" : "Assinar agora"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
+                      <span className={f.enabled ? "" : "text-muted-foreground/60"}>
+                        {!f.enabled && "🔒 "}{f.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  disabled={isCurrentFree}
+                >
+                  {isCurrentFree ? "Seu plano atual" : "Plano gratuito"}
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* PREMIUM PLAN */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="relative transition-shadow hover:shadow-xl h-full border-2 border-accent ring-2 ring-accent/20 shadow-xl shadow-accent/10">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge className="bg-accent text-accent-foreground gap-1 px-3 py-1 text-xs font-bold shadow-md">
+                  <Crown className="h-3 w-3" /> Mais popular
+                </Badge>
+              </div>
+              <CardHeader className="text-center pt-8">
+                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+                  <Crown className="h-6 w-6 text-accent" />
+                </div>
+                <CardTitle className="font-display text-xl">Premium</CardTitle>
+                <p className="text-xs text-muted-foreground">Acesso completo a todas as ferramentas</p>
+                <div className="mt-3">
+                  <span className="text-3xl font-bold text-accent">{formatPreco(premiumPrice)}</span>
+                  <span className="text-sm text-muted-foreground">/mês</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ≈ {formatPreco(premiumPrice / 30)}/dia • Cancele quando quiser
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2">
+                  {PREMIUM_FEATURES.map((f) => (
+                    <li key={f.text} className="flex items-center gap-2 text-sm">
+                      <CheckCircle className="h-4 w-4 shrink-0 text-accent" />
+                      <span>{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  className="w-full h-12 text-base bg-accent text-accent-foreground hover:bg-accent/90 shadow-md shadow-accent/20 group"
+                  disabled={!!isCurrentPremium}
+                  onClick={() => !isCurrentPremium && handleAssinar(premiumLink, "Premium")}
+                >
+                  {isCurrentPremium ? "Seu plano atual" : (
+                    <>
+                      Assinar Premium
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
-        <div className="mt-10 text-center space-y-3">
+        <div className="mt-8 text-center space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-4 py-2 text-sm text-accent">
             <Shield className="h-4 w-4" /> Garantia de 7 dias — não gostou, devolvemos seu dinheiro.
           </div>
-          <p className="text-xs text-muted-foreground">
-            Planos trimestral e anual com validade fixa a partir da data de contratação.
-          </p>
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-8 rounded-xl border-2 border-primary/20 bg-primary/5 p-6 text-center"
-        >
-          <div className="flex items-center justify-center gap-2 text-primary mb-2">
-            <Clock className="h-5 w-5" />
-            <span className="font-display text-lg font-bold">Não deixe para amanhã</span>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            A cada dia sem prática direcionada, você perde tempo precioso que seus concorrentes estão usando.
-            Comece agora e saia na frente.
-          </p>
-        </motion.div>
       </div>
     </AppLayout>
   );

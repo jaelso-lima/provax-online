@@ -19,10 +19,10 @@ const FREE_DEFAULTS: PlanConfig = {
   limite_questoes_dia: 15,
   acesso_filtro_banca: true,
   acesso_filtro_cargo: false,
-  acesso_comentario: false,
+  acesso_comentario: true,
   acesso_estatisticas_avancadas: false,
-  limite_cadernos: 1,
-  limite_itens_caderno: 3,
+  limite_cadernos: 2,
+  limite_itens_caderno: 5,
   acesso_ranking: false,
 };
 

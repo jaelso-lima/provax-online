@@ -16,4 +16,4 @@ Disallow: /admin
 Disallow: /admin/
 Disallow: /funcionario
 
-Sitemap: https://provax-online.lovable.app/sitemap.xml
+Sitemap: https://provax.online/sitemap.xml
