@@ -432,7 +432,7 @@ export async function generateEditalPdf(resultado: AnalysisResult, fileName: str
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
-  doc.text("Gerado por ProvaX - provax-online.lovable.app", margin, 288);
+  doc.text("Gerado por ProvaX - provax.online", margin, 288);
 
   const safeName = fileName.replace(/\.pdf$/i, "").replace(/[^a-zA-Z0-9_-]/g, "_");
   doc.save(`edital_master_${safeName}.pdf`);

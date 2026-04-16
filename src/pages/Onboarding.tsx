@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft, Target, Brain, Clock, Flame, CheckCircle, Play, Crown, X } from "lucide-react";
+import { ArrowRight, ArrowLeft, Target, Brain, Clock, Flame, CheckCircle, Play, Crown, Lock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { trackFBEvent } from "@/lib/fbPixel";
@@ -82,13 +82,11 @@ export default function Onboarding() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showVSL, setShowVSL] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [vslReady, setVslReady] = useState(false);
-  const [showButtons, setShowButtons] = useState(false);
-  const [canCloseFree, setCanCloseFree] = useState(false);
+  const [videoStarted, setVideoStarted] = useState(false);
+  const [showPremiumBtn, setShowPremiumBtn] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
   const playerRef = useRef<any>(null);
-  const vslTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const buttonTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressCheckRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: onboardingData } = useQuery({
@@ -141,53 +139,46 @@ export default function Onboarding() {
     }
   }, [onboardingData, navigate]);
 
-  // VSL: wait 4 seconds then autoplay, show buttons after 30s, allow free after 40%
+  // Poll video progress via YouTube API
   useEffect(() => {
-    if (showVSL) {
-      vslTimerRef.current = setTimeout(() => setVslReady(true), 4000);
-      buttonTimerRef.current = setTimeout(() => setShowButtons(true), 30000);
-      
-      // Check 40% progress via YouTube API polling
-      progressCheckRef.current = setInterval(() => {
-        if (playerRef.current) {
-          try {
-            const duration = playerRef.current.getDuration?.();
-            const current = playerRef.current.getCurrentTime?.();
-            if (duration && current && current / duration >= 0.4) {
-              setCanCloseFree(true);
+    if (!videoStarted) return;
+
+    progressCheckRef.current = setInterval(() => {
+      if (playerRef.current) {
+        try {
+          const duration = playerRef.current.getDuration?.();
+          const current = playerRef.current.getCurrentTime?.();
+          if (duration && duration > 0) {
+            const pct = Math.min((current / duration) * 100, 100);
+            setVideoProgress(pct);
+
+            // Show premium button when 20s before end
+            if (duration - current <= 20 && !showPremiumBtn) {
+              setShowPremiumBtn(true);
             }
-            if (duration && current && current >= duration - 1) {
+
+            // Video ended
+            if (current >= duration - 1) {
               setVideoEnded(true);
-              setShowButtons(true);
-              setCanCloseFree(true);
+              setShowPremiumBtn(true);
             }
-          } catch {}
-        }
-      }, 2000);
-    }
+          }
+        } catch {}
+      }
+    }, 1000);
+
     return () => {
-      if (vslTimerRef.current) clearTimeout(vslTimerRef.current);
-      if (buttonTimerRef.current) clearTimeout(buttonTimerRef.current);
       if (progressCheckRef.current) clearInterval(progressCheckRef.current);
     };
-  }, [showVSL]);
+  }, [videoStarted, showPremiumBtn]);
 
-  // Load YouTube IFrame API
-  useEffect(() => {
-    if (!showVSL || !vslReady || !vslUrl) return;
+  // Load YouTube IFrame API and create player when user clicks play
+  const startVideo = useCallback(() => {
+    if (!vslUrl) return;
     const videoId = getYouTubeId(vslUrl);
     if (!videoId) return;
 
-    const loadAPI = () => {
-      if ((window as any).YT?.Player) {
-        createPlayer(videoId);
-        return;
-      }
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      document.head.appendChild(tag);
-      (window as any).onYouTubeIframeAPIReady = () => createPlayer(videoId);
-    };
+    setVideoStarted(true);
 
     const createPlayer = (id: string) => {
       playerRef.current = new (window as any).YT.Player("vsl-player", {
@@ -206,16 +197,24 @@ export default function Onboarding() {
           onStateChange: (event: any) => {
             if (event.data === 0) {
               setVideoEnded(true);
-              setShowButtons(true);
-              setCanCloseFree(true);
+              setShowPremiumBtn(true);
+              setVideoProgress(100);
             }
           },
         },
       });
     };
 
-    loadAPI();
-  }, [showVSL, vslReady, vslUrl]);
+    if ((window as any).YT?.Player) {
+      createPlayer(videoId);
+      return;
+    }
+
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+    (window as any).onYouTubeIframeAPIReady = () => createPlayer(videoId);
+  }, [vslUrl]);
 
   const saveProgress = async (newAnswers: Record<string, string>, currentStep: number, complete = false) => {
     if (!user) return;
@@ -259,15 +258,11 @@ export default function Onboarding() {
   };
 
   const handleFinishFree = async () => {
-    if (!canCloseFree && showButtons) {
-      toast({ title: "Aguarde um pouco mais", description: "Assista pelo menos 40% do vídeo para continuar.", variant: "destructive" });
-      return;
-    }
     setSaving(true);
     try {
       await saveProgress(answers, STEPS.length, true);
       await supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id);
-      await refreshProfile();
+      refreshProfile(); // fire and forget
       toast({ title: "Bem-vindo ao ProvaX! 🎉", description: "Seu acesso gratuito foi liberado." });
       navigate("/dashboard", { replace: true });
     } catch (e) {
@@ -283,7 +278,7 @@ export default function Onboarding() {
     try {
       await saveProgress(answers, STEPS.length, true);
       await supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id);
-      await refreshProfile();
+      refreshProfile(); // fire and forget — no await to avoid delay
       trackFBEvent("InitiateCheckout", { content_name: "Premium from VSL" });
       navigate("/planos", { replace: true });
     } catch (e) {
@@ -404,39 +399,65 @@ export default function Onboarding() {
             </DialogHeader>
           </div>
 
-          {/* Video with YouTube IFrame API - no seek, no controls */}
-          <div className="px-6 pt-4">
-            {vslUrl && getYouTubeId(vslUrl) ? (
-              <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
-                {!vslReady ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="mx-auto mb-3 h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-                      <p className="text-sm text-muted-foreground">Preparando vídeo...</p>
+          {/* Video area */}
+          {!videoEnded && (
+            <div className="px-6 pt-4">
+              {vslUrl && getYouTubeId(vslUrl) ? (
+                <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
+                  {!videoStarted ? (
+                    /* Play button overlay */
+                    <div className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer bg-black/80" onClick={startVideo}>
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/90 shadow-lg shadow-primary/30 transition-transform hover:scale-110">
+                        <Play className="h-10 w-10 text-primary-foreground ml-1" />
+                      </div>
+                      <p className="mt-4 text-sm font-medium text-white/90">Aperte para ver o vídeo de boas-vindas</p>
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div id="vsl-player" className="absolute inset-0 w-full h-full" />
-                    {/* Block all interaction with the video */}
-                    <div className="absolute inset-0" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} />
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed">
-                <Play className="h-12 w-12 text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground">Vídeo em breve</p>
+                  ) : (
+                    <>
+                      <div id="vsl-player" className="absolute inset-0 w-full h-full" />
+                      {/* Block all interaction with the video */}
+                      <div className="absolute inset-0" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} />
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 rounded-xl border border-dashed">
+                  <Play className="h-12 w-12 text-muted-foreground/40 mb-3" />
+                  <p className="text-muted-foreground">Vídeo em breve</p>
+                </div>
+              )}
+
+              {/* Video progress bar */}
+              {videoStarted && !videoEnded && (
+                <div className="mt-3">
+                  <Progress value={videoProgress} className="h-2" />
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    {Math.round(videoProgress)}% do vídeo
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CTA Buttons area */}
+          <div className="p-6 space-y-3">
+            {/* Info message when buttons are not yet visible */}
+            {!videoEnded && !showPremiumBtn && videoStarted && (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Lock className="h-4 w-4" />
+                <span>Para continuar grátis, aguarde o vídeo de boas-vindas acabar.</span>
               </div>
             )}
-          </div>
 
-          {/* CTA Buttons - appear after 30s or video end */}
-          <div className="p-6 space-y-3">
-            
-            
+            {!videoEnded && !showPremiumBtn && !videoStarted && (
+              <p className="text-center text-xs text-muted-foreground">
+                Inicie o vídeo acima para ver as opções de plano.
+              </p>
+            )}
+
             <AnimatePresence>
-              {showButtons ? (
+              {/* Premium button — appears 20s before end */}
+              {showPremiumBtn && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -456,24 +477,32 @@ export default function Onboarding() {
                   <p className="text-center text-xs text-muted-foreground">
                     Simulados ilimitados • Sistema adaptativo • Análise completa
                   </p>
-                  <div className="text-center pt-1">
-                    <button
-                      onClick={handleFinishFree}
-                      disabled={saving || !canCloseFree}
-                      className={`text-sm underline underline-offset-4 transition-colors ${
-                        canCloseFree
-                          ? "text-muted-foreground hover:text-foreground"
-                          : "text-muted-foreground/40 cursor-not-allowed"
-                      }`}
+
+                  {/* Free button — only after video ends */}
+                  {videoEnded && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-center pt-1"
                     >
-                      {canCloseFree ? "Continuar gratuito" : "Assista mais um pouco para continuar grátis..."}
-                    </button>
-                  </div>
+                      <button
+                        onClick={handleFinishFree}
+                        disabled={saving}
+                        className="text-sm underline underline-offset-4 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Continuar gratuito
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {!videoEnded && (
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Lock className="h-3 w-3" />
+                      <span>Aguarde o vídeo terminar para a opção gratuita</span>
+                    </div>
+                  )}
                 </motion.div>
-              ) : (
-                <p className="text-center text-xs text-muted-foreground animate-pulse">
-                  Aguarde o vídeo para ver as opções...
-                </p>
               )}
             </AnimatePresence>
           </div>

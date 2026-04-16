@@ -139,12 +139,12 @@ export default function ShareResultCard({ pontuacao, acertos, total, materia, ar
       roundRect(ctx, W * 0.2, 1480, W * 0.6, 80, 40);
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 32px system-ui, sans-serif";
-      ctx.fillText("Teste grátis → provax-online.lovable.app", W / 2, 1532);
+      ctx.fillText("Teste grátis → provax.online", W / 2, 1532);
 
       // Footer
       ctx.fillStyle = "#334155";
       ctx.font = "22px system-ui, sans-serif";
-      ctx.fillText("provax-online.lovable.app", W / 2, 1780);
+      ctx.fillText("provax.online", W / 2, 1780);
 
       // Download
       const link = document.createElement("a");

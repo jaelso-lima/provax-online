@@ -18,7 +18,12 @@ import { supabase } from "@/integrations/supabase/client";
 const getYouTubeEmbedUrl = (url: string, autoplay = false) => {
   if (!url) return "";
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1${autoplay ? '&autoplay=1&mute=1&loop=1&playlist=' + match[1] : ''}` : "";
+  if (!match) return "";
+  const id = match[1];
+  if (autoplay) {
+    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&disablekb=1&fs=0&modestbranding=1&showinfo=0&iv_load_policy=3&rel=0`;
+  }
+  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
 };
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
@@ -141,9 +146,10 @@ export default function Index() {
                     src={getYouTubeEmbedUrl(landingVideoUrl, true)}
                     title="ProvaX"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
                     loading="lazy"
                   />
+                  {/* Block all user interaction — no pause, no seek */}
+                  <div className="absolute inset-0 z-10" />
                 </div>
               </motion.div>
             )}
