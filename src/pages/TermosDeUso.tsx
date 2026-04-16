@@ -47,14 +47,12 @@ export default function TermosDeUso() {
             <section>
               <h3 className="font-display text-lg font-semibold">3. Planos e Limites de Uso</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                A ProvaX oferece quatro planos de acesso: <strong>Gratuito</strong>, <strong>Provax X</strong>, <strong>Start</strong> e <strong>Pro</strong>.
+                A ProvaX oferece dois planos de acesso: <strong>Free</strong> e <strong>Premium</strong>.
                 Cada plano possui um limite diário de questões que pode ser gerado, renovado automaticamente a cada dia (00h00 UTC-3).
               </p>
               <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-1 mt-2">
-                <li><strong>Gratuito:</strong> 10 questões por dia, simulados básicos e radar de concursos abertos.</li>
-                <li><strong>Provax X (R$ 14,90/mês):</strong> 20 questões por dia, Professor IA 24h, correção de redação por IA, estatísticas básicas e histórico de erros.</li>
-                <li><strong>Start (R$ 29,90/mês):</strong> 30 questões por dia, tudo do Provax X + análise de edital por IA, cronograma personalizado, anotações por matéria, estudo em aba separada e simulados personalizados.</li>
-                <li><strong>Pro (R$ 49,90/mês):</strong> 60 questões por dia, tudo do Start + filtros avançados (banca, estado, concurso real), ranking, estatísticas avançadas e simulado reverso inteligente.</li>
+                <li><strong>Free (R$ 0):</strong> 15 questões por dia, simulados básicos, filtro por matéria e assunto, comentários, histórico de erros, 2 cadernos personalizados e radar de concursos abertos.</li>
+                <li><strong>Premium (R$ 29,90/mês):</strong> Simulados ilimitados, sistema adaptativo inteligente, Professor IA 24h, correção de redação por IA, análise de edital por IA, filtros completos (banca, cargo, estado), ranking, estatísticas avançadas, cadernos ilimitados e simulado reverso inteligente.</li>
               </ul>
               <p className="text-sm text-muted-foreground leading-relaxed mt-2">
                 <strong>Política de uso justo:</strong> Os limites diários são individuais e intransferíveis. Questões não utilizadas em um dia não acumulam para o dia seguinte.
