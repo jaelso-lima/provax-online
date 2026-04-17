@@ -6,14 +6,16 @@ const log = (step: string, details?: any) => {
 };
 
 // Map Cakto checkout links to plan slugs and periods
+// Premium = slug "start" (R$ 29,90/mês). Legacy links mantidos por segurança/retrocompatibilidade.
 const CHECKOUT_MAP: Record<string, { slug: string; periodo: string }> = {
-  "https://pay.cakto.com.br/7o62ahx_806491": { slug: "provax-x", periodo: "mensal" },
+  "https://pay.cakto.com.br/7o62ahx_806491": { slug: "start", periodo: "mensal" }, // Premium R$ 29,90
   "https://pay.cakto.com.br/32a6gtd": { slug: "start", periodo: "mensal" },
   "https://pay.cakto.com.br/5589p3m": { slug: "start", periodo: "trimestral" },
   "https://pay.cakto.com.br/jicz7uh": { slug: "start", periodo: "anual" },
-  "https://pay.cakto.com.br/y9kys4g": { slug: "pro", periodo: "mensal" },
-  "https://pay.cakto.com.br/364vjre": { slug: "pro", periodo: "trimestral" },
-  "https://pay.cakto.com.br/ft7z9ar": { slug: "pro", periodo: "anual" },
+  // Legacy (planos desativados — fallback para Premium se houver pagamento)
+  "https://pay.cakto.com.br/y9kys4g": { slug: "start", periodo: "mensal" },
+  "https://pay.cakto.com.br/364vjre": { slug: "start", periodo: "trimestral" },
+  "https://pay.cakto.com.br/ft7z9ar": { slug: "start", periodo: "anual" },
 };
 
 function createSupabaseAdmin() {
@@ -122,11 +124,12 @@ async function handleActivation(customerEmail: string, matched: { slug: string; 
     payment_gateway_id: orderId,
   });
 
-  // Update profile plan
-  await supabase.rpc("activate_plan_from_stripe", {
-    _user_id: userId,
-    _plan_slug: matched.slug,
-  });
+    // Update profile plan — normaliza slug Premium para "premium"
+    const profileSlug = matched.slug === "start" ? "premium" : matched.slug;
+    await supabase.rpc("activate_plan_from_stripe", {
+      _user_id: userId,
+      _plan_slug: profileSlug,
+    });
 
   // Audit log
   await supabase.from("audit_logs").insert({
