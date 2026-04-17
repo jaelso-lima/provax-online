@@ -21,9 +21,9 @@ const getYouTubeEmbedUrl = (url: string, autoplay = false) => {
   if (!match) return "";
   const id = match[1];
   if (autoplay) {
-    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&disablekb=1&fs=0&modestbranding=1&showinfo=0&iv_load_policy=3&rel=0`;
+    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&disablekb=1&fs=0&modestbranding=1&showinfo=0&iv_load_policy=3&rel=0&playsinline=1`;
   }
-  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
+  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`;
 };
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
@@ -62,10 +62,14 @@ export default function Index() {
   });
 
   const handlePremiumCTA = () => {
-    const plan = dbPlans?.find(p => p.slug === "start" || p.slug === "premium");
+    if (!user) {
+      navigate("/register");
+      return;
+    }
+    const plan = dbPlans?.find(p => p.slug === "premium" || p.slug === "start");
     const link = plan?.stripe_link_mensal;
     if (!link) {
-      navigate("/register");
+      navigate("/planos");
       return;
     }
     trackFBEvent("InitiateCheckout", { content_name: "Premium", value: 29.90, currency: "BRL" });
@@ -145,7 +149,8 @@ export default function Index() {
                     className="absolute inset-0 w-full h-full"
                     src={getYouTubeEmbedUrl(landingVideoUrl, true)}
                     title="ProvaX"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen={false}
                     loading="lazy"
                   />
                   {/* Block all user interaction — no pause, no seek */}
