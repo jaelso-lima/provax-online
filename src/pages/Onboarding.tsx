@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowLeft, Target, Brain, Clock, Flame, CheckCircle, Play, Crown, Lock } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { trackFBEvent } from "@/lib/fbPixel";
 
@@ -78,6 +78,7 @@ const getYouTubeId = (url: string) => {
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showVSL, setShowVSL] = useState(false);
@@ -269,12 +270,43 @@ export default function Onboarding() {
     if (step > 0) setStep(step - 1);
   };
 
+  const markOnboardingComplete = async () => {
+    if (!user) return;
+    // Update BOTH tables and AWAIT them — this is the source of truth.
+    const [{ error: e1 }, { error: e2 }] = await Promise.all([
+      supabase
+        .from("user_onboarding")
+        .upsert(
+          {
+            user_id: user.id,
+            step_atual: STEPS.length,
+            onboarding_completo: true,
+            objetivo: answers.objetivo || null,
+            nivel: answers.nivel || null,
+            ja_estuda: null,
+            tempo_diario: answers.tempo_diario || null,
+            dificuldade: answers.dificuldade || null,
+            meta: null,
+            origem: answers.origem || null,
+          },
+          { onConflict: "user_id" }
+        ),
+      supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user.id),
+    ]);
+    if (e1) console.error("[Onboarding] user_onboarding update error:", e1);
+    if (e2) console.error("[Onboarding] profiles update error:", e2);
+
+    // Invalidate cache so ProtectedRoute reads fresh value on next render
+    await queryClient.invalidateQueries({ queryKey: ["onboarding-check", user.id] });
+    await refreshProfile();
+
+    console.log("[Onboarding] onboarding_completo persisted = TRUE");
+  };
+
   const handleFinishFree = async () => {
     setSaving(true);
     try {
-      await saveProgress(answers, STEPS.length, true);
-      await supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id);
-      refreshProfile(); // fire and forget
+      await markOnboardingComplete();
       toast({ title: "Bem-vindo ao ProvaX! 🎉", description: "Seu acesso gratuito foi liberado." });
       navigate("/dashboard", { replace: true });
     } catch (e) {
@@ -289,12 +321,8 @@ export default function Onboarding() {
     if (saving) return;
     setSaving(true);
     try {
-      // Mark onboarding complete IMMEDIATELY so user can return to dashboard if they cancel checkout
-      await Promise.all([
-        saveProgress(answers, STEPS.length, true),
-        supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id),
-      ]);
-      refreshProfile(); // fire and forget — no await to avoid delay
+      // Persist onboarding BEFORE redirecting so user can never bounce back to /onboarding
+      await markOnboardingComplete();
       trackFBEvent("InitiateCheckout", { content_name: "Premium from VSL", value: 29.90, currency: "BRL" });
 
       // Fetch checkout link directly (avoid /planos roundtrip)
@@ -311,12 +339,11 @@ export default function Onboarding() {
       if (checkoutUrl) {
         const url = new URL(checkoutUrl);
         if (user?.email) url.searchParams.set("email", user.email);
-        // Open checkout in new tab, send user to dashboard immediately.
+        // Open checkout in new tab; user is sent to dashboard immediately.
         // If they pay, webhook upgrades plan; if they cancel, they're already on dashboard (free).
         window.open(url.toString(), "_blank");
         navigate("/dashboard", { replace: true });
       } else {
-        // Fallback to /planos if checkout link not configured
         navigate("/planos", { replace: true });
       }
     } catch (e) {
