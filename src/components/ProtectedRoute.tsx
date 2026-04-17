@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
 
-  // Check onboarding status
+  // Check onboarding status — checks BOTH tables to be resilient.
+  // Always refetch on mount so post-checkout / post-quiz navigation sees fresh data.
   const { data: onboarding, isLoading: onboardingLoading } = useQuery({
     queryKey: ["onboarding-check", user?.id],
     queryFn: async () => {
@@ -20,7 +21,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       return data;
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   if (loading || (user && onboardingLoading)) {
@@ -35,9 +37,28 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  // If onboarding not complete and not already on onboarding page, redirect
+  // Source of truth: TRUE in EITHER table = onboarding complete.
+  // This protects against race conditions where one update lands before the other.
+  const completed =
+    onboarding?.onboarding_completo === true ||
+    profile?.onboarding_completo === true;
+
+  console.log("[ProtectedRoute] onboarding:", {
+    user_onboarding: onboarding?.onboarding_completo,
+    profile: profile?.onboarding_completo,
+    completed,
+    path: location.pathname,
+  });
+
   const isOnboardingPage = location.pathname === "/onboarding";
-  if (!isOnboardingPage && onboarding !== undefined && !onboarding?.onboarding_completo) {
+
+  // Block access to /onboarding if already completed
+  if (isOnboardingPage && completed) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Force onboarding only if not completed and not already there
+  if (!isOnboardingPage && !completed) {
     return <Navigate to="/onboarding" replace />;
   }
 
