@@ -218,9 +218,7 @@ export default function AdminPromocoes() {
                 <Select value={form.plano_destino} onValueChange={v => setForm(f => ({ ...f, plano_destino: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="provax-x">Provax X</SelectItem>
-                    <SelectItem value="start">Start</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
+                    <SelectItem value="start">Premium (R$ 29,90)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

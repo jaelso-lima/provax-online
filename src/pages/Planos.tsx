@@ -81,16 +81,14 @@ export default function Planos() {
     window.open(url.toString(), "_blank");
   };
 
-  // Find the premium plan from DB
-  const premiumPlan = dbPlans?.find(p => 
-    p.slug === "start" || p.slug === "premium" || p.slug === "pro" || p.slug === "provax-x"
-  );
-  const freePlan = dbPlans?.find(p => p.slug === "free");
+  // Find the premium plan from DB (only Free + Premium are active)
+  const premiumPlan = dbPlans?.find(p => p.slug === "premium" || p.slug === "start");
 
   const isCurrentFree = profile?.plano === "free" || !profile?.plano;
-  const isCurrentPremium = premiumPlan && profile?.plano === premiumPlan.slug;
+  const isCurrentPremium = !!(premiumPlan && profile?.plano === premiumPlan.slug);
 
-  const premiumPrice = premiumPlan ? Number(premiumPlan.preco_mensal) || 29.90 : 29.90;
+  // Force R$ 29,90 — no legacy R$ 14,90 ever
+  const premiumPrice = 29.90;
   const premiumLink = premiumPlan?.stripe_link_mensal || null;
 
   return (
