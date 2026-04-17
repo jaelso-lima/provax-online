@@ -185,6 +185,8 @@ export default function Onboarding() {
         videoId: id,
         playerVars: {
           autoplay: 1,
+          mute: 1, // Required for mobile autoplay
+          playsinline: 1, // Required for iOS — prevents fullscreen takeover
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -194,6 +196,16 @@ export default function Onboarding() {
           iv_load_policy: 3,
         },
         events: {
+          onReady: (event: any) => {
+            // Force play (mobile-friendly with mute)
+            try {
+              event.target.playVideo();
+              // Unmute after a tick (user already gestured by clicking play overlay)
+              setTimeout(() => {
+                try { event.target.unMute(); } catch {}
+              }, 500);
+            } catch {}
+          },
           onStateChange: (event: any) => {
             if (event.data === 0) {
               setVideoEnded(true);
@@ -274,17 +286,42 @@ export default function Onboarding() {
   };
 
   const handleGoPremium = async () => {
+    if (saving) return;
     setSaving(true);
     try {
-      await saveProgress(answers, STEPS.length, true);
-      await supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id);
+      // Mark onboarding complete IMMEDIATELY so user can return to dashboard if they cancel checkout
+      await Promise.all([
+        saveProgress(answers, STEPS.length, true),
+        supabase.from("profiles").update({ onboarding_completo: true }).eq("id", user!.id),
+      ]);
       refreshProfile(); // fire and forget — no await to avoid delay
-      trackFBEvent("InitiateCheckout", { content_name: "Premium from VSL" });
-      navigate("/planos", { replace: true });
+      trackFBEvent("InitiateCheckout", { content_name: "Premium from VSL", value: 29.90, currency: "BRL" });
+
+      // Fetch checkout link directly (avoid /planos roundtrip)
+      const { data: plan } = await supabase
+        .from("plans")
+        .select("stripe_link_mensal")
+        .in("slug", ["premium", "start"])
+        .eq("ativo", true)
+        .order("preco_mensal", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const checkoutUrl = plan?.stripe_link_mensal;
+      if (checkoutUrl) {
+        const url = new URL(checkoutUrl);
+        if (user?.email) url.searchParams.set("email", user.email);
+        // Open checkout in new tab, send user to dashboard immediately.
+        // If they pay, webhook upgrades plan; if they cancel, they're already on dashboard (free).
+        window.open(url.toString(), "_blank");
+        navigate("/dashboard", { replace: true });
+      } else {
+        // Fallback to /planos if checkout link not configured
+        navigate("/planos", { replace: true });
+      }
     } catch (e) {
       console.error(e);
       toast({ title: "Erro", description: "Tente novamente.", variant: "destructive" });
-    } finally {
       setSaving(false);
     }
   };
