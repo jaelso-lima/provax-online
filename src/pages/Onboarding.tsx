@@ -78,6 +78,7 @@ const getYouTubeId = (url: string) => {
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showVSL, setShowVSL] = useState(false);
