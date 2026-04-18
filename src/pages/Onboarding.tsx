@@ -10,6 +10,7 @@ import { ArrowRight, ArrowLeft, Target, Brain, Clock, Flame, CheckCircle, Play, 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { trackFBEvent } from "@/lib/fbPixel";
+import { getAppConfig } from "@/lib/deviceDetect";
 
 const STEPS = [
   {
@@ -89,6 +90,8 @@ export default function Onboarding() {
   const [videoProgress, setVideoProgress] = useState(0);
   const playerRef = useRef<any>(null);
   const progressCheckRef = useRef<NodeJS.Timeout | null>(null);
+  const appConfigRef = useRef(getAppConfig());
+  const appConfig = appConfigRef.current;
 
   const { data: onboardingData } = useQuery({
     queryKey: ["user-onboarding", user?.id],
@@ -116,6 +119,17 @@ export default function Onboarding() {
     },
     staleTime: 10 * 60 * 1000,
   });
+
+  // DEBUG: device + onboarding state
+  useEffect(() => {
+    console.log("[Onboarding] device:", appConfig.device, "| autoplay:", appConfig.autoplay, "| requireUserInteraction:", appConfig.requireUserInteraction);
+  }, [appConfig]);
+
+  useEffect(() => {
+    if (onboardingData) {
+      console.log("[Onboarding] DB onboarding_completo:", onboardingData.onboarding_completo, "| step_atual:", onboardingData.step_atual);
+    }
+  }, [onboardingData]);
 
   // Resume from where user left off — SOURCE OF TRUTH IS user_onboarding TABLE.
   // Do NOT use localStorage / sessionStorage here.
@@ -243,6 +257,17 @@ export default function Onboarding() {
       playerRef.current?.setVolume?.(100);
     } catch {}
   }, []);
+
+  // Auto-start video on Android/Desktop when VSL opens; iOS requires manual tap.
+  useEffect(() => {
+    if (!showVSL || videoStarted || !vslUrl) return;
+    if (appConfig.autoplay && !appConfig.requireUserInteraction) {
+      console.log("[Onboarding] auto-starting video for", appConfig.device);
+      startVideo();
+    } else {
+      console.log("[Onboarding] waiting for user tap (", appConfig.device, ")");
+    }
+  }, [showVSL, videoStarted, vslUrl, appConfig, startVideo]);
 
   const saveProgress = async (newAnswers: Record<string, string>, currentStep: number, complete = false) => {
     if (!user) return;
