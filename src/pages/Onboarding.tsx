@@ -572,7 +572,7 @@ export default function Onboarding() {
             {!videoEnded && !showPremiumBtn && videoStarted && (
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Lock className="h-4 w-4" />
-                <span>Para continuar grátis, aguarde o vídeo de boas-vindas acabar.</span>
+                <span>Assista pelo menos 30 segundos para liberar as opções.</span>
               </div>
             )}
 
