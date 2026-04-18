@@ -484,18 +484,32 @@ export default function Onboarding() {
               {vslUrl && getYouTubeId(vslUrl) ? (
                 <div className="relative w-full rounded-xl overflow-hidden bg-black" style={{ paddingBottom: "56.25%" }}>
                   {!videoStarted ? (
-                    /* Play button overlay */
-                    <div className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer bg-black/80" onClick={startVideo}>
+                    /* Play button — REQUIRED for iOS (no autoplay without user gesture). Universal fallback. */
+                    <button
+                      type="button"
+                      className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer bg-black/80 w-full h-full border-0"
+                      onClick={startVideo}
+                      aria-label="Iniciar vídeo de boas-vindas"
+                    >
                       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/90 shadow-lg shadow-primary/30 transition-transform hover:scale-110">
                         <Play className="h-10 w-10 text-primary-foreground ml-1" />
                       </div>
-                      <p className="mt-4 text-sm font-medium text-white/90">Aperte para ver o vídeo de boas-vindas</p>
-                    </div>
+                      <p className="mt-4 text-sm font-medium text-white/90">Toque para iniciar o vídeo</p>
+                      <p className="mt-1 text-xs text-white/60">Vídeo de boas-vindas — necessário para continuar</p>
+                    </button>
                   ) : (
                     <>
                       <div id="vsl-player" className="absolute inset-0 w-full h-full" />
-                      {/* Block all interaction with the video */}
-                      <div className="absolute inset-0" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} />
+                      {/* Click-blocker overlay — prevents user from pausing/seeking VSL */}
+                      <div className="absolute inset-0" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} aria-hidden="true" />
+                      {/* Unmute button — iOS often keeps autoplay muted; universal fallback */}
+                      <button
+                        type="button"
+                        onClick={handleUnmute}
+                        className="absolute bottom-3 right-3 z-10 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs font-medium hover:bg-black/90 transition"
+                      >
+                        🔊 Ativar som
+                      </button>
                     </>
                   )}
                 </div>
