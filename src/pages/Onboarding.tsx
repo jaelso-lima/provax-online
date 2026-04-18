@@ -10,6 +10,7 @@ import { ArrowRight, ArrowLeft, Target, Brain, Clock, Flame, CheckCircle, Play, 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { trackFBEvent } from "@/lib/fbPixel";
+import { getAppConfig } from "@/lib/deviceDetect";
 
 const STEPS = [
   {
