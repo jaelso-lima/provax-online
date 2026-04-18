@@ -605,8 +605,8 @@ export default function Onboarding() {
                     Simulados ilimitados • Sistema adaptativo • Análise completa
                   </p>
 
-                  {/* Free button — only after video ends */}
-                  {videoEnded && (
+                  {/* Free button — liberado após 40% do vídeo */}
+                  {canContinueFree && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -623,10 +623,10 @@ export default function Onboarding() {
                     </motion.div>
                   )}
 
-                  {!videoEnded && (
+                  {!canContinueFree && (
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                       <Lock className="h-3 w-3" />
-                      <span>Aguarde o vídeo terminar para a opção gratuita</span>
+                      <span>Assista 40% do vídeo para liberar a opção gratuita</span>
                     </div>
                   )}
                 </motion.div>
