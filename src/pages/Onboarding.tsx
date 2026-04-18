@@ -88,6 +88,7 @@ export default function Onboarding() {
   const [showPremiumBtn, setShowPremiumBtn] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
+  const [canContinueFree, setCanContinueFree] = useState(false);
   const playerRef = useRef<any>(null);
   const progressCheckRef = useRef<NodeJS.Timeout | null>(null);
   const appConfigRef = useRef(getAppConfig());
@@ -166,19 +167,26 @@ export default function Onboarding() {
         try {
           const duration = playerRef.current.getDuration?.();
           const current = playerRef.current.getCurrentTime?.();
+
+          // Liberar botão Premium após 30s assistidos (regra fixa)
+          if (typeof current === "number" && current >= 30 && !showPremiumBtn) {
+            setShowPremiumBtn(true);
+          }
+
           if (duration && duration > 0) {
             const pct = Math.min((current / duration) * 100, 100);
             setVideoProgress(pct);
 
-            // Show premium button when 20s before end
-            if (duration - current <= 20 && !showPremiumBtn) {
-              setShowPremiumBtn(true);
+            // Liberar "Continuar grátis" após 40% do vídeo
+            if (pct >= 40 && !canContinueFree) {
+              setCanContinueFree(true);
             }
 
-            // Video ended
+            // Vídeo finalizado
             if (current >= duration - 1) {
               setVideoEnded(true);
               setShowPremiumBtn(true);
+              setCanContinueFree(true);
             }
           }
         } catch {}
@@ -188,7 +196,7 @@ export default function Onboarding() {
     return () => {
       if (progressCheckRef.current) clearInterval(progressCheckRef.current);
     };
-  }, [videoStarted, showPremiumBtn]);
+  }, [videoStarted, showPremiumBtn, canContinueFree]);
 
   // Load YouTube IFrame API and create player.
   // CRITICAL: This is invoked DIRECTLY from a user click (touchend/click) so iOS
@@ -231,6 +239,7 @@ export default function Onboarding() {
             if (event.data === 0) {
               setVideoEnded(true);
               setShowPremiumBtn(true);
+              setCanContinueFree(true);
               setVideoProgress(100);
             }
           },
@@ -563,7 +572,7 @@ export default function Onboarding() {
             {!videoEnded && !showPremiumBtn && videoStarted && (
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Lock className="h-4 w-4" />
-                <span>Para continuar grátis, aguarde o vídeo de boas-vindas acabar.</span>
+                <span>Assista pelo menos 30 segundos para liberar as opções.</span>
               </div>
             )}
 
@@ -596,8 +605,8 @@ export default function Onboarding() {
                     Simulados ilimitados • Sistema adaptativo • Análise completa
                   </p>
 
-                  {/* Free button — only after video ends */}
-                  {videoEnded && (
+                  {/* Free button — liberado após 40% do vídeo */}
+                  {canContinueFree && (
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -614,10 +623,10 @@ export default function Onboarding() {
                     </motion.div>
                   )}
 
-                  {!videoEnded && (
+                  {!canContinueFree && (
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                       <Lock className="h-3 w-3" />
-                      <span>Aguarde o vídeo terminar para a opção gratuita</span>
+                      <span>Assista 40% do vídeo para liberar a opção gratuita</span>
                     </div>
                   )}
                 </motion.div>
