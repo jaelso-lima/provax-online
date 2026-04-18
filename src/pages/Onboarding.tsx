@@ -239,6 +239,7 @@ export default function Onboarding() {
             if (event.data === 0) {
               setVideoEnded(true);
               setShowPremiumBtn(true);
+              setCanContinueFree(true);
               setVideoProgress(100);
             }
           },
