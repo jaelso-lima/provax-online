@@ -88,6 +88,7 @@ export default function Onboarding() {
   const [showPremiumBtn, setShowPremiumBtn] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
+  const [canContinueFree, setCanContinueFree] = useState(false);
   const playerRef = useRef<any>(null);
   const progressCheckRef = useRef<NodeJS.Timeout | null>(null);
   const appConfigRef = useRef(getAppConfig());
