@@ -120,6 +120,17 @@ export default function Onboarding() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // DEBUG: device + onboarding state
+  useEffect(() => {
+    console.log("[Onboarding] device:", appConfig.device, "| autoplay:", appConfig.autoplay, "| requireUserInteraction:", appConfig.requireUserInteraction);
+  }, [appConfig]);
+
+  useEffect(() => {
+    if (onboardingData) {
+      console.log("[Onboarding] DB onboarding_completo:", onboardingData.onboarding_completo, "| step_atual:", onboardingData.step_atual);
+    }
+  }, [onboardingData]);
+
   // Resume from where user left off — SOURCE OF TRUTH IS user_onboarding TABLE.
   // Do NOT use localStorage / sessionStorage here.
   useEffect(() => {
