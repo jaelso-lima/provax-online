@@ -209,6 +209,7 @@ export default function Onboarding() {
 
     setVideoStarted(true);
 
+    const isIOS = appConfig.device === "ios";
     const createPlayer = (id: string) => {
       playerRef.current = new (window as any).YT.Player("vsl-player", {
         videoId: id,
@@ -216,7 +217,9 @@ export default function Onboarding() {
           autoplay: 1,
           mute: 1, // iOS requires muted for inline autoplay
           playsinline: 1, // iOS: keep inline, do NOT go fullscreen
-          controls: 0,
+          // iOS needs native controls so the user can manually press play (autoplay
+          // is unreliable even after a tap). Other platforms hide controls entirely.
+          controls: isIOS ? 1 : 0,
           disablekb: 1,
           fs: 0,
           modestbranding: 1,
@@ -534,8 +537,25 @@ export default function Onboarding() {
                   ) : (
                     <>
                       <div id="vsl-player" className="absolute inset-0 w-full h-full" />
-                      {/* Click-blocker overlay — prevents user from pausing/seeking VSL */}
-                      <div className="absolute inset-0" style={{ pointerEvents: "auto" }} onClick={(e) => e.preventDefault()} aria-hidden="true" />
+                      {/* Click-blocker overlay — prevents pausing/seeking VSL.
+                          On iOS we need the YouTube native controls visible (autoplay
+                          is unreliable), so we only block the bottom progress bar strip
+                          while keeping the central play button clickable. */}
+                      {appConfig.device === "ios" ? (
+                        <div
+                          className="absolute bottom-0 left-0 right-0 h-12 z-[5]"
+                          style={{ pointerEvents: "auto" }}
+                          onClick={(e) => e.preventDefault()}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <div
+                          className="absolute inset-0"
+                          style={{ pointerEvents: "auto" }}
+                          onClick={(e) => e.preventDefault()}
+                          aria-hidden="true"
+                        />
+                      )}
                       {/* Unmute button — iOS often keeps autoplay muted; universal fallback */}
                       <button
                         type="button"
