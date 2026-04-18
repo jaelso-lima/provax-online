@@ -209,6 +209,7 @@ export default function Onboarding() {
 
     setVideoStarted(true);
 
+    const isIOS = appConfig.device === "ios";
     const createPlayer = (id: string) => {
       playerRef.current = new (window as any).YT.Player("vsl-player", {
         videoId: id,
@@ -216,7 +217,9 @@ export default function Onboarding() {
           autoplay: 1,
           mute: 1, // iOS requires muted for inline autoplay
           playsinline: 1, // iOS: keep inline, do NOT go fullscreen
-          controls: 0,
+          // iOS needs native controls so the user can manually press play (autoplay
+          // is unreliable even after a tap). Other platforms hide controls entirely.
+          controls: isIOS ? 1 : 0,
           disablekb: 1,
           fs: 0,
           modestbranding: 1,
