@@ -167,19 +167,26 @@ export default function Onboarding() {
         try {
           const duration = playerRef.current.getDuration?.();
           const current = playerRef.current.getCurrentTime?.();
+
+          // Liberar botão Premium após 30s assistidos (regra fixa)
+          if (typeof current === "number" && current >= 30 && !showPremiumBtn) {
+            setShowPremiumBtn(true);
+          }
+
           if (duration && duration > 0) {
             const pct = Math.min((current / duration) * 100, 100);
             setVideoProgress(pct);
 
-            // Show premium button when 20s before end
-            if (duration - current <= 20 && !showPremiumBtn) {
-              setShowPremiumBtn(true);
+            // Liberar "Continuar grátis" após 40% do vídeo
+            if (pct >= 40 && !canContinueFree) {
+              setCanContinueFree(true);
             }
 
-            // Video ended
+            // Vídeo finalizado
             if (current >= duration - 1) {
               setVideoEnded(true);
               setShowPremiumBtn(true);
+              setCanContinueFree(true);
             }
           }
         } catch {}
@@ -189,7 +196,7 @@ export default function Onboarding() {
     return () => {
       if (progressCheckRef.current) clearInterval(progressCheckRef.current);
     };
-  }, [videoStarted, showPremiumBtn]);
+  }, [videoStarted, showPremiumBtn, canContinueFree]);
 
   // Load YouTube IFrame API and create player.
   // CRITICAL: This is invoked DIRECTLY from a user click (touchend/click) so iOS
