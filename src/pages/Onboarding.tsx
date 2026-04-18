@@ -117,26 +117,29 @@ export default function Onboarding() {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Resume from where user left off
+  // Resume from where user left off — SOURCE OF TRUTH IS user_onboarding TABLE.
+  // Do NOT use localStorage / sessionStorage here.
   useEffect(() => {
-    if (onboardingData) {
-      if (onboardingData.onboarding_completo) {
-        navigate("/dashboard", { replace: true });
-        return;
+    if (!onboardingData) return;
+    // If truly completed in DB, leave onboarding (ProtectedRoute also enforces this).
+    if (onboardingData.onboarding_completo === true) {
+      console.log("[Onboarding] DB says complete=true, redirecting to /dashboard");
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+    const saved: Record<string, string> = {};
+    STEPS.forEach((s) => {
+      const val = (onboardingData as any)[s.key];
+      if (val !== null && val !== undefined) {
+        saved[s.key] = typeof val === "boolean" ? (val ? "sim" : "nao") : String(val);
       }
-      const saved: Record<string, string> = {};
-      STEPS.forEach((s) => {
-        const val = (onboardingData as any)[s.key];
-        if (val !== null && val !== undefined) {
-          saved[s.key] = typeof val === "boolean" ? (val ? "sim" : "nao") : String(val);
-        }
-      });
-      setAnswers(saved);
-      if (onboardingData.step_atual >= STEPS.length) {
-        setShowVSL(true);
-      } else {
-        setStep(onboardingData.step_atual || 0);
-      }
+    });
+    setAnswers(saved);
+    // Only show VSL if quiz was fully answered (step_atual reached end).
+    if ((onboardingData.step_atual ?? 0) >= STEPS.length) {
+      setShowVSL(true);
+    } else {
+      setStep(onboardingData.step_atual || 0);
     }
   }, [onboardingData, navigate]);
 
@@ -173,7 +176,10 @@ export default function Onboarding() {
     };
   }, [videoStarted, showPremiumBtn]);
 
-  // Load YouTube IFrame API and create player when user clicks play
+  // Load YouTube IFrame API and create player.
+  // CRITICAL: This is invoked DIRECTLY from a user click (touchend/click) so iOS
+  // counts it as a user gesture. We start MUTED + playsinline (iOS requirement),
+  // then unmute synchronously inside the same gesture context via onReady.
   const startVideo = useCallback(() => {
     if (!vslUrl) return;
     const videoId = getYouTubeId(vslUrl);
@@ -186,8 +192,8 @@ export default function Onboarding() {
         videoId: id,
         playerVars: {
           autoplay: 1,
-          mute: 1, // Required for mobile autoplay
-          playsinline: 1, // Required for iOS — prevents fullscreen takeover
+          mute: 1, // iOS requires muted for inline autoplay
+          playsinline: 1, // iOS: keep inline, do NOT go fullscreen
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -198,14 +204,14 @@ export default function Onboarding() {
         },
         events: {
           onReady: (event: any) => {
-            // Force play (mobile-friendly with mute)
             try {
+              // playVideo() inside onReady — runs in the gesture window from the click.
               event.target.playVideo();
-              // Unmute after a tick (user already gestured by clicking play overlay)
-              setTimeout(() => {
-                try { event.target.unMute(); } catch {}
-              }, 500);
-            } catch {}
+              // Try to unmute. iOS may keep it muted; that's OK — user can tap unmute.
+              try { event.target.unMute(); event.target.setVolume(100); } catch {}
+            } catch (err) {
+              console.warn("[VSL] playVideo failed:", err);
+            }
           },
           onStateChange: (event: any) => {
             if (event.data === 0) {
@@ -214,6 +220,7 @@ export default function Onboarding() {
               setVideoProgress(100);
             }
           },
+          onError: (e: any) => console.warn("[VSL] YT error:", e?.data),
         },
       });
     };
@@ -228,6 +235,14 @@ export default function Onboarding() {
     document.head.appendChild(tag);
     (window as any).onYouTubeIframeAPIReady = () => createPlayer(videoId);
   }, [vslUrl]);
+
+  // Manual unmute fallback (iOS often keeps player muted after autoplay)
+  const handleUnmute = useCallback(() => {
+    try {
+      playerRef.current?.unMute?.();
+      playerRef.current?.setVolume?.(100);
+    } catch {}
+  }, []);
 
   const saveProgress = async (newAnswers: Record<string, string>, currentStep: number, complete = false) => {
     if (!user) return;
