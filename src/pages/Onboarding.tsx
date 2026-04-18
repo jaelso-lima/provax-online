@@ -258,6 +258,17 @@ export default function Onboarding() {
     } catch {}
   }, []);
 
+  // Auto-start video on Android/Desktop when VSL opens; iOS requires manual tap.
+  useEffect(() => {
+    if (!showVSL || videoStarted || !vslUrl) return;
+    if (appConfig.autoplay && !appConfig.requireUserInteraction) {
+      console.log("[Onboarding] auto-starting video for", appConfig.device);
+      startVideo();
+    } else {
+      console.log("[Onboarding] waiting for user tap (", appConfig.device, ")");
+    }
+  }, [showVSL, videoStarted, vslUrl, appConfig, startVideo]);
+
   const saveProgress = async (newAnswers: Record<string, string>, currentStep: number, complete = false) => {
     if (!user) return;
     const payload: any = {
