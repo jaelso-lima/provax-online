@@ -90,6 +90,8 @@ export default function Onboarding() {
   const [videoProgress, setVideoProgress] = useState(0);
   const playerRef = useRef<any>(null);
   const progressCheckRef = useRef<NodeJS.Timeout | null>(null);
+  const appConfigRef = useRef(getAppConfig());
+  const appConfig = appConfigRef.current;
 
   const { data: onboardingData } = useQuery({
     queryKey: ["user-onboarding", user?.id],
