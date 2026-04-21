@@ -184,10 +184,9 @@ serve(async (req) => {
     const allowedNiveis = ["facil", "medio", "media", "dificil", "misto"];
     const allowedModos = ["concurso", "enem"];
 
-    // Allow any quantity up to 50 for all modes; prova_completa up to 60
     const rawQuantidade = typeof body.quantidade === "number" ? body.quantidade : 10;
     const quantidade = body.provaCompleta === true
-      ? Math.min(Math.max(rawQuantidade, 5), 60)
+      ? Math.min(Math.max(rawQuantidade, 5), 100)
       : Math.min(Math.max(rawQuantidade, 5), 50);
     const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "medio";
     const modo = allowedModos.includes(body.modo) ? body.modo : "concurso";
