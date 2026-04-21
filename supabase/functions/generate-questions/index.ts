@@ -184,10 +184,9 @@ serve(async (req) => {
     const allowedNiveis = ["facil", "medio", "media", "dificil", "misto"];
     const allowedModos = ["concurso", "enem"];
 
-    // Allow any quantity up to 50 for all modes; prova_completa up to 60
     const rawQuantidade = typeof body.quantidade === "number" ? body.quantidade : 10;
     const quantidade = body.provaCompleta === true
-      ? Math.min(Math.max(rawQuantidade, 5), 60)
+      ? Math.min(Math.max(rawQuantidade, 5), 100)
       : Math.min(Math.max(rawQuantidade, 5), 50);
     const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "medio";
     const modo = allowedModos.includes(body.modo) ? body.modo : "concurso";
@@ -461,27 +460,48 @@ serve(async (req) => {
     let questoes: any[] = [];
     let lastError: any = null;
 
-    const results = await Promise.allSettled(
-      batches.map(async (batch) => {
-        try {
-          const raw = await callAIBatch(batch.qtd, batch.context);
-          const { cleaned } = validateQuestions(raw, batch.qtd, tipoResposta);
-          return cleaned; // Accept whatever cleaned questions came back (no retry to save time)
-        } catch (e) {
-          if ((e as any).status === 429 || (e as any).status === 402) throw e;
-          lastError = e;
-          return [];
+    // Track per-batch shortfall so we can retry just the missing slices
+    interface BatchResult { batch: BatchJob; produced: any[]; missing: number; }
+    const runBatches = async (jobs: BatchJob[]): Promise<BatchResult[]> => {
+      const settled = await Promise.allSettled(
+        jobs.map(async (batch) => {
+          try {
+            const raw = await callAIBatch(batch.qtd, batch.context);
+            const { cleaned } = validateQuestions(raw, batch.qtd, tipoResposta);
+            return cleaned;
+          } catch (e) {
+            if ((e as any).status === 429 || (e as any).status === 402) throw e;
+            lastError = e;
+            return [] as any[];
+          }
+        })
+      );
+      return settled.map((r, i) => {
+        if (r.status === "fulfilled") {
+          const produced = r.value.slice(0, jobs[i].qtd);
+          return { batch: jobs[i], produced, missing: Math.max(0, jobs[i].qtd - produced.length) };
         }
-      })
-    );
-
-    for (const r of results) {
-      if (r.status === "fulfilled") {
-        questoes.push(...r.value);
-      } else {
         lastError = r.reason;
         if (lastError?.status === 429 || lastError?.status === 402) throw lastError;
-      }
+        return { batch: jobs[i], produced: [], missing: jobs[i].qtd };
+      });
+    };
+
+    // Round 1: original batches
+    const round1 = await runBatches(batches);
+    for (const r of round1) questoes.push(...r.produced);
+
+    // Round 2: retry only the missing portions (if we still have time budget)
+    const RETRY_BUDGET_MS = 110_000;
+    const shortfalls = round1.filter(r => r.missing > 0);
+    if (shortfalls.length > 0 && Date.now() - startedAt < RETRY_BUDGET_MS) {
+      const retryJobs: BatchJob[] = shortfalls.map(r => ({
+        qtd: r.missing,
+        context: r.batch.context,
+      }));
+      console.log(`Retrying ${retryJobs.length} batches to recover ${retryJobs.reduce((a, b) => a + b.qtd, 0)} missing questions`);
+      const round2 = await runBatches(retryJobs);
+      for (const r of round2) questoes.push(...r.produced);
     }
 
     console.log(`Generated ${questoes.length}/${quantidade} questions in ${Date.now() - startedAt}ms`);
@@ -503,7 +523,7 @@ serve(async (req) => {
 
     // Skip math validation if we're already close to the timeout (safety margin: 30s)
     const elapsedMs = Date.now() - startedAt;
-    const TIMEOUT_BUDGET_MS = 120_000; // leave ~30s headroom before 150s edge timeout
+    const TIMEOUT_BUDGET_MS = 135_000; // leave ~15s headroom before 150s edge timeout (retry already used budget)
     if (mathQuestionIndices.length > 0 && elapsedMs < TIMEOUT_BUDGET_MS) {
       try {
         const questionsToValidate = mathQuestionIndices.slice(0, 10).map(i => ({
