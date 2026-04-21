@@ -501,7 +501,10 @@ serve(async (req) => {
       }
     }
 
-    if (mathQuestionIndices.length > 0) {
+    // Skip math validation if we're already close to the timeout (safety margin: 30s)
+    const elapsedMs = Date.now() - startedAt;
+    const TIMEOUT_BUDGET_MS = 120_000; // leave ~30s headroom before 150s edge timeout
+    if (mathQuestionIndices.length > 0 && elapsedMs < TIMEOUT_BUDGET_MS) {
       try {
         const questionsToValidate = mathQuestionIndices.slice(0, 10).map(i => ({
           index: i,
