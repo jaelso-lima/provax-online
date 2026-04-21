@@ -311,10 +311,39 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
 
         {!showResumo ? (
           <div className="space-y-4">
+            {/* Seleção de Edital (opcional — ativa modo "edital" e bloqueia área manual) */}
+            {editais.length > 0 && (
+              <div className="space-y-1.5 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  Edital (opcional)
+                </Label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={editalId}
+                  onChange={(e) => {
+                    setEditalId(e.target.value);
+                    if (!e.target.value) setSlots([]);
+                  }}
+                >
+                  <option value="">Sem edital — escolher manualmente</option>
+                  {editais.map((ed) => (
+                    <option key={ed.id} value={ed.id}>{ed.label}</option>
+                  ))}
+                </select>
+                {editalSelecionado && (
+                  <p className="text-xs text-muted-foreground">
+                    📚 Sua prova será baseada exclusivamente nos conteúdos previstos no edital{" "}
+                    <span className="font-semibold text-foreground">{editalSelecionado.label}</span>.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Filtros base */}
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Área *</Label>
+              <div className={`space-y-1.5 ${editalSelecionado ? "opacity-50" : ""}`}>
+                <Label className="text-xs">Área {editalSelecionado ? "(definida pelo edital)" : "*"}</Label>
                 <select
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={areaId}
@@ -322,6 +351,7 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
                     setAreaId(e.target.value);
                     setSlots([]);
                   }}
+                  disabled={!!editalSelecionado}
                 >
                   <option value="">Selecione</option>
                   {areas.map((a) => (
@@ -369,8 +399,8 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
               </div>
             </div>
 
-            {/* Adicionar matérias */}
-            {areaId && (
+            {/* Adicionar matérias (apenas no modo manual — sem edital) */}
+            {areaId && !editalSelecionado && (
               <div className="space-y-2 rounded-lg border border-dashed p-3">
                 <Label className="text-xs">Adicionar matéria</Label>
                 <select
@@ -394,27 +424,39 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
             {/* Lista de matérias adicionadas */}
             {slots.length > 0 && (
               <div className="space-y-2">
-                <Label className="text-xs font-semibold">Matérias selecionadas</Label>
+                <Label className="text-xs font-semibold">
+                  {editalSelecionado ? "Matérias do edital" : "Matérias selecionadas"}
+                </Label>
                 {slots.map((s) => (
-                  <div key={s.materia_id} className="flex items-center gap-2 rounded-lg border bg-muted/20 p-2">
-                    <span className="flex-1 text-sm font-medium">{s.materia_nome}</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={MAX_TOTAL}
-                      value={s.quantidade}
-                      onChange={(e) => updateQty(s.materia_id, parseInt(e.target.value, 10))}
-                      className="w-20 text-center"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                      onClick={() => removeSlot(s.materia_id)}
-                      aria-label="Remover matéria"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div key={s.materia_id} className="rounded-lg border bg-muted/20 p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 text-sm font-medium">{s.materia_nome}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={MAX_TOTAL}
+                        value={s.quantidade}
+                        onChange={(e) => updateQty(s.materia_id, parseInt(e.target.value, 10))}
+                        className="w-20 text-center"
+                      />
+                      {!editalSelecionado && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                          onClick={() => removeSlot(s.materia_id)}
+                          aria-label="Remover matéria"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {editalSelecionado && s.topicos && s.topicos.length > 0 && (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        ✔ {s.topicos.slice(0, 3).join(" · ")}
+                        {s.topicos.length > 3 ? ` (+${s.topicos.length - 3} tópicos)` : ""}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -428,7 +470,10 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
 
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button onClick={handlePreview} disabled={!areaId || slots.length === 0 || total === 0 || total > MAX_TOTAL}>
+              <Button
+                onClick={handlePreview}
+                disabled={(!editalSelecionado && !areaId) || slots.length === 0 || total === 0 || total > MAX_TOTAL}
+              >
                 Revisar e Gerar
               </Button>
             </DialogFooter>
@@ -436,12 +481,30 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
         ) : (
           // Resumo
           <div className="space-y-4">
+            {editalSelecionado && (
+              <div className="rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm">
+                <p className="font-semibold">
+                  📚 Seu simulado será baseado no edital{" "}
+                  <span className="text-primary">{editalSelecionado.label}</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  As questões serão restritas exclusivamente aos tópicos previstos no edital.
+                </p>
+              </div>
+            )}
             <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
               <p className="text-sm font-semibold">📋 Você está criando um simulado com:</p>
               <ul className="space-y-1 pl-2">
                 {slots.filter((s) => s.quantidade > 0).map((s) => (
                   <li key={s.materia_id} className="text-sm">
-                    • <span className="font-medium">{s.quantidade}</span> questões de <span className="font-medium">{s.materia_nome}</span>
+                    • <span className="font-medium">{s.quantidade}</span> questões de{" "}
+                    <span className="font-medium">{s.materia_nome}</span>
+                    {editalSelecionado && s.topicos && s.topicos.length > 0 && (
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        — ✔ {s.topicos.slice(0, 2).join(", ")}
+                        {s.topicos.length > 2 ? `, +${s.topicos.length - 2}` : ""}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
