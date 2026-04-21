@@ -781,6 +781,19 @@ export default function Simulado() {
 
         {/* ─── CONCURSO MODE ─────────────────────────────────── */}
         {modo === "concurso" ? (<>
+          {/* Botão isolado: Prova Personalizada (não interfere nos modos existentes) */}
+          <div className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 p-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 border-primary/40 hover:bg-primary/10"
+              onClick={() => setShowCustomProva(true)}
+              type="button"
+            >
+              🛠️ <span className="font-medium">Montar Prova Personalizada</span>
+              <span className="ml-auto text-xs text-muted-foreground">Defina questões por matéria</span>
+            </Button>
+          </div>
+
           {/* Tipo de simulado */}
           <div className="space-y-2">
             <Label className="font-semibold">Tipo de Simulado</Label>
