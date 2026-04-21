@@ -126,6 +126,9 @@ export default function Simulado() {
   const isFreePlan = !profile?.plano || profile.plano === "free";
   const isPremiumUser = profile?.plano && profile.plano !== "free";
 
+  // Modal isolado: Prova Personalizada (não interfere no fluxo existente)
+  const [showCustomProva, setShowCustomProva] = useState(false);
+
   // Animated loading messages
   const loadingMessages = [
     "🧠 Preparando questões com IA...",
