@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2, Sparkles } from "lucide-react";
+import { Loader2, Plus, Trash2, Sparkles, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +28,22 @@ interface MateriaSlot {
   materia_id: string;
   materia_nome: string;
   quantidade: number;
+  // Tópicos do edital vinculados a esta matéria (quando origem = edital)
+  topicos?: string[];
+}
+
+// Estrutura mínima de uma matéria dentro do resultado de análise de edital
+interface EditalMateria {
+  nome: string;
+  conteudos_principais?: string[];
+  topicos?: Array<{ nome: string; subtopicos?: Array<{ nome: string }> }>;
+}
+
+interface EditalOption {
+  id: string;
+  label: string;
+  cargo: string | null;
+  materias: EditalMateria[];
 }
 
 interface Props {
@@ -49,6 +65,11 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
   const [nivel, setNivel] = useState("misto");
   const [tipoResposta, setTipoResposta] = useState("multipla_escolha");
 
+  // Editais do usuário (análises concluídas)
+  const [editais, setEditais] = useState<EditalOption[]>([]);
+  const [editalId, setEditalId] = useState(""); // "" = sem edital (comportamento padrão)
+  const editalSelecionado = useMemo(() => editais.find((e) => e.id === editalId) || null, [editais, editalId]);
+
   const [slots, setSlots] = useState<MateriaSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [showResumo, setShowResumo] = useState(false);
@@ -60,7 +81,29 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
       setAreas(a);
       setBancas(b);
     });
-  }, [open, modo]);
+    // Carrega editais analisados do usuário
+    if (user) {
+      supabase
+        .from("edital_analyses")
+        .select("id, file_name, cargo_selecionado, resultado")
+        .eq("user_id", user.id)
+        .eq("status", "concluido")
+        .order("created_at", { ascending: false })
+        .limit(20)
+        .then(({ data }) => {
+          if (!data) return;
+          const opts: EditalOption[] = data
+            .map((row: any) => {
+              const materias = (row.resultado?.materias || []) as EditalMateria[];
+              if (!Array.isArray(materias) || materias.length === 0) return null;
+              const label = row.cargo_selecionado || row.file_name || "Edital";
+              return { id: row.id, label, cargo: row.cargo_selecionado, materias };
+            })
+            .filter(Boolean) as EditalOption[];
+          setEditais(opts);
+        });
+    }
+  }, [open, modo, user]);
 
   // Cascade: ao escolher área, carrega matérias daquela área
   useEffect(() => {
@@ -77,9 +120,32 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
       setSlots([]);
       setAreaId("");
       setBancaId("");
+      setEditalId("");
       setShowResumo(false);
     }
   }, [open]);
+
+  // Quando o usuário seleciona um edital, pré-popular slots com as matérias do edital
+  useEffect(() => {
+    if (!editalSelecionado) return;
+    const novosSlots: MateriaSlot[] = editalSelecionado.materias.map((m, idx) => {
+      // Extrai a lista de tópicos: prioriza `topicos[].nome`, cai para `conteudos_principais`
+      const topicosFromTree = Array.isArray(m.topicos)
+        ? m.topicos.map((t) => t.nome).filter(Boolean)
+        : [];
+      const topicos =
+        topicosFromTree.length > 0 ? topicosFromTree : Array.isArray(m.conteudos_principais) ? m.conteudos_principais : [];
+      return {
+        materia_id: `edital-${idx}-${m.nome.slice(0, 20)}`,
+        materia_nome: m.nome,
+        quantidade: 5,
+        topicos,
+      };
+    });
+    setSlots(novosSlots);
+    // Limpa área manual já que o edital define o escopo
+    setAreaId("");
+  }, [editalSelecionado]);
 
   const total = useMemo(() => slots.reduce((s, x) => s + (Number.isFinite(x.quantidade) ? x.quantidade : 0), 0), [slots]);
 
@@ -122,10 +188,25 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
     setLoading(true);
     try {
       const distribuicaoOnly = slots.filter((s) => s.quantidade > 0);
+      const usandoEdital = !!editalSelecionado;
+
+      // Monta a distribuição. Se houver edital, anexa os tópicos permitidos por matéria
+      // para forçar a IA a gerar APENAS sobre o conteúdo previsto no edital.
       const distribuicaoText = distribuicaoOnly
-        .map((d) => `${d.quantidade} questões de ${d.materia_nome}`)
-        .join("\n");
-      const distribuicaoPrompt = `Distribuição da prova personalizada (SIGA EXATAMENTE — gere as questões agrupadas por matéria nesta sequência):\n${distribuicaoText}`;
+        .map((d) => {
+          const base = `${d.quantidade} questões de ${d.materia_nome}`;
+          if (usandoEdital && d.topicos && d.topicos.length > 0) {
+            const topicosTxt = d.topicos.slice(0, 25).map((t) => `- ${t}`).join("\n");
+            return `${base}\n  Tópicos OBRIGATÓRIOS (use APENAS estes assuntos, NÃO gere nada fora desta lista):\n${topicosTxt}`;
+          }
+          return base;
+        })
+        .join("\n\n");
+
+      const editalHeader = usandoEdital
+        ? `IMPORTANTE: A prova é baseada no edital "${editalSelecionado!.label}". Restrinja TODAS as questões aos tópicos listados em cada matéria. Se faltarem questões para um tópico específico, complete com OUTROS tópicos da MESMA matéria do edital — NUNCA gere conteúdo fora do edital.\n\n`
+        : "";
+      const distribuicaoPrompt = `${editalHeader}Distribuição da prova personalizada (SIGA EXATAMENTE — gere as questões agrupadas por matéria nesta sequência):\n${distribuicaoText}`;
 
       const bodyPayload: Record<string, unknown> = {
         quantidade: total,
