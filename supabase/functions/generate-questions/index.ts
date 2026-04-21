@@ -453,47 +453,38 @@ serve(async (req) => {
       }
     }
 
+    const startedAt = Date.now();
     console.log(`Splitting ${quantidade} questions into ${batches.length} parallel batches`);
 
-    // --- Execute batches in parallel (max 3 concurrent to avoid rate limits) ---
-    const MAX_CONCURRENT = 3;
+    // --- Execute ALL batches in parallel to fit within edge timeout ---
+    // Each AI call ~20-40s; running sequentially would exceed 150s easily.
     let questoes: any[] = [];
     let lastError: any = null;
 
-    for (let i = 0; i < batches.length; i += MAX_CONCURRENT) {
-      const chunk = batches.slice(i, i + MAX_CONCURRENT);
-      const results = await Promise.allSettled(
-        chunk.map(async (batch) => {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              const raw = await callAIBatch(batch.qtd, batch.context);
-              const { valid, cleaned } = validateQuestions(raw, batch.qtd, tipoResposta);
-              if (valid) return cleaned;
-              console.warn(`Batch validation: ${cleaned.length}/${batch.qtd} valid, retrying...`);
-              if (cleaned.length > 0) return cleaned; // Accept partial on retry
-            } catch (e) {
-              if ((e as any).status === 429 || (e as any).status === 402) throw e;
-              lastError = e;
-            }
-          }
+    const results = await Promise.allSettled(
+      batches.map(async (batch) => {
+        try {
+          const raw = await callAIBatch(batch.qtd, batch.context);
+          const { cleaned } = validateQuestions(raw, batch.qtd, tipoResposta);
+          return cleaned; // Accept whatever cleaned questions came back (no retry to save time)
+        } catch (e) {
+          if ((e as any).status === 429 || (e as any).status === 402) throw e;
+          lastError = e;
           return [];
-        })
-      );
-
-      for (const r of results) {
-        if (r.status === "fulfilled") {
-          questoes.push(...r.value);
-        } else {
-          lastError = r.reason;
-          if (lastError?.status === 429 || lastError?.status === 402) throw lastError;
         }
-      }
+      })
+    );
 
-      // Small delay between chunks to avoid rate limits
-      if (i + MAX_CONCURRENT < batches.length) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        questoes.push(...r.value);
+      } else {
+        lastError = r.reason;
+        if (lastError?.status === 429 || lastError?.status === 402) throw lastError;
       }
     }
+
+    console.log(`Generated ${questoes.length}/${quantidade} questions in ${Date.now() - startedAt}ms`);
 
     if (questoes.length === 0) {
       return errorResponse(lastError?.userMessage || "Erro ao gerar questões", lastError?.status || 500);
@@ -510,7 +501,10 @@ serve(async (req) => {
       }
     }
 
-    if (mathQuestionIndices.length > 0) {
+    // Skip math validation if we're already close to the timeout (safety margin: 30s)
+    const elapsedMs = Date.now() - startedAt;
+    const TIMEOUT_BUDGET_MS = 120_000; // leave ~30s headroom before 150s edge timeout
+    if (mathQuestionIndices.length > 0 && elapsedMs < TIMEOUT_BUDGET_MS) {
       try {
         const questionsToValidate = mathQuestionIndices.slice(0, 10).map(i => ({
           index: i,
