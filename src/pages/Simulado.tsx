@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import QuestionComments from "@/components/QuestionComments";
+import CustomProvaModal from "@/components/CustomProvaModal";
 import {
   fetchAreas, fetchCarreiras, fetchBancas, fetchStates,
   fetchEsferas, fetchTopics, fetchSubtopics, fetchMateriasByArea, hasBancaDistribuicao,
@@ -124,6 +125,9 @@ export default function Simulado() {
 
   const isFreePlan = !profile?.plano || profile.plano === "free";
   const isPremiumUser = profile?.plano && profile.plano !== "free";
+
+  // Modal isolado: Prova Personalizada (não interfere no fluxo existente)
+  const [showCustomProva, setShowCustomProva] = useState(false);
 
   // Animated loading messages
   const loadingMessages = [
@@ -777,6 +781,19 @@ export default function Simulado() {
 
         {/* ─── CONCURSO MODE ─────────────────────────────────── */}
         {modo === "concurso" ? (<>
+          {/* Botão isolado: Prova Personalizada (não interfere nos modos existentes) */}
+          <div className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/5 to-accent/5 p-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 border-primary/40 hover:bg-primary/10"
+              onClick={() => setShowCustomProva(true)}
+              type="button"
+            >
+              🛠️ <span className="font-medium">Montar Prova Personalizada</span>
+              <span className="ml-auto text-xs text-muted-foreground">Defina questões por matéria</span>
+            </Button>
+          </div>
+
           {/* Tipo de simulado */}
           <div className="space-y-2">
             <Label className="font-semibold">Tipo de Simulado</Label>
@@ -895,6 +912,7 @@ export default function Simulado() {
     <Dialog open={showConfirm} onOpenChange={setShowConfirm}><DialogContent><DialogHeader><DialogTitle>Confirmar Simulado</DialogTitle><DialogDescription>{tipoMode === "prova_completa" ? "Será gerada uma prova completa com distribuição realista." : tipoMode === "disciplina" ? "Serão geradas 100 questões focadas na matéria selecionada. Você poderá responder conforme o limite do seu plano." : `Serão geradas ${quantidade} questões.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirm(false)}>Cancelar</Button><Button onClick={handleConfirmarGerar}>Confirmar</Button></DialogFooter></DialogContent></Dialog>
     <Dialog open={showInsuficiente} onOpenChange={setShowInsuficiente}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" />Limite diário atingido 🔥</DialogTitle><DialogDescription>Você chegou ao limite de {FREE_DAILY_LIMIT} questões grátis por dia. Alunos aprovados treinam todos os dias sem limite. Desbloqueie agora!</DialogDescription></DialogHeader><div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-center">💡 Com um plano pago você responde questões ilimitadas e acelera sua aprovação!</div><DialogFooter><Button variant="outline" onClick={() => setShowInsuficiente(false)}>Fechar</Button><Button variant="outline" onClick={() => { setShowInsuficiente(false); navigate("/comprar-moedas"); }}>Comprar Moedas</Button><Button onClick={() => { setShowInsuficiente(false); navigate("/planos"); }}>Desbloquear acesso</Button></DialogFooter></DialogContent></Dialog>
     <Dialog open={showConfirmSair} onOpenChange={setShowConfirmSair}><DialogContent><DialogHeader><DialogTitle>Sair do Simulado?</DialogTitle><DialogDescription>Seu progresso será salvo automaticamente. Você poderá continuar de onde parou no Dashboard.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setShowConfirmSair(false)}>Continuar respondendo</Button><Button onClick={handleSairSalvando}>Salvar e sair</Button></DialogFooter></DialogContent></Dialog>
+    <CustomProvaModal open={showCustomProva} onOpenChange={setShowCustomProva} modo={modo} />
     <AppFooter />
     </div>
   );
