@@ -331,6 +331,7 @@ REGRAS:
       "tipo": "basico ou especifico",
       "explicacao": "O que essa materia aborda",
       "conteudos_principais": ["Item 1 do edital", "Item 2"],
+      "quantidade_questoes": "Numero de questoes desta materia na prova (inteiro). Extraia do edital quando informado; caso contrario, ESTIME com base no peso/relevancia indicada (ex: numero de itens, carga horaria) — sempre devolva um inteiro >= 1.",
       "resumo_detalhado": "RESUMO COMPLETO com definicoes, conceitos, regras. Minimo 500 palavras. Organize por subtopicos.",
       "macetes": [
         "LIMPE = Legalidade, Impessoalidade, Moralidade, Publicidade, Eficiencia (Principios da Adm Publica)",
