@@ -176,6 +176,20 @@ function ViewerConteudo({ resultado }: { resultado: AnalysisResult }) {
             <h4 className="font-semibold flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-primary" /> {m.nome}
               {m.tipo && <Badge variant="outline" className="text-[10px]">{m.tipo === "basico" ? "Basico" : "Especifico"}</Badge>}
+              {(() => {
+                const anyM = m as any;
+                const raw = anyM.quantidade_questoes ?? anyM.qtd_questoes ?? anyM.num_questoes;
+                const parsed = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+                const qtd = Number.isFinite(parsed) && parsed > 0
+                  ? parsed
+                  : (Array.isArray(m.conteudos_principais) ? m.conteudos_principais.length : 0);
+                if (!qtd) return null;
+                return (
+                  <Badge className="text-[10px] bg-primary/10 text-primary border border-primary/20">
+                    {qtd} {qtd === 1 ? "questao" : "questoes"}
+                  </Badge>
+                );
+              })()}
             </h4>
             {m.explicacao && <p className="text-sm text-muted-foreground">{m.explicacao}</p>}
             {m.conteudos_principais?.length > 0 && (
