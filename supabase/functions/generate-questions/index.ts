@@ -431,7 +431,7 @@ serve(async (req) => {
     interface BatchJob { qtd: number; context: string; }
     const batches: BatchJob[] = [];
 
-    if (provaCompleta && distribuicao) {
+    if (provaCompleta && (distribuicaoJson.length > 0 || distribuicao)) {
       // Parse distribuicao text into per-subject blocks (subject + optional topics list).
       // Format expected:
       //   "10 questões de Português
@@ -440,24 +440,32 @@ serve(async (req) => {
       //     - topic2"
       // Blocks separated by blank lines.
       const baseFilter = filterParts.join(". ");
-      const lines = distribuicao.split("\n");
       type Block = { qtd: number; subject: string; topics: string[] };
-      const blocks: Block[] = [];
-      let current: Block | null = null;
-      for (const rawLine of lines) {
-        const line = rawLine.trimEnd();
-        const headMatch = line.match(/^\s*(\d+)\s+quest(?:ões|oes|ão|ao)\s+de\s+(.+)$/i);
-        if (headMatch) {
-          if (current) blocks.push(current);
-          current = { qtd: parseInt(headMatch[1]), subject: headMatch[2].trim(), topics: [] };
-          continue;
+      const blocks: Block[] = [...distribuicaoJson];
+
+      if (blocks.length === 0 && distribuicao) {
+        const lines = distribuicao.split("\n");
+        let current: Block | null = null;
+        for (const rawLine of lines) {
+          const line = rawLine.trimEnd();
+          const headMatch = line.match(/^\s*(\d+)\s+quest(?:ões|oes|ão|ao)\s+de\s+(.+)$/i);
+          if (headMatch) {
+            if (current) blocks.push(current);
+            current = { qtd: parseInt(headMatch[1]), subject: headMatch[2].trim(), topics: [] };
+            continue;
+          }
+          const topicMatch = line.match(/^\s*-\s+(.+)$/);
+          if (topicMatch && current) {
+            current.topics.push(topicMatch[1].trim());
+          }
         }
-        const topicMatch = line.match(/^\s*-\s+(.+)$/);
-        if (topicMatch && current) {
-          current.topics.push(topicMatch[1].trim());
-        }
+        if (current) blocks.push(current);
       }
-      if (current) blocks.push(current);
+
+      const parsedTotal = blocks.reduce((sum, block) => sum + block.qtd, 0);
+      if (parsedTotal > 0 && parsedTotal !== quantidade) {
+        console.warn(`Distribuição soma ${parsedTotal}, quantidade solicitada ${quantidade}. Usando distribuição por matéria como fonte da verdade.`);
+      }
 
       for (const block of blocks) {
         let remaining = block.qtd;
