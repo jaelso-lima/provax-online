@@ -526,27 +526,28 @@ serve(async (req) => {
       });
     };
 
-    // Round 1: original batches
-    const round1 = await runBatches(batches);
-    for (const r of round1) questoes.push(...r.produced);
-
-    // Round 2: retry only the missing portions (if we still have time budget)
+    let pendingJobs = batches;
     const RETRY_BUDGET_MS = 110_000;
-    const shortfalls = round1.filter(r => r.missing > 0);
-    if (shortfalls.length > 0 && Date.now() - startedAt < RETRY_BUDGET_MS) {
-      const retryJobs: BatchJob[] = shortfalls.map(r => ({
-        qtd: r.missing,
-        context: r.batch.context,
-      }));
-      console.log(`Retrying ${retryJobs.length} batches to recover ${retryJobs.reduce((a, b) => a + b.qtd, 0)} missing questions`);
-      const round2 = await runBatches(retryJobs);
-      for (const r of round2) questoes.push(...r.produced);
+    for (let round = 1; round <= 3 && pendingJobs.length > 0; round++) {
+      if (round > 1 && Date.now() - startedAt >= RETRY_BUDGET_MS) break;
+      if (round > 1) {
+        console.log(`Retry ${round - 1}: recuperando ${pendingJobs.reduce((a, b) => a + b.qtd, 0)} questões faltantes em ${pendingJobs.length} matérias/lotes`);
+      }
+      const results = await runBatches(pendingJobs);
+      for (const r of results) questoes.push(...r.produced);
+      pendingJobs = results
+        .filter(r => r.missing > 0)
+        .map(r => ({ qtd: r.missing, context: r.batch.context }));
     }
 
     console.log(`Generated ${questoes.length}/${quantidade} questions in ${Date.now() - startedAt}ms`);
 
     if (questoes.length === 0) {
       return errorResponse(lastError?.userMessage || "Erro ao gerar questões", lastError?.status || 500);
+    }
+
+    if (provaCompleta && questoes.length < quantidade) {
+      return errorResponse(`Não consegui gerar a prova completa (${questoes.length}/${quantidade}). Tente novamente em instantes.`, 500);
     }
 
     // --- Post-generation validation for math/calculation questions ---
