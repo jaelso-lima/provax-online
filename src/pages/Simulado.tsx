@@ -952,6 +952,20 @@ function QuestionCard({
   return (
     <Card>
       <CardContent className="pt-6">
+        {/* Matéria em destaque no topo */}
+        {(() => {
+          const materiaNome = question.materia_nome || simuladoMeta.materia_nome;
+          if (!materiaNome) return null;
+          return (
+            <div className="-mx-6 -mt-6 mb-4 rounded-t-lg bg-gradient-to-r from-primary/15 to-primary/5 border-b border-primary/20 px-6 py-2.5 flex items-center gap-2">
+              <span className="text-base">📚</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Matéria</p>
+                <p className="text-sm font-bold text-primary truncate">{materiaNome}</p>
+              </div>
+            </div>
+          );
+        })()}
         {/* Metadata badges — always show all available info */}
         {(() => {
           const materiaNome = question.materia_nome || simuladoMeta.materia_nome;
@@ -961,7 +975,6 @@ function QuestionCard({
           return (
             <div className="mb-3 flex flex-wrap gap-1.5">
               {simuladoMeta.area_nome && <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">📂 {simuladoMeta.area_nome}</span>}
-              {materiaNome && <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">📚 {materiaNome}</span>}
               {topicNome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">📖 {topicNome}</span>}
               {simuladoMeta.banca_nome && <span className="inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">🏛️ {simuladoMeta.banca_nome}</span>}
               {simuladoMeta.carreira_nome && <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent-foreground">💼 {simuladoMeta.carreira_nome}</span>}
