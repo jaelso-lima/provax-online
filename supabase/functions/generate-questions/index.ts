@@ -201,7 +201,19 @@ serve(async (req) => {
     const subtopic = typeof body.subtopic === "string" ? body.subtopic.slice(0, 100) : undefined;
     const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
     const provaCompleta = body.provaCompleta === true;
-    const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 2000) : undefined;
+    const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 12000) : undefined;
+    const distribuicaoJson = Array.isArray(body.distribuicao_json)
+      ? body.distribuicao_json
+        .slice(0, 60)
+        .map((item: any) => ({
+          qtd: Math.min(Math.max(parseInt(String(item?.quantidade ?? item?.qtd ?? 0), 10) || 0, 0), 100),
+          subject: String(item?.materia_nome ?? item?.subject ?? item?.materia ?? "").trim().slice(0, 140),
+          topics: Array.isArray(item?.topicos ?? item?.topics)
+            ? (item.topicos ?? item.topics).map((t: any) => String(t).trim()).filter(Boolean).slice(0, 40)
+            : [],
+        }))
+        .filter((item: any) => item.qtd > 0 && item.subject)
+      : [];
     const cadernoContext = typeof body.caderno_context === "string" ? body.caderno_context.slice(0, 3000) : undefined;
     const excludeEnunciados: string[] = Array.isArray(body.exclude_enunciados)
       ? body.exclude_enunciados.slice(0, 200).map((e: any) => String(e).slice(0, 100))
@@ -419,7 +431,7 @@ serve(async (req) => {
     interface BatchJob { qtd: number; context: string; }
     const batches: BatchJob[] = [];
 
-    if (provaCompleta && distribuicao) {
+    if (provaCompleta && (distribuicaoJson.length > 0 || distribuicao)) {
       // Parse distribuicao text into per-subject blocks (subject + optional topics list).
       // Format expected:
       //   "10 questões de Português
@@ -428,24 +440,32 @@ serve(async (req) => {
       //     - topic2"
       // Blocks separated by blank lines.
       const baseFilter = filterParts.join(". ");
-      const lines = distribuicao.split("\n");
       type Block = { qtd: number; subject: string; topics: string[] };
-      const blocks: Block[] = [];
-      let current: Block | null = null;
-      for (const rawLine of lines) {
-        const line = rawLine.trimEnd();
-        const headMatch = line.match(/^\s*(\d+)\s+quest(?:ões|oes|ão|ao)\s+de\s+(.+)$/i);
-        if (headMatch) {
-          if (current) blocks.push(current);
-          current = { qtd: parseInt(headMatch[1]), subject: headMatch[2].trim(), topics: [] };
-          continue;
+      const blocks: Block[] = [...distribuicaoJson];
+
+      if (blocks.length === 0 && distribuicao) {
+        const lines = distribuicao.split("\n");
+        let current: Block | null = null;
+        for (const rawLine of lines) {
+          const line = rawLine.trimEnd();
+          const headMatch = line.match(/^\s*(\d+)\s+quest(?:ões|oes|ão|ao)\s+de\s+(.+)$/i);
+          if (headMatch) {
+            if (current) blocks.push(current);
+            current = { qtd: parseInt(headMatch[1]), subject: headMatch[2].trim(), topics: [] };
+            continue;
+          }
+          const topicMatch = line.match(/^\s*-\s+(.+)$/);
+          if (topicMatch && current) {
+            current.topics.push(topicMatch[1].trim());
+          }
         }
-        const topicMatch = line.match(/^\s*-\s+(.+)$/);
-        if (topicMatch && current) {
-          current.topics.push(topicMatch[1].trim());
-        }
+        if (current) blocks.push(current);
       }
-      if (current) blocks.push(current);
+
+      const parsedTotal = blocks.reduce((sum, block) => sum + block.qtd, 0);
+      if (parsedTotal > 0 && parsedTotal !== quantidade) {
+        console.warn(`Distribuição soma ${parsedTotal}, quantidade solicitada ${quantidade}. Usando distribuição por matéria como fonte da verdade.`);
+      }
 
       for (const block of blocks) {
         let remaining = block.qtd;
@@ -506,27 +526,28 @@ serve(async (req) => {
       });
     };
 
-    // Round 1: original batches
-    const round1 = await runBatches(batches);
-    for (const r of round1) questoes.push(...r.produced);
-
-    // Round 2: retry only the missing portions (if we still have time budget)
+    let pendingJobs = batches;
     const RETRY_BUDGET_MS = 110_000;
-    const shortfalls = round1.filter(r => r.missing > 0);
-    if (shortfalls.length > 0 && Date.now() - startedAt < RETRY_BUDGET_MS) {
-      const retryJobs: BatchJob[] = shortfalls.map(r => ({
-        qtd: r.missing,
-        context: r.batch.context,
-      }));
-      console.log(`Retrying ${retryJobs.length} batches to recover ${retryJobs.reduce((a, b) => a + b.qtd, 0)} missing questions`);
-      const round2 = await runBatches(retryJobs);
-      for (const r of round2) questoes.push(...r.produced);
+    for (let round = 1; round <= 3 && pendingJobs.length > 0; round++) {
+      if (round > 1 && Date.now() - startedAt >= RETRY_BUDGET_MS) break;
+      if (round > 1) {
+        console.log(`Retry ${round - 1}: recuperando ${pendingJobs.reduce((a, b) => a + b.qtd, 0)} questões faltantes em ${pendingJobs.length} matérias/lotes`);
+      }
+      const results = await runBatches(pendingJobs);
+      for (const r of results) questoes.push(...r.produced);
+      pendingJobs = results
+        .filter(r => r.missing > 0)
+        .map(r => ({ qtd: r.missing, context: r.batch.context }));
     }
 
     console.log(`Generated ${questoes.length}/${quantidade} questions in ${Date.now() - startedAt}ms`);
 
     if (questoes.length === 0) {
       return errorResponse(lastError?.userMessage || "Erro ao gerar questões", lastError?.status || 500);
+    }
+
+    if (provaCompleta && questoes.length < quantidade) {
+      return errorResponse(`Não consegui gerar a prova completa (${questoes.length}/${quantidade}). Tente novamente em instantes.`, 500);
     }
 
     // --- Post-generation validation for math/calculation questions ---

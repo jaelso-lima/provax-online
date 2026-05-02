@@ -217,6 +217,11 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
         banca: bancaId || undefined,
         provaCompleta: true,
         distribuicao: distribuicaoPrompt,
+        distribuicao_json: distribuicaoOnly.map((d) => ({
+          quantidade: d.quantidade,
+          materia_nome: d.materia_nome,
+          topicos: usandoEdital ? d.topicos || [] : [],
+        })),
       };
 
       const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-questions", {
