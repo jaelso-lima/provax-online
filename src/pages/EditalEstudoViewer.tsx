@@ -408,6 +408,20 @@ function ViewerEstudo({ analysisId, resultado }: { analysisId: string; resultado
                   <div className="flex items-center gap-2 text-left flex-1">
                     <BookOpen className="h-4 w-4 text-primary shrink-0" />
                     <span className="font-semibold">{materia.nome}</span>
+                    {(() => {
+                      const anyM = materia as any;
+                      const raw = anyM.quantidade_questoes ?? anyM.qtd_questoes ?? anyM.num_questoes;
+                      const parsed = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+                      const qtd = Number.isFinite(parsed) && parsed > 0
+                        ? parsed
+                        : (Array.isArray(materia.conteudos_principais) ? materia.conteudos_principais.length : 0);
+                      if (!qtd) return null;
+                      return (
+                        <Badge className="text-[10px] bg-primary/10 text-primary border border-primary/20 shrink-0">
+                          {qtd} {qtd === 1 ? "questão" : "questões"}
+                        </Badge>
+                      );
+                    })()}
                     <div className="ml-auto flex items-center gap-2 shrink-0">
                       {allChecked ? (
                         <Badge className="bg-primary/10 text-primary text-[10px]">
