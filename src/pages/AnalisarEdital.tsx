@@ -1188,7 +1188,7 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
           return (
             <AccordionItem key={mIdx} value={`estudo-${mIdx}`} className="border rounded-lg px-4">
               <AccordionTrigger className="py-3 hover:no-underline">
-                <div className="flex items-center gap-2 text-left flex-1">
+                <div className="flex items-center gap-2 text-left flex-1 flex-wrap">
                   <BookOpen className="h-4 w-4 text-primary shrink-0" />
                   <span className="font-semibold">{materia.nome}</span>
                   {materia.tipo && (
@@ -1196,6 +1196,18 @@ function EstudoSection({ analysisId, resultado }: { analysisId: string; resultad
                       {materia.tipo === "basico" ? "Basico" : "Especifico"}
                     </Badge>
                   )}
+                  {(() => {
+                    const anyM = materia as any;
+                    const raw = anyM.quantidade_questoes ?? anyM.qtd_questoes ?? anyM.num_questoes;
+                    const parsed = typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
+                    const qtd = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+                    if (!qtd) return null;
+                    return (
+                      <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-primary/10 text-primary border border-primary/20">
+                        {qtd} {qtd === 1 ? "questao" : "questoes"}
+                      </Badge>
+                    );
+                  })()}
                   <div className="ml-auto flex items-center gap-2 shrink-0">
                     {allChecked ? (
                       <Badge className="bg-primary/10 text-primary text-[10px]">
