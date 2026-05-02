@@ -201,7 +201,19 @@ serve(async (req) => {
     const subtopic = typeof body.subtopic === "string" ? body.subtopic.slice(0, 100) : undefined;
     const curso = typeof body.curso === "string" ? body.curso.slice(0, 100) : undefined;
     const provaCompleta = body.provaCompleta === true;
-    const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 2000) : undefined;
+    const distribuicao = typeof body.distribuicao === "string" ? body.distribuicao.slice(0, 12000) : undefined;
+    const distribuicaoJson = Array.isArray(body.distribuicao_json)
+      ? body.distribuicao_json
+        .slice(0, 60)
+        .map((item: any) => ({
+          qtd: Math.min(Math.max(parseInt(String(item?.quantidade ?? item?.qtd ?? 0), 10) || 0, 0), 100),
+          subject: String(item?.materia_nome ?? item?.subject ?? item?.materia ?? "").trim().slice(0, 140),
+          topics: Array.isArray(item?.topicos ?? item?.topics)
+            ? (item.topicos ?? item.topics).map((t: any) => String(t).trim()).filter(Boolean).slice(0, 40)
+            : [],
+        }))
+        .filter((item: any) => item.qtd > 0 && item.subject)
+      : [];
     const cadernoContext = typeof body.caderno_context === "string" ? body.caderno_context.slice(0, 3000) : undefined;
     const excludeEnunciados: string[] = Array.isArray(body.exclude_enunciados)
       ? body.exclude_enunciados.slice(0, 200).map((e: any) => String(e).slice(0, 100))
