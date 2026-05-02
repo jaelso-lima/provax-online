@@ -245,10 +245,9 @@ serve(async (req) => {
       resolveFilter("cursos", curso, "Curso"),
     ]);
 
-    // Add prova completa distribution context if provided
-    if (provaCompleta && distribuicao) {
-      filterParts.push(distribuicao);
-    }
+    // NOTE: distribuicao text is NOT pushed into filterParts here for prova completa.
+    // It's parsed below into per-subject batches with isolated context, so the AI
+    // doesn't get confused by seeing all subjects when it should focus on one.
 
     // Add caderno context for personalized notebook-based generation
     if (cadernoContext) {
@@ -421,23 +420,43 @@ serve(async (req) => {
     const batches: BatchJob[] = [];
 
     if (provaCompleta && distribuicao) {
-      // For prova completa: split by subject groups from distribution
-      // Parse distribution lines like "5 questões de Português"
-      const distLines = distribuicao.split("\n").filter((l: string) => l.match(/^\d+ questões de /));
-      for (const line of distLines) {
-        const match = line.match(/^(\d+) questões de (.+)$/);
-        if (!match) continue;
-        const subjQtd = parseInt(match[1]);
-        const subjName = match[2];
-        // Split large subjects into sub-batches
-        let remaining = subjQtd;
+      // Parse distribuicao text into per-subject blocks (subject + optional topics list).
+      // Format expected:
+      //   "10 questões de Português
+      //     Tópicos OBRIGATÓRIOS: ...
+      //     - topic1
+      //     - topic2"
+      // Blocks separated by blank lines.
+      const baseFilter = filterParts.join(". ");
+      const lines = distribuicao.split("\n");
+      type Block = { qtd: number; subject: string; topics: string[] };
+      const blocks: Block[] = [];
+      let current: Block | null = null;
+      for (const rawLine of lines) {
+        const line = rawLine.trimEnd();
+        const headMatch = line.match(/^\s*(\d+)\s+quest(?:ões|oes|ão|ao)\s+de\s+(.+)$/i);
+        if (headMatch) {
+          if (current) blocks.push(current);
+          current = { qtd: parseInt(headMatch[1]), subject: headMatch[2].trim(), topics: [] };
+          continue;
+        }
+        const topicMatch = line.match(/^\s*-\s+(.+)$/);
+        if (topicMatch && current) {
+          current.topics.push(topicMatch[1].trim());
+        }
+      }
+      if (current) blocks.push(current);
+
+      for (const block of blocks) {
+        let remaining = block.qtd;
         while (remaining > 0) {
           const batchQtd = Math.min(remaining, BATCH_SIZE);
           remaining -= batchQtd;
-          batches.push({
-            qtd: batchQtd,
-            context: `${filterParts.join(". ")}. Gere ${batchQtd} questões de ${subjName}. Todas devem ter materia_nome = "${subjName}".`,
-          });
+          const topicsTxt = block.topics.length > 0
+            ? `\nTópicos OBRIGATÓRIOS de ${block.subject} (use APENAS estes assuntos, NÃO gere fora desta lista):\n${block.topics.slice(0, 30).map(t => `- ${t}`).join("\n")}`
+            : "";
+          const context = `${baseFilter ? baseFilter + ". " : ""}FOCO EXCLUSIVO: gere ${batchQtd} questões SOMENTE da matéria "${block.subject}". TODAS devem ter materia_nome = "${block.subject}". Ignore outras matérias.${topicsTxt}`;
+          batches.push({ qtd: batchQtd, context });
         }
       }
     }
