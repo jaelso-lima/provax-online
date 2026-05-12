@@ -172,7 +172,7 @@ export default function Simulado() {
         setSimuladoMeta(resumeMeta);
 
         const { data: existingRespostas } = await supabase
-          .from("respostas").select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao, materias:materia_id(nome), topics:topic_id(nome))")
+          .from("respostas").select("*, questoes(id, enunciado, alternativas, resposta_correta, explicacao, materia_nome, materias:materia_id(nome), topics:topic_id(nome))")
           .eq("simulado_id", continuarId).order("created_at");
 
         let allQuestoes: Questao[] = [];
@@ -185,6 +185,7 @@ export default function Simulado() {
               alternativas: Array.isArray(r.questoes?.alternativas) ? r.questoes.alternativas : [],
               resposta_correta: r.questoes?.resposta_correta || "", explicacao: r.questoes?.explicacao,
               materia_nome: r.questoes?.materias?.nome || undefined,
+              ...(r.questoes?.materia_nome && !r.questoes?.materias?.nome ? { materia_nome: r.questoes.materia_nome } : {}),
               topic_nome: r.questoes?.topics?.nome || undefined,
             })).filter((q: Questao) => q.id && q.enunciado);
 
