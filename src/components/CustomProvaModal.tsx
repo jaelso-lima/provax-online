@@ -263,7 +263,7 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
       if (sErr) throw sErr;
 
       // Insere questões
-      const questoesInsert = generated.map((q) => ({
+      const questoesInsert = generated.map((q, idx) => ({
         enunciado: q.enunciado,
         alternativas: q.alternativas as unknown,
         resposta_correta: q.resposta_correta,
@@ -271,6 +271,7 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
         modo,
         area_id: areaId || null,
         banca_id: bancaId || null,
+        materia_nome: q.materia_nome || null,
         source: "ai_generated",
       }));
       const { data: savedQuestoes, error: qErr } = await supabase
