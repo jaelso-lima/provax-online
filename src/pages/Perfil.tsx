@@ -32,6 +32,7 @@ export default function Perfil() {
   const [saving, setSaving] = useState(false);
   const [respostas, setRespostas] = useState<any[]>([]);
   const [respostasPorMateria, setRespostasPorMateria] = useState<any[]>([]);
+  const [desempenhoMateria, setDesempenhoMateria] = useState<any[]>([]);
   const [simulados, setSimulados] = useState<any[]>([]);
   const [resetting, setResetting] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -68,6 +69,13 @@ export default function Perfil() {
         supabase.from("respostas").select("acertou, questoes(materia_id, materia_nome, materias(nome), topic_id, topics(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostasPorMateria(data); });
       });
+    // Fonte primária: tabela agregada `desempenho_usuario` (sempre populada pelo motor de simulados)
+    supabase
+      .from("desempenho_usuario")
+      .select("materia_id, topic_id, subtopic_id, microtopico_id, total_questoes, total_acertos, taxa_acerto, materias:materia_id(nome), topics:topic_id(nome)")
+      .eq("user_id", user.id)
+      .gt("total_questoes", 0)
+      .then(({ data }) => { if (data) setDesempenhoMateria(data); });
   }, [user]);
 
   const handleSave = async () => {
@@ -141,6 +149,36 @@ export default function Perfil() {
   }, [respostas, simulados]);
 
   const materiaStats = useMemo(() => {
+    // Preferimos a tabela agregada `desempenho_usuario` (cobre todo o histórico, inclusive questões sem FK).
+    if (desempenhoMateria.length > 0) {
+      const map: Record<string, { nome: string; acertos: number; erros: number; total: number; topics: Record<string, { nome: string; acertos: number; erros: number; total: number }> }> = {};
+      for (const d of desempenhoMateria) {
+        const matNome = (d as any).materias?.nome;
+        if (!matNome) continue;
+        if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0, topics: {} };
+        const isMateriaLevel = !d.topic_id && !d.subtopic_id && !d.microtopico_id;
+        const isTopicLevel = !!d.topic_id && !d.subtopic_id && !d.microtopico_id;
+        if (isMateriaLevel) {
+          map[matNome].total = d.total_questoes;
+          map[matNome].acertos = d.total_acertos;
+          map[matNome].erros = Math.max(0, d.total_questoes - d.total_acertos);
+        } else if (isTopicLevel) {
+          const topicNome = (d as any).topics?.nome;
+          if (topicNome && !map[matNome].topics[topicNome]) {
+            map[matNome].topics[topicNome] = {
+              nome: topicNome,
+              acertos: d.total_acertos,
+              erros: Math.max(0, d.total_questoes - d.total_acertos),
+              total: d.total_questoes,
+            };
+          }
+        }
+      }
+      return Object.values(map)
+        .filter(m => m.total > 0)
+        .map(m => ({ ...m, topicsList: Object.values(m.topics).sort((a, b) => b.total - a.total) }))
+        .sort((a, b) => b.total - a.total);
+    }
     if (!respostasPorMateria.length) return [];
     const map: Record<string, { nome: string; acertos: number; erros: number; total: number; topics: Record<string, { nome: string; acertos: number; erros: number; total: number }> }> = {};
     for (const r of respostasPorMateria) {
@@ -164,7 +202,7 @@ export default function Perfil() {
       ...m,
       topicsList: Object.values(m.topics).sort((a, b) => b.total - a.total),
     })).sort((a, b) => b.total - a.total);
-  }, [respostasPorMateria]);
+  }, [respostasPorMateria, desempenhoMateria]);
 
   const xp = profile?.xp ?? 0;
   const nivel = profile?.nivel ?? 1;
