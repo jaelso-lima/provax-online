@@ -22,7 +22,7 @@ import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 
 const chartConfig: ChartConfig = {
   acertos: { label: "Acertos", color: "hsl(var(--primary))" },
-  erros: { label: "Erros", color: "hsl(var(--destructive))" },
+  erros: { label: "Erros", color: "hsl(var(--destructive) / 0.65)" },
 };
 
 export default function Perfil() {
@@ -171,7 +171,7 @@ export default function Perfil() {
 
   const pieData = stats ? [
     { name: "Acertos", value: stats.totalAcertos, fill: "hsl(var(--primary))" },
-    { name: "Erros", value: stats.totalErros, fill: "hsl(var(--destructive))" },
+    { name: "Erros", value: stats.totalErros, fill: "hsl(var(--destructive) / 0.65)" },
   ] : [];
 
   return (
@@ -322,8 +322,8 @@ export default function Perfil() {
                   <p className="text-lg font-bold text-primary">{stats.totalAcertos}</p>
                   <p className="text-[10px] text-muted-foreground">Acertos</p>
                 </div>
-                <div className="rounded-lg bg-destructive/10 p-2.5 text-center">
-                  <p className="text-lg font-bold text-destructive">{stats.totalErros}</p>
+                <div className="rounded-lg bg-destructive/5 p-2.5 text-center">
+                  <p className="text-lg font-bold text-destructive/80">{stats.totalErros}</p>
                   <p className="text-[10px] text-muted-foreground">Erros</p>
                 </div>
               </div>
@@ -345,8 +345,8 @@ export default function Perfil() {
                     <span className="text-xs">{stats.totalAcertos} acertos ({stats.totalQuestoes > 0 ? Math.round((stats.totalAcertos / stats.totalQuestoes) * 100) : 0}%)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <XCircle className="h-3.5 w-3.5 text-destructive" />
-                    <span className="text-xs">{stats.totalErros} erros ({stats.totalQuestoes > 0 ? Math.round((stats.totalErros / stats.totalQuestoes) * 100) : 0}%)</span>
+                    <XCircle className="h-3.5 w-3.5 text-destructive/75" />
+                    <span className="text-xs text-muted-foreground">{stats.totalErros} erros ({stats.totalQuestoes > 0 ? Math.round((stats.totalErros / stats.totalQuestoes) * 100) : 0}%)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
@@ -363,7 +363,7 @@ export default function Perfil() {
                   <YAxis hide />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar dataKey="acertos" stackId="a" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="erros" stackId="a" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="erros" stackId="a" fill="hsl(var(--destructive) / 0.65)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ChartContainer>
             </CardContent>
@@ -400,7 +400,7 @@ export default function Perfil() {
                           <Progress value={pct} className="h-1 mb-1" />
                           <div className="flex gap-3 text-[10px] text-muted-foreground mb-1">
                             <span className="text-primary font-medium">{m.acertos} acertos</span>
-                            <span className="text-destructive font-medium">{m.erros} erros</span>
+                            <span className="text-destructive/75 font-medium">{m.erros} erros</span>
                           </div>
                         </div>
                       </div>
@@ -418,7 +418,7 @@ export default function Perfil() {
                                   <Progress value={tPct} className="h-1 mb-0.5" />
                                   <div className="flex gap-2 text-[10px] text-muted-foreground">
                                     <span className="text-primary font-medium">{t.acertos} acertos</span>
-                                    <span className="text-destructive font-medium">{t.erros} erros</span>
+                                    <span className="text-destructive/75 font-medium">{t.erros} erros</span>
                                   </div>
                                 </div>
                               );
