@@ -184,8 +184,7 @@ export default function Simulado() {
               id: r.questoes?.id, enunciado: r.questoes?.enunciado || "",
               alternativas: Array.isArray(r.questoes?.alternativas) ? r.questoes.alternativas : [],
               resposta_correta: r.questoes?.resposta_correta || "", explicacao: r.questoes?.explicacao,
-              materia_nome: r.questoes?.materias?.nome || undefined,
-              ...(r.questoes?.materia_nome && !r.questoes?.materias?.nome ? { materia_nome: r.questoes.materia_nome } : {}),
+              materia_nome: r.questoes?.materias?.nome || r.questoes?.materia_nome || undefined,
               topic_nome: r.questoes?.topics?.nome || undefined,
             })).filter((q: Questao) => q.id && q.enunciado);
 
