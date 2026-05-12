@@ -1910,6 +1910,7 @@ export type Database = {
           explicacao: string | null
           id: string
           materia_id: string | null
+          materia_nome: string | null
           microtopico_id: string | null
           modo: string
           nivel: string | null
@@ -1938,6 +1939,7 @@ export type Database = {
           explicacao?: string | null
           id?: string
           materia_id?: string | null
+          materia_nome?: string | null
           microtopico_id?: string | null
           modo?: string
           nivel?: string | null
@@ -1966,6 +1968,7 @@ export type Database = {
           explicacao?: string | null
           id?: string
           materia_id?: string | null
+          materia_nome?: string | null
           microtopico_id?: string | null
           modo?: string
           nivel?: string | null
