@@ -64,8 +64,8 @@ export default function Perfil() {
         // Respostas simples para stats gerais
         supabase.from("respostas").select("acertou").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostas(data); });
-        // Respostas com matéria para breakdown
-        supabase.from("respostas").select("acertou, questoes!inner(materia_id, materias!inner(nome), topic_id, topics(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
+        // Respostas com matéria para breakdown (usa materia_nome como fallback quando não há FK)
+        supabase.from("respostas").select("acertou, questoes(materia_id, materia_nome, materias(nome), topic_id, topics(nome))").in("simulado_id", simIds).not("resposta_usuario", "is", null)
           .then(({ data }) => { if (data) setRespostasPorMateria(data); });
       });
   }, [user]);
@@ -145,7 +145,7 @@ export default function Perfil() {
     const map: Record<string, { nome: string; acertos: number; erros: number; total: number; topics: Record<string, { nome: string; acertos: number; erros: number; total: number }> }> = {};
     for (const r of respostasPorMateria) {
       const q = (r as any).questoes;
-      const matNome = q?.materias?.nome;
+      const matNome = q?.materias?.nome || q?.materia_nome;
       if (!matNome) continue;
       if (!map[matNome]) map[matNome] = { nome: matNome, acertos: 0, erros: 0, total: 0, topics: {} };
       map[matNome].total++;
