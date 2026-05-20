@@ -460,6 +460,37 @@ REGRAS:
 
       const resultado = extractJsonFromResponse(content);
 
+      // === Override cronograma rules with server-computed values ===
+      // The AI sometimes echoes the "30 dias" example. Force the real values
+      // computed from data_prova_usuario so the schedule always goes from
+      // today until 1 day before the exam.
+      try {
+        const res: any = resultado;
+        const todayStr = (() => {
+          const n = new Date();
+          return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+        })();
+        if (res && typeof res === 'object') {
+          res.cronograma_reverso = res.cronograma_reverso || {};
+          res.cronograma_reverso.regras = {
+            ...(res.cronograma_reverso.regras || {}),
+            bloco_minutos: res.cronograma_reverso.regras?.bloco_minutos || 40,
+            blocos_por_dia: res.cronograma_reverso.regras?.blocos_por_dia || 4,
+            total_dia: res.cronograma_reverso.regras?.total_dia || "2h40",
+            meta_questoes_bloco: res.cronograma_reverso.regras?.meta_questoes_bloco || "20 a 30",
+            meta_questoes_dia: res.cronograma_reverso.regras?.meta_questoes_dia || "80 a 120",
+            total_dias_estudo: totalDiasEstudo,
+            ciclo_dias: cicloDias,
+            ciclos_completos: ciclosCompletos,
+            dias_restantes: diasRestantes,
+            data_inicio: todayStr,
+            data_prova: dataProvaStr || res.cronograma_reverso.regras?.data_prova || "",
+          };
+        }
+      } catch (overrideErr: any) {
+        console.error("Cronograma override error:", overrideErr?.message);
+      }
+
       await supabaseAdmin.from("edital_analyses").update({
         status: "concluido",
         resultado,
