@@ -50,9 +50,12 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   modo?: string; // 'concurso' (default) | 'enem'
+  // Quando informado, pré-popula as matérias (ex.: combinação de 2 editais)
+  initialMaterias?: Array<{ nome: string; conteudos_principais?: string[] }>;
+  initialLabel?: string;
 }
 
-export default function CustomProvaModal({ open, onOpenChange, modo = "concurso" }: Props) {
+export default function CustomProvaModal({ open, onOpenChange, modo = "concurso", initialMaterias, initialLabel }: Props) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -125,6 +128,21 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
     }
   }, [open]);
 
+  // Quando recebemos matérias iniciais (ex.: cronograma combinado), pré-popula slots
+  useEffect(() => {
+    if (!open) return;
+    if (!initialMaterias || initialMaterias.length === 0) return;
+    const novos: MateriaSlot[] = initialMaterias.map((m, idx) => ({
+      materia_id: `combinado-${idx}-${m.nome.slice(0, 20)}`,
+      materia_nome: m.nome,
+      quantidade: 5,
+      topicos: Array.isArray(m.conteudos_principais) ? m.conteudos_principais : [],
+    }));
+    setSlots(novos);
+    setAreaId("");
+    setEditalId("");
+  }, [open, initialMaterias]);
+
   // Quando o usuário seleciona um edital, pré-popular slots com as matérias do edital
   useEffect(() => {
     if (!editalSelecionado) return;
@@ -188,7 +206,8 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
     setLoading(true);
     try {
       const distribuicaoOnly = slots.filter((s) => s.quantidade > 0);
-      const usandoEdital = !!editalSelecionado;
+      const usandoCombinado = !!(initialMaterias && initialMaterias.length > 0);
+      const usandoEdital = !!editalSelecionado || usandoCombinado;
 
       // Monta a distribuição. Se houver edital, anexa os tópicos permitidos por matéria
       // para forçar a IA a gerar APENAS sobre o conteúdo previsto no edital.
@@ -204,7 +223,11 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
         .join("\n\n");
 
       const editalHeader = usandoEdital
-        ? `IMPORTANTE: A prova é baseada no edital "${editalSelecionado!.label}". Restrinja TODAS as questões aos tópicos listados em cada matéria. Se faltarem questões para um tópico específico, complete com OUTROS tópicos da MESMA matéria do edital — NUNCA gere conteúdo fora do edital.\n\n`
+        ? `IMPORTANTE: A prova é baseada ${
+            usandoCombinado
+              ? `na combinação de editais "${initialLabel || "Combinado"}"`
+              : `no edital "${editalSelecionado!.label}"`
+          }. Restrinja TODAS as questões aos tópicos listados em cada matéria. Se faltarem questões para um tópico específico, complete com OUTROS tópicos da MESMA matéria — NUNCA gere conteúdo fora do edital.\n\n`
         : "";
       const distribuicaoPrompt = `${editalHeader}Distribuição da prova personalizada (SIGA EXATAMENTE — gere as questões agrupadas por matéria nesta sequência):\n${distribuicaoText}`;
 

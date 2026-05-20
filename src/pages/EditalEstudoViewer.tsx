@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -11,6 +11,10 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 import type { AnalysisResult } from "@/lib/editalPdf";
 
 // We import the section components by re-exporting them
@@ -39,6 +43,9 @@ export default function EditalEstudoViewer() {
     const params = new URLSearchParams(window.location.search);
     return params.get("tab") || "estudo";
   });
+  const [combineOpen, setCombineOpen] = useState(false);
+  const [outrosEditais, setOutrosEditais] = useState<Array<{ id: string; file_name: string; cargo_selecionado?: string | null }>>([]);
+  const [outroId, setOutroId] = useState("");
 
   const fetchAnalysis = useCallback(async () => {
     if (!user || !id) return;
@@ -53,6 +60,22 @@ export default function EditalEstudoViewer() {
   }, [user, id]);
 
   useEffect(() => { fetchAnalysis(); }, [fetchAnalysis]);
+
+  // Carrega outros editais concluídos do usuário para combinação
+  useEffect(() => {
+    if (!user || !id) return;
+    supabase
+      .from("edital_analyses")
+      .select("id, file_name, cargo_selecionado")
+      .eq("user_id", user.id)
+      .eq("status", "concluido")
+      .neq("id", id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (data) setOutrosEditais(data as any);
+      });
+  }, [user, id]);
 
   if (loading) {
     return (
@@ -88,6 +111,18 @@ export default function EditalEstudoViewer() {
             {analysis.cargo_selecionado && (
               <Badge variant="secondary" className="text-[10px] shrink-0">{analysis.cargo_selecionado}</Badge>
             )}
+          </div>
+          <div className="ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => setCombineOpen(true)}
+              disabled={outrosEditais.length === 0}
+              title={outrosEditais.length === 0 ? "Analise outro edital primeiro" : "Combinar com outro edital"}
+            >
+              <Layers className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Combinar com outro edital</span><span className="sm:hidden">Combinar</span>
+            </Button>
           </div>
         </div>
       </div>
@@ -133,6 +168,48 @@ export default function EditalEstudoViewer() {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={combineOpen} onOpenChange={setCombineOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-primary" /> Cronograma Combinado
+            </DialogTitle>
+            <DialogDescription>
+              Escolha outro edital já analisado para gerar um cronograma único focado nas matérias em comum. Ideal para quem vai prestar dois concursos parecidos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-xs font-medium">Outro edital</label>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={outroId}
+              onChange={(e) => setOutroId(e.target.value)}
+            >
+              <option value="">Selecione…</option>
+              {outrosEditais.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.cargo_selecionado ? `${o.cargo_selecionado} — ${o.file_name}` : o.file_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCombineOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (!outroId) {
+                  toast({ title: "Selecione o segundo edital", variant: "destructive" });
+                  return;
+                }
+                navigate(`/analisar-edital/combinado?ids=${analysis.id},${outroId}`);
+              }}
+            >
+              Gerar combinado
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
