@@ -317,14 +317,20 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-    const BATCH_SIZE = 15;
+    const BATCH_SIZE = 8;
     const MODELS = ["google/gemini-2.5-flash", "openai/gpt-5-mini"];
+    const PER_CALL_TIMEOUT_MS = 70_000;
 
     const callAIWithModel = async (model: string, batchQtd: number, batchContext: string): Promise<any[]> => {
       const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano, tipoResposta });
 
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const callController = new AbortController();
+      const callTimer = setTimeout(() => callController.abort(), PER_CALL_TIMEOUT_MS);
+      let aiResponse: Response;
+      try {
+        aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
+        signal: callController.signal,
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
@@ -382,6 +388,15 @@ serve(async (req) => {
           tool_choice: { type: "function", function: { name: "return_questions" } },
         }),
       });
+      } catch (fetchErr: any) {
+        clearTimeout(callTimer);
+        if (fetchErr?.name === "AbortError") {
+          console.warn(`Model ${model} timed out after ${PER_CALL_TIMEOUT_MS}ms`);
+          throw { recitation: true, userMessage: "Timeout do modelo", status: 500 };
+        }
+        throw fetchErr;
+      }
+      clearTimeout(callTimer);
 
       if (!aiResponse.ok) {
         const status = aiResponse.status;
@@ -527,8 +542,12 @@ serve(async (req) => {
     };
 
     let pendingJobs = batches;
-    const RETRY_BUDGET_MS = 110_000;
-    for (let round = 1; round <= 3 && pendingJobs.length > 0; round++) {
+    // Tighter budget so we don't approach the 150s edge timeout.
+    // Non-prova-completa: only 1 retry (return partial results fast).
+    // Prova-completa: up to 2 retries (needs full count).
+    const RETRY_BUDGET_MS = 90_000;
+    const MAX_ROUNDS = provaCompleta ? 3 : 2;
+    for (let round = 1; round <= MAX_ROUNDS && pendingJobs.length > 0; round++) {
       if (round > 1 && Date.now() - startedAt >= RETRY_BUDGET_MS) break;
       if (round > 1) {
         console.log(`Retry ${round - 1}: recuperando ${pendingJobs.reduce((a, b) => a + b.qtd, 0)} questões faltantes em ${pendingJobs.length} matérias/lotes`);
@@ -538,6 +557,8 @@ serve(async (req) => {
       pendingJobs = results
         .filter(r => r.missing > 0)
         .map(r => ({ qtd: r.missing, context: r.batch.context }));
+      // For non-prova-completa, if we already have something useful, stop early
+      if (!provaCompleta && questoes.length >= Math.ceil(quantidade * 0.7)) break;
     }
 
     console.log(`Generated ${questoes.length}/${quantidade} questions in ${Date.now() - startedAt}ms`);
@@ -561,9 +582,9 @@ serve(async (req) => {
       }
     }
 
-    // Skip math validation if we're already close to the timeout (safety margin: 30s)
+    // Skip math validation if we're already close to the timeout (tighter budget: 90s)
     const elapsedMs = Date.now() - startedAt;
-    const TIMEOUT_BUDGET_MS = 135_000; // leave ~15s headroom before 150s edge timeout (retry already used budget)
+    const TIMEOUT_BUDGET_MS = 90_000; // leave generous headroom; validation can add 10-30s
     if (mathQuestionIndices.length > 0 && elapsedMs < TIMEOUT_BUDGET_MS) {
       try {
         const questionsToValidate = mathQuestionIndices.slice(0, 10).map(i => ({
@@ -574,8 +595,11 @@ serve(async (req) => {
           explicacao: questoes[i].explicacao,
         }));
 
+        const valController = new AbortController();
+        const valTimer = setTimeout(() => valController.abort(), 30_000);
         const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
+          signal: valController.signal,
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
@@ -628,6 +652,7 @@ Retorne APENAS as questões que têm ERRO, com a correção.`,
             tool_choice: { type: "function", function: { name: "report_errors" } },
           }),
         });
+        clearTimeout(valTimer);
 
         if (validationResponse.ok) {
           const valData = await validationResponse.json();
