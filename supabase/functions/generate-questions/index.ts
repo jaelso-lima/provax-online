@@ -595,8 +595,11 @@ serve(async (req) => {
           explicacao: questoes[i].explicacao,
         }));
 
+        const valController = new AbortController();
+        const valTimer = setTimeout(() => valController.abort(), 30_000);
         const validationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
+          signal: valController.signal,
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
@@ -649,6 +652,7 @@ Retorne APENAS as questões que têm ERRO, com a correção.`,
             tool_choice: { type: "function", function: { name: "report_errors" } },
           }),
         });
+        clearTimeout(valTimer);
 
         if (validationResponse.ok) {
           const valData = await validationResponse.json();
