@@ -542,8 +542,12 @@ serve(async (req) => {
     };
 
     let pendingJobs = batches;
-    const RETRY_BUDGET_MS = 110_000;
-    for (let round = 1; round <= 3 && pendingJobs.length > 0; round++) {
+    // Tighter budget so we don't approach the 150s edge timeout.
+    // Non-prova-completa: only 1 retry (return partial results fast).
+    // Prova-completa: up to 2 retries (needs full count).
+    const RETRY_BUDGET_MS = 90_000;
+    const MAX_ROUNDS = provaCompleta ? 3 : 2;
+    for (let round = 1; round <= MAX_ROUNDS && pendingJobs.length > 0; round++) {
       if (round > 1 && Date.now() - startedAt >= RETRY_BUDGET_MS) break;
       if (round > 1) {
         console.log(`Retry ${round - 1}: recuperando ${pendingJobs.reduce((a, b) => a + b.qtd, 0)} questões faltantes em ${pendingJobs.length} matérias/lotes`);
@@ -553,6 +557,8 @@ serve(async (req) => {
       pendingJobs = results
         .filter(r => r.missing > 0)
         .map(r => ({ qtd: r.missing, context: r.batch.context }));
+      // For non-prova-completa, if we already have something useful, stop early
+      if (!provaCompleta && questoes.length >= Math.ceil(quantidade * 0.7)) break;
     }
 
     console.log(`Generated ${questoes.length}/${quantidade} questions in ${Date.now() - startedAt}ms`);
@@ -576,9 +582,9 @@ serve(async (req) => {
       }
     }
 
-    // Skip math validation if we're already close to the timeout (safety margin: 30s)
+    // Skip math validation if we're already close to the timeout (tighter budget: 90s)
     const elapsedMs = Date.now() - startedAt;
-    const TIMEOUT_BUDGET_MS = 135_000; // leave ~15s headroom before 150s edge timeout (retry already used budget)
+    const TIMEOUT_BUDGET_MS = 90_000; // leave generous headroom; validation can add 10-30s
     if (mathQuestionIndices.length > 0 && elapsedMs < TIMEOUT_BUDGET_MS) {
       try {
         const questionsToValidate = mathQuestionIndices.slice(0, 10).map(i => ({
