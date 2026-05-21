@@ -317,14 +317,20 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-    const BATCH_SIZE = 15;
+    const BATCH_SIZE = 8;
     const MODELS = ["google/gemini-2.5-flash", "openai/gpt-5-mini"];
+    const PER_CALL_TIMEOUT_MS = 70_000;
 
     const callAIWithModel = async (model: string, batchQtd: number, batchContext: string): Promise<any[]> => {
       const batchPrompt = buildPrompt({ modo, quantidade: batchQtd, nivel, filterContext: batchContext || filterParts.join(". "), ano, tipoResposta });
 
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const callController = new AbortController();
+      const callTimer = setTimeout(() => callController.abort(), PER_CALL_TIMEOUT_MS);
+      let aiResponse: Response;
+      try {
+        aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
+        signal: callController.signal,
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
@@ -382,6 +388,15 @@ serve(async (req) => {
           tool_choice: { type: "function", function: { name: "return_questions" } },
         }),
       });
+      } catch (fetchErr: any) {
+        clearTimeout(callTimer);
+        if (fetchErr?.name === "AbortError") {
+          console.warn(`Model ${model} timed out after ${PER_CALL_TIMEOUT_MS}ms`);
+          throw { recitation: true, userMessage: "Timeout do modelo", status: 500 };
+        }
+        throw fetchErr;
+      }
+      clearTimeout(callTimer);
 
       if (!aiResponse.ok) {
         const status = aiResponse.status;
