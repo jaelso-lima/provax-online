@@ -703,6 +703,18 @@ Retorne APENAS as questões que têm ERRO, com a correção.`,
       }
     }
 
+    // Increment server-side daily usage so the plan quota cannot be bypassed
+    if (questoes.length > 0) {
+      try {
+        await supabase.rpc("incrementar_uso_diario", {
+          _user_id: userId,
+          _quantidade: questoes.length,
+        });
+      } catch (incErr) {
+        console.warn("Failed to increment daily usage:", incErr);
+      }
+    }
+
     return new Response(JSON.stringify({ questoes }), { headers });
   } catch (e: any) {
     console.error("generate-questions error:", e);
