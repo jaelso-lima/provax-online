@@ -185,7 +185,7 @@ serve(async (req) => {
     const allowedModos = ["concurso", "enem"];
 
     const rawQuantidade = typeof body.quantidade === "number" ? body.quantidade : 10;
-    const quantidade = body.provaCompleta === true
+    let quantidade = body.provaCompleta === true
       ? Math.min(Math.max(rawQuantidade, 5), 100)
       : Math.min(Math.max(rawQuantidade, 5), 50);
     const nivel = allowedNiveis.includes(body.nivel) ? body.nivel : "medio";
@@ -233,8 +233,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Limite de requisições atingido. Aguarde alguns minutos." }), { status: 429, headers: corsHeaders });
     }
 
-    // Coin check removed — daily limits and coin deduction handled client-side
-    // Edge function just generates questions for authenticated users
+    // --- Daily quota enforcement (server-side, by plan) ---
+    const { data: dailyInfo, error: dailyErr } = await supabase.rpc("check_daily_limit", {
+      _user_id: userId,
+    });
+    if (dailyErr) {
+      console.error("check_daily_limit error:", dailyErr);
+    } else if (dailyInfo && dailyInfo.pode_gerar === false) {
+      return new Response(
+        JSON.stringify({
+          error: `Limite diário do plano ${dailyInfo.plano} atingido (${dailyInfo.usado}/${dailyInfo.limite} questões).`,
+          plano: dailyInfo.plano,
+          limite: dailyInfo.limite,
+          usado: dailyInfo.usado,
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else if (dailyInfo && typeof dailyInfo.restante === "number" && dailyInfo.restante > 0 && quantidade > dailyInfo.restante) {
+      // Cap requested quantity to remaining quota
+      quantidade = dailyInfo.restante;
+    }
 
     // --- Resolver nomes dos filtros para contexto ---
     const filterParts: string[] = [];
@@ -682,6 +700,18 @@ Retorne APENAS as questões que têm ERRO, com a correção.`,
         }
       } catch (valError) {
         console.warn("Math validation failed (non-blocking):", valError);
+      }
+    }
+
+    // Increment server-side daily usage so the plan quota cannot be bypassed
+    if (questoes.length > 0) {
+      try {
+        await supabase.rpc("incrementar_uso_diario", {
+          _user_id: userId,
+          _quantidade: questoes.length,
+        });
+      } catch (incErr) {
+        console.warn("Failed to increment daily usage:", incErr);
       }
     }
 

@@ -156,7 +156,37 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    // --- Verificação de assinatura do webhook (Cakto) ---
+    const rawBody = await req.text();
+    const webhookSecret = Deno.env.get("CAKTO_WEBHOOK_SECRET");
+    if (webhookSecret) {
+      const provided =
+        req.headers.get("x-cakto-token") ||
+        req.headers.get("x-cakto-signature") ||
+        req.headers.get("x-webhook-secret") ||
+        req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+        "";
+      const enc = new TextEncoder();
+      const a = enc.encode(provided);
+      const b = enc.encode(webhookSecret);
+      let ok = a.byteLength === b.byteLength;
+      if (ok) {
+        let diff = 0;
+        for (let i = 0; i < a.byteLength; i++) diff |= a[i] ^ b[i];
+        ok = diff === 0;
+      }
+      if (!ok) {
+        log("Invalid webhook signature");
+        return new Response(JSON.stringify({ error: "Invalid signature" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      log("WARNING: CAKTO_WEBHOOK_SECRET not configured — accepting unsigned request. Configure secret to enforce verification.");
+    }
+
+    const body = JSON.parse(rawBody);
     log("Received webhook", body);
 
     // Cakto webhook payload parsing
