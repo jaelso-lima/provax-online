@@ -225,17 +225,16 @@ export default function Index() {
         <div className="relative">
           <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-card/50 to-transparent z-10" />
           <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-card/50 to-transparent z-10" />
-          <div className="flex animate-[scroll_20s_linear_infinite] gap-12 items-center w-max">
-            {[...Array(2)].map((_, loop) => (
-              <div key={loop} className="flex gap-12 items-center">
-                {["Google", "Microsoft", "Meta", "Amazon", "Apple", "IBM", "Oracle", "Cisco"].map((brand) => (
-                  <div
-                    key={`${loop}-${brand}`}
-                    className="px-5 py-2 opacity-30 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0"
-                  >
-                    <span className="text-lg md:text-xl font-bold text-foreground tracking-tight whitespace-nowrap">{brand}</span>
-                  </div>
-                ))}
+          <div
+            className="flex animate-[scroll_30s_linear_infinite] gap-12 items-center w-max"
+            style={{ willChange: "transform", backfaceVisibility: "hidden" }}
+          >
+            {[...["Google", "Microsoft", "Meta", "Amazon", "Apple", "IBM", "Oracle", "Cisco"], ...["Google", "Microsoft", "Meta", "Amazon", "Apple", "IBM", "Oracle", "Cisco"]].map((brand, idx) => (
+              <div
+                key={`${idx}-${brand}`}
+                className="px-5 py-2 opacity-30 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0 shrink-0"
+              >
+                <span className="text-lg md:text-xl font-bold text-foreground tracking-tight whitespace-nowrap">{brand}</span>
               </div>
             ))}
           </div>
