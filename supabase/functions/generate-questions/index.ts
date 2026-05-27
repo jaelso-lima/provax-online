@@ -233,8 +233,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Limite de requisições atingido. Aguarde alguns minutos." }), { status: 429, headers: corsHeaders });
     }
 
-    // Coin check removed — daily limits and coin deduction handled client-side
-    // Edge function just generates questions for authenticated users
+    // --- Daily quota enforcement (server-side, by plan) ---
+    const { data: dailyInfo, error: dailyErr } = await supabase.rpc("check_daily_limit", {
+      _user_id: userId,
+    });
+    if (dailyErr) {
+      console.error("check_daily_limit error:", dailyErr);
+    } else if (dailyInfo && dailyInfo.pode_gerar === false) {
+      return new Response(
+        JSON.stringify({
+          error: `Limite diário do plano ${dailyInfo.plano} atingido (${dailyInfo.usado}/${dailyInfo.limite} questões).`,
+          plano: dailyInfo.plano,
+          limite: dailyInfo.limite,
+          usado: dailyInfo.usado,
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else if (dailyInfo && typeof dailyInfo.restante === "number" && dailyInfo.restante > 0 && quantidade > dailyInfo.restante) {
+      // Cap requested quantity to remaining quota
+      quantidade = dailyInfo.restante;
+    }
 
     // --- Resolver nomes dos filtros para contexto ---
     const filterParts: string[] = [];
