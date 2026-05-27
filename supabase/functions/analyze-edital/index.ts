@@ -406,9 +406,10 @@ REGRAS:
 3. "macetes" = minimo 5 mnemonicos/dicas por materia. Inclua: acronimos, frases memoraveis, associacoes visuais, regras praticas, comparacoes, pegadinhas da banca, palavras-chave recorrentes. Quanto mais macetes melhor!
 4. "pegadinhas_frequentes" = minimo 3 pegadinhas que a banca cobra nessa materia
 5. "palavras_chave" = termos tecnicos e palavras que aparecem com frequencia nas provas dessa materia
-4. Retorne APENAS JSON valido
-5. NAO use acentos, cedilhas ou caracteres especiais
-6. NAO use barras invertidas exceto para sequencias JSON validas`;
+6. REDACAO / PROVA DISCURSIVA: Se o edital mencionar redacao, prova discursiva, peca processual, parecer, estudo de caso ou qualquer producao textual (mesmo que valha pontos separados ou seja eliminatoria), VOCE DEVE incluir uma materia chamada "Redacao" (ou "Prova Discursiva" conforme o edital) com os MESMOS campos das demais (resumo_detalhado, macetes, pegadinhas_frequentes, palavras_chave, dicas_prova, estrategia_estudo) e tambem distribui-la nos blocos do cronograma como qualquer outra materia, seguindo as MESMAS regras de dias, blocos de 40min e revisoes. Em "conteudos_principais" liste: estrutura (introducao/desenvolvimento/conclusao), tipos textuais cobrados, temas provaveis, criterios de correcao e proibicoes da banca. Em "macetes" inclua tecnicas de coesao, conectivos, modelos de paragrafo e dicas para fugir do tema.
+7. Retorne APENAS JSON valido
+8. NAO use acentos, cedilhas ou caracteres especiais
+9. NAO use barras invertidas exceto para sequencias JSON validas`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 240000);
