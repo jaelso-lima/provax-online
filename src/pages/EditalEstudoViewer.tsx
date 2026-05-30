@@ -627,6 +627,15 @@ function ViewerEstudo({ analysisId, resultado, bancaNome, editalLabel, cargo }: 
           </div>
         ))}
       </div>
+      <SimuladoBlocoModal
+        open={blocoOpen}
+        onOpenChange={setBlocoOpen}
+        titulo={blocoTitulo}
+        itens={blocoItens}
+        bancaNome={bancaNome}
+        editalLabel={editalLabel}
+        cargo={cargo}
+      />
     </div>
   );
 }
