@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import type { AnalysisResult } from "@/lib/editalPdf";
+import SimuladoBlocoModal, { type BlocoItem } from "@/components/SimuladoBlocoModal";
 
 // We import the section components by re-exporting them
 // Since they're internal to AnalisarEdital, we'll duplicate a lightweight shell here
@@ -97,6 +98,11 @@ export default function EditalEstudoViewer() {
   }
 
   const resultado = analysis.resultado;
+  const raioX = (resultado as any).raio_x || {};
+  const info = (resultado as any).info_concurso || {};
+  const bancaNome: string | null = raioX?.banca || info?.banca || null;
+  const editalLabel: string = analysis.cargo_selecionado || analysis.file_name;
+  const cargo: string | null = analysis.cargo_selecionado || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -161,10 +167,10 @@ export default function EditalEstudoViewer() {
             <ViewerMacetes resultado={resultado} />
           </TabsContent>
           <TabsContent value="cronograma" className="mt-4">
-            <ViewerCronograma resultado={resultado} />
+            <ViewerCronograma resultado={resultado} bancaNome={bancaNome} editalLabel={editalLabel} cargo={cargo} />
           </TabsContent>
           <TabsContent value="estudo" className="mt-4">
-            <ViewerEstudo analysisId={analysis.id} resultado={resultado} />
+            <ViewerEstudo analysisId={analysis.id} resultado={resultado} bancaNome={bancaNome} editalLabel={editalLabel} cargo={cargo} />
           </TabsContent>
         </Tabs>
       </main>
@@ -348,9 +354,12 @@ function addDays(date: Date, days: number): Date {
   return d;
 }
 
-function ViewerCronograma({ resultado }: { resultado: AnalysisResult }) {
+function ViewerCronograma({ resultado, bancaNome, editalLabel, cargo }: { resultado: AnalysisResult; bancaNome?: string | null; editalLabel?: string | null; cargo?: string | null }) {
   const cronograma = resultado.cronograma_reverso as any;
   if (!cronograma?.dias?.length) return <p className="text-sm text-muted-foreground py-4">Cronograma nao disponivel.</p>;
+  const [blocoOpen, setBlocoOpen] = useState(false);
+  const [blocoItens, setBlocoItens] = useState<BlocoItem[]>([]);
+  const [blocoTitulo, setBlocoTitulo] = useState("");
 
   const { regras, dias } = cronograma;
   const totalDiasEstudo = regras?.total_dias_estudo || dias.length;
@@ -395,8 +404,33 @@ function ViewerCronograma({ resultado }: { resultado: AnalysisResult }) {
               </div>
             ))}
           </div>
+          <div className="pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => {
+                const itens: BlocoItem[] = (dia.blocos || []).map((b: any) => ({ materia: b.materia, topico: b.topico }));
+                if (!itens.length) return;
+                setBlocoItens(itens);
+                setBlocoTitulo(`DIA ${dia.dia} — ${fmt(dia.realDate)}`);
+                setBlocoOpen(true);
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Gerar simulado deste dia
+            </Button>
+          </div>
         </div>
       ))}
+      <SimuladoBlocoModal
+        open={blocoOpen}
+        onOpenChange={setBlocoOpen}
+        titulo={blocoTitulo}
+        itens={blocoItens}
+        bancaNome={bancaNome}
+        editalLabel={editalLabel}
+        cargo={cargo}
+      />
     </div>
   );
 }
@@ -433,9 +467,12 @@ function saveProgress(analysisId: string, progress: StudyProgress) {
   localStorage.setItem(`edital_estudo_${analysisId}`, JSON.stringify(progress));
 }
 
-function ViewerEstudo({ analysisId, resultado }: { analysisId: string; resultado: AnalysisResult }) {
+function ViewerEstudo({ analysisId, resultado, bancaNome, editalLabel, cargo }: { analysisId: string; resultado: AnalysisResult; bancaNome?: string | null; editalLabel?: string | null; cargo?: string | null }) {
   const navigate = useNavigate();
   const [progress, setProgress] = useState<StudyProgress>(() => loadProgress(analysisId));
+  const [blocoOpen, setBlocoOpen] = useState(false);
+  const [blocoItens, setBlocoItens] = useState<BlocoItem[]>([]);
+  const [blocoTitulo, setBlocoTitulo] = useState("");
 
   const update = (fn: (p: StudyProgress) => StudyProgress) => {
     setProgress(prev => {
@@ -529,7 +566,19 @@ function ViewerEstudo({ analysisId, resultado }: { analysisId: string; resultado
                     <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 text-sm whitespace-pre-line">{materia.resumo_detalhado}</div>
                   )}
 
-                  <Button size="sm" className="gap-1.5" onClick={() => navigate(`/simulado?materia_nome=${encodeURIComponent(materia.nome)}`)}>
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      const conteudos = (materia.conteudos_principais || []) as string[];
+                      const itens: BlocoItem[] = conteudos.length > 0
+                        ? conteudos.map((c) => ({ materia: materia.nome, topico: c }))
+                        : [{ materia: materia.nome }];
+                      setBlocoItens(itens);
+                      setBlocoTitulo(materia.nome);
+                      setBlocoOpen(true);
+                    }}
+                  >
                     <Play className="h-3.5 w-3.5" /> Treinar essa materia
                   </Button>
                 </AccordionContent>
@@ -578,6 +627,15 @@ function ViewerEstudo({ analysisId, resultado }: { analysisId: string; resultado
           </div>
         ))}
       </div>
+      <SimuladoBlocoModal
+        open={blocoOpen}
+        onOpenChange={setBlocoOpen}
+        titulo={blocoTitulo}
+        itens={blocoItens}
+        bancaNome={bancaNome}
+        editalLabel={editalLabel}
+        cargo={cargo}
+      />
     </div>
   );
 }
