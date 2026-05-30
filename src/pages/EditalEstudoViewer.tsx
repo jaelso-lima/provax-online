@@ -467,9 +467,12 @@ function saveProgress(analysisId: string, progress: StudyProgress) {
   localStorage.setItem(`edital_estudo_${analysisId}`, JSON.stringify(progress));
 }
 
-function ViewerEstudo({ analysisId, resultado }: { analysisId: string; resultado: AnalysisResult }) {
+function ViewerEstudo({ analysisId, resultado, bancaNome, editalLabel, cargo }: { analysisId: string; resultado: AnalysisResult; bancaNome?: string | null; editalLabel?: string | null; cargo?: string | null }) {
   const navigate = useNavigate();
   const [progress, setProgress] = useState<StudyProgress>(() => loadProgress(analysisId));
+  const [blocoOpen, setBlocoOpen] = useState(false);
+  const [blocoItens, setBlocoItens] = useState<BlocoItem[]>([]);
+  const [blocoTitulo, setBlocoTitulo] = useState("");
 
   const update = (fn: (p: StudyProgress) => StudyProgress) => {
     setProgress(prev => {
@@ -563,7 +566,19 @@ function ViewerEstudo({ analysisId, resultado }: { analysisId: string; resultado
                     <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 text-sm whitespace-pre-line">{materia.resumo_detalhado}</div>
                   )}
 
-                  <Button size="sm" className="gap-1.5" onClick={() => navigate(`/simulado?materia_nome=${encodeURIComponent(materia.nome)}`)}>
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => {
+                      const conteudos = (materia.conteudos_principais || []) as string[];
+                      const itens: BlocoItem[] = conteudos.length > 0
+                        ? conteudos.map((c) => ({ materia: materia.nome, topico: c }))
+                        : [{ materia: materia.nome }];
+                      setBlocoItens(itens);
+                      setBlocoTitulo(materia.nome);
+                      setBlocoOpen(true);
+                    }}
+                  >
                     <Play className="h-3.5 w-3.5" /> Treinar essa materia
                   </Button>
                 </AccordionContent>
