@@ -354,9 +354,12 @@ function addDays(date: Date, days: number): Date {
   return d;
 }
 
-function ViewerCronograma({ resultado }: { resultado: AnalysisResult }) {
+function ViewerCronograma({ resultado, bancaNome, editalLabel, cargo }: { resultado: AnalysisResult; bancaNome?: string | null; editalLabel?: string | null; cargo?: string | null }) {
   const cronograma = resultado.cronograma_reverso as any;
   if (!cronograma?.dias?.length) return <p className="text-sm text-muted-foreground py-4">Cronograma nao disponivel.</p>;
+  const [blocoOpen, setBlocoOpen] = useState(false);
+  const [blocoItens, setBlocoItens] = useState<BlocoItem[]>([]);
+  const [blocoTitulo, setBlocoTitulo] = useState("");
 
   const { regras, dias } = cronograma;
   const totalDiasEstudo = regras?.total_dias_estudo || dias.length;
@@ -401,8 +404,33 @@ function ViewerCronograma({ resultado }: { resultado: AnalysisResult }) {
               </div>
             ))}
           </div>
+          <div className="pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => {
+                const itens: BlocoItem[] = (dia.blocos || []).map((b: any) => ({ materia: b.materia, topico: b.topico }));
+                if (!itens.length) return;
+                setBlocoItens(itens);
+                setBlocoTitulo(`DIA ${dia.dia} — ${fmt(dia.realDate)}`);
+                setBlocoOpen(true);
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Gerar simulado deste dia
+            </Button>
+          </div>
         </div>
       ))}
+      <SimuladoBlocoModal
+        open={blocoOpen}
+        onOpenChange={setBlocoOpen}
+        titulo={blocoTitulo}
+        itens={blocoItens}
+        bancaNome={bancaNome}
+        editalLabel={editalLabel}
+        cargo={cargo}
+      />
     </div>
   );
 }
