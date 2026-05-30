@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import type { AnalysisResult } from "@/lib/editalPdf";
+import SimuladoBlocoModal, { type BlocoItem } from "@/components/SimuladoBlocoModal";
 
 // We import the section components by re-exporting them
 // Since they're internal to AnalisarEdital, we'll duplicate a lightweight shell here
@@ -97,6 +98,11 @@ export default function EditalEstudoViewer() {
   }
 
   const resultado = analysis.resultado;
+  const raioX = (resultado as any).raio_x || {};
+  const info = (resultado as any).info_concurso || {};
+  const bancaNome: string | null = raioX?.banca || info?.banca || null;
+  const editalLabel: string = analysis.cargo_selecionado || analysis.file_name;
+  const cargo: string | null = analysis.cargo_selecionado || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -161,10 +167,10 @@ export default function EditalEstudoViewer() {
             <ViewerMacetes resultado={resultado} />
           </TabsContent>
           <TabsContent value="cronograma" className="mt-4">
-            <ViewerCronograma resultado={resultado} />
+            <ViewerCronograma resultado={resultado} bancaNome={bancaNome} editalLabel={editalLabel} cargo={cargo} />
           </TabsContent>
           <TabsContent value="estudo" className="mt-4">
-            <ViewerEstudo analysisId={analysis.id} resultado={resultado} />
+            <ViewerEstudo analysisId={analysis.id} resultado={resultado} bancaNome={bancaNome} editalLabel={editalLabel} cargo={cargo} />
           </TabsContent>
         </Tabs>
       </main>
