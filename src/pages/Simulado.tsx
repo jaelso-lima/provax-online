@@ -914,10 +914,54 @@ export default function Simulado() {
             {(tipoMode === "disciplina" || tipoMode === "livre") && (
               <>
                 <div className="space-y-2"><Label>{tipoMode === "disciplina" ? "Matéria *" : "Matéria (opcional)"}</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? (tipoMode === "livre" ? "Todas as matérias" : "Selecione") : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
-                {topics.length > 0 && (
+                {topics.length > 0 && tipoMode === "disciplina" && (
                   <div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
                 )}
-                {subtopics.length > 0 && (
+                {topics.length > 0 && tipoMode === "livre" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Tópicos (opcional)</Label>
+                      {multiTopicIds.length > 0 && (
+                        <button
+                          type="button"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => setMultiTopicIds([])}
+                        >
+                          Limpar
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-48 overflow-y-auto rounded-md border border-input bg-background p-2 space-y-1">
+                      {topics.map(t => {
+                        const checked = multiTopicIds.includes(t.id);
+                        return (
+                          <label
+                            key={t.id}
+                            className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted/50"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) => {
+                                setMultiTopicIds(prev =>
+                                  v ? [...prev, t.id] : prev.filter(id => id !== t.id)
+                                );
+                              }}
+                            />
+                            <span className="flex-1">{t.nome}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {multiTopicIds.length === 0
+                        ? "Selecione quantos tópicos quiser — as questões serão divididas igualmente entre eles."
+                        : multiTopicIds.length === 1
+                          ? "1 tópico selecionado — todas as questões serão deste tópico."
+                          : `${multiTopicIds.length} tópicos selecionados — ${quantidade} questões serão divididas entre eles.`}
+                    </p>
+                  </div>
+                )}
+                {subtopics.length > 0 && tipoMode === "disciplina" && (
                   <div className="space-y-2"><Label>Subtópico (opcional)</Label><Select value={subtopicId} onValueChange={setSubtopicId}><SelectTrigger><SelectValue placeholder="Todos os subtópicos" /></SelectTrigger><SelectContent>{subtopics.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent></Select></div>
                 )}
               </>
