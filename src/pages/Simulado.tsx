@@ -14,6 +14,7 @@ import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft, CheckCirc
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import QuestionComments from "@/components/QuestionComments";
 import CustomProvaModal from "@/components/CustomProvaModal";
 import {
@@ -105,6 +106,8 @@ export default function Simulado() {
   const [anoEnem, setAnoEnem] = useState("");
   const [topicId, setTopicId] = useState("");
   const [subtopicId, setSubtopicId] = useState("");
+  // Livre mode: seleção múltipla de tópicos (divide as questões entre os tópicos escolhidos)
+  const [multiTopicIds, setMultiTopicIds] = useState<string[]>([]);
 
   // Simulado type mode (concurso)
   const [tipoMode, setTipoMode] = useState<SimuladoTipoMode>("disciplina");
@@ -276,7 +279,7 @@ export default function Simulado() {
   // Cascading: área → matérias (concurso)
   useEffect(() => {
     if (continuarId) return;
-    setMateriaId(""); setTopicId(""); setSubtopicId(""); setTopics([]); setSubtopics([]);
+    setMateriaId(""); setTopicId(""); setSubtopicId(""); setTopics([]); setSubtopics([]); setMultiTopicIds([]);
     if (!areaId) { setMaterias([]); return; }
     fetchMateriasByArea(areaId).then(setMaterias);
   }, [areaId, continuarId]);
@@ -284,7 +287,7 @@ export default function Simulado() {
   // Load topics when materia selected
   useEffect(() => {
     if (continuarId) return;
-    setTopicId(""); setSubtopicId(""); setSubtopics([]);
+    setTopicId(""); setSubtopicId(""); setSubtopics([]); setMultiTopicIds([]);
     if (!materiaId) { setTopics([]); return; }
     fetchTopics(materiaId).then(setTopics);
   }, [materiaId, continuarId]);
@@ -425,6 +428,11 @@ export default function Simulado() {
         if (materiaId) meta.materia_nome = materias.find(m => m.id === materiaId)?.nome;
         if (topicId) meta.topic_nome = topics.find(t => t.id === topicId)?.nome;
         if (subtopicId) meta.subtopic_nome = subtopics.find(s => s.id === subtopicId)?.nome;
+        if (!topicId && multiTopicIds.length > 0) {
+          meta.topic_nome = multiTopicIds.length === 1
+            ? topics.find(t => t.id === multiTopicIds[0])?.nome
+            : `${multiTopicIds.length} tópicos`;
+        }
       } else {
         if (areaEnem) meta.area_nome = ENEM_AREAS.find(a => a.id === areaEnem)?.nome;
         if (anoEnem) meta.ano = anoEnem;
@@ -467,19 +475,59 @@ export default function Simulado() {
         const adaptMeta: SimuladoMeta = { area_nome: "Simulado Adaptativo" };
         setSimuladoMeta(adaptMeta);
       } else if (modo === "concurso") {
-        bodyPayload = {
-          ...bodyPayload,
-          materia: materiaId || undefined,
-          banca: bancaId || undefined,
-          carreira: carreiraId || undefined,
-          area: areaId || undefined,
-          state: stateId || undefined,
-          esfera: esferaId || undefined,
-          ano: anoConcurso ? parseInt(anoConcurso) : undefined,
-          topic: topicId || undefined,
-          subtopic: subtopicId || undefined,
-          ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
-        };
+        // Caso especial (livre): usuário escolheu múltiplos tópicos → dividir a quantidade entre eles
+        const usaMultiTopicos =
+          tipoMode === "livre" && materiaId && multiTopicIds.length >= 2 && !topicId;
+        if (usaMultiTopicos) {
+          const total = parseInt(quantidade);
+          const k = multiTopicIds.length;
+          const base = Math.floor(total / k);
+          const resto = total - base * k;
+          const materiaNome = materias.find(m => m.id === materiaId)?.nome || "";
+          const topicosSelecionados = multiTopicIds.map((tid, i) => {
+            const nome = topics.find(t => t.id === tid)?.nome || "";
+            const qtdTopico = base + (i < resto ? 1 : 0);
+            return { nome, quantidade: qtdTopico };
+          }).filter(t => t.quantidade > 0);
+
+          const distribuicaoText = topicosSelecionados
+            .map(t => `${t.quantidade} questões de ${materiaNome}\n  Tópicos OBRIGATÓRIOS (use APENAS este assunto, NÃO gere nada fora):\n- ${t.nome}`)
+            .join("\n\n");
+
+          bodyPayload = {
+            ...bodyPayload,
+            quantidade: total,
+            materia: materiaId || undefined,
+            banca: bancaId || undefined,
+            carreira: carreiraId || undefined,
+            area: areaId || undefined,
+            state: stateId || undefined,
+            esfera: esferaId || undefined,
+            ano: anoConcurso ? parseInt(anoConcurso) : undefined,
+            provaCompleta: true,
+            distribuicao: distribuicaoText,
+            distribuicao_json: topicosSelecionados.map(t => ({
+              quantidade: t.quantidade,
+              materia_nome: materiaNome,
+              topicos: [t.nome],
+            })),
+            ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
+          };
+        } else {
+          bodyPayload = {
+            ...bodyPayload,
+            materia: materiaId || undefined,
+            banca: bancaId || undefined,
+            carreira: carreiraId || undefined,
+            area: areaId || undefined,
+            state: stateId || undefined,
+            esfera: esferaId || undefined,
+            ano: anoConcurso ? parseInt(anoConcurso) : undefined,
+            topic: topicId || (multiTopicIds.length === 1 ? multiTopicIds[0] : undefined),
+            subtopic: subtopicId || undefined,
+            ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
+          };
+        }
       } else {
         bodyPayload = { ...bodyPayload, area: ENEM_AREAS.find(a => a.id === areaEnem)?.nome, ano: anoEnem || undefined };
       }
@@ -866,10 +914,54 @@ export default function Simulado() {
             {(tipoMode === "disciplina" || tipoMode === "livre") && (
               <>
                 <div className="space-y-2"><Label>{tipoMode === "disciplina" ? "Matéria *" : "Matéria (opcional)"}</Label><Select value={materiaId} onValueChange={setMateriaId} disabled={!areaId}><SelectTrigger><SelectValue placeholder={areaId ? (tipoMode === "livre" ? "Todas as matérias" : "Selecione") : "Selecione a área primeiro"} /></SelectTrigger><SelectContent>{materias.map(m => <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>)}</SelectContent></Select></div>
-                {topics.length > 0 && (
+                {topics.length > 0 && tipoMode === "disciplina" && (
                   <div className="space-y-2"><Label>Tópico (opcional)</Label><Select value={topicId} onValueChange={setTopicId}><SelectTrigger><SelectValue placeholder="Todos os tópicos" /></SelectTrigger><SelectContent>{topics.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
                 )}
-                {subtopics.length > 0 && (
+                {topics.length > 0 && tipoMode === "livre" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Tópicos (opcional)</Label>
+                      {multiTopicIds.length > 0 && (
+                        <button
+                          type="button"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => setMultiTopicIds([])}
+                        >
+                          Limpar
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-48 overflow-y-auto rounded-md border border-input bg-background p-2 space-y-1">
+                      {topics.map(t => {
+                        const checked = multiTopicIds.includes(t.id);
+                        return (
+                          <label
+                            key={t.id}
+                            className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-muted/50"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) => {
+                                setMultiTopicIds(prev =>
+                                  v ? [...prev, t.id] : prev.filter(id => id !== t.id)
+                                );
+                              }}
+                            />
+                            <span className="flex-1">{t.nome}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {multiTopicIds.length === 0
+                        ? "Selecione quantos tópicos quiser — as questões serão divididas igualmente entre eles."
+                        : multiTopicIds.length === 1
+                          ? "1 tópico selecionado — todas as questões serão deste tópico."
+                          : `${multiTopicIds.length} tópicos selecionados — ${quantidade} questões serão divididas entre eles.`}
+                    </p>
+                  </div>
+                )}
+                {subtopics.length > 0 && tipoMode === "disciplina" && (
                   <div className="space-y-2"><Label>Subtópico (opcional)</Label><Select value={subtopicId} onValueChange={setSubtopicId}><SelectTrigger><SelectValue placeholder="Todos os subtópicos" /></SelectTrigger><SelectContent>{subtopics.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent></Select></div>
                 )}
               </>
