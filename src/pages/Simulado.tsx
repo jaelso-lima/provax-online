@@ -14,6 +14,7 @@ import { Loader2, AlertTriangle, ChevronLeft, ChevronRight, ArrowLeft, CheckCirc
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import QuestionComments from "@/components/QuestionComments";
 import CustomProvaModal from "@/components/CustomProvaModal";
 import {
@@ -105,6 +106,8 @@ export default function Simulado() {
   const [anoEnem, setAnoEnem] = useState("");
   const [topicId, setTopicId] = useState("");
   const [subtopicId, setSubtopicId] = useState("");
+  // Livre mode: seleção múltipla de tópicos (divide as questões entre os tópicos escolhidos)
+  const [multiTopicIds, setMultiTopicIds] = useState<string[]>([]);
 
   // Simulado type mode (concurso)
   const [tipoMode, setTipoMode] = useState<SimuladoTipoMode>("disciplina");
@@ -276,7 +279,7 @@ export default function Simulado() {
   // Cascading: área → matérias (concurso)
   useEffect(() => {
     if (continuarId) return;
-    setMateriaId(""); setTopicId(""); setSubtopicId(""); setTopics([]); setSubtopics([]);
+    setMateriaId(""); setTopicId(""); setSubtopicId(""); setTopics([]); setSubtopics([]); setMultiTopicIds([]);
     if (!areaId) { setMaterias([]); return; }
     fetchMateriasByArea(areaId).then(setMaterias);
   }, [areaId, continuarId]);
@@ -284,7 +287,7 @@ export default function Simulado() {
   // Load topics when materia selected
   useEffect(() => {
     if (continuarId) return;
-    setTopicId(""); setSubtopicId(""); setSubtopics([]);
+    setTopicId(""); setSubtopicId(""); setSubtopics([]); setMultiTopicIds([]);
     if (!materiaId) { setTopics([]); return; }
     fetchTopics(materiaId).then(setTopics);
   }, [materiaId, continuarId]);
