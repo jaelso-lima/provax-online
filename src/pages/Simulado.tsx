@@ -475,19 +475,59 @@ export default function Simulado() {
         const adaptMeta: SimuladoMeta = { area_nome: "Simulado Adaptativo" };
         setSimuladoMeta(adaptMeta);
       } else if (modo === "concurso") {
-        bodyPayload = {
-          ...bodyPayload,
-          materia: materiaId || undefined,
-          banca: bancaId || undefined,
-          carreira: carreiraId || undefined,
-          area: areaId || undefined,
-          state: stateId || undefined,
-          esfera: esferaId || undefined,
-          ano: anoConcurso ? parseInt(anoConcurso) : undefined,
-          topic: topicId || undefined,
-          subtopic: subtopicId || undefined,
-          ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
-        };
+        // Caso especial (livre): usuário escolheu múltiplos tópicos → dividir a quantidade entre eles
+        const usaMultiTopicos =
+          tipoMode === "livre" && materiaId && multiTopicIds.length >= 2 && !topicId;
+        if (usaMultiTopicos) {
+          const total = parseInt(quantidade);
+          const k = multiTopicIds.length;
+          const base = Math.floor(total / k);
+          const resto = total - base * k;
+          const materiaNome = materias.find(m => m.id === materiaId)?.nome || "";
+          const topicosSelecionados = multiTopicIds.map((tid, i) => {
+            const nome = topics.find(t => t.id === tid)?.nome || "";
+            const qtdTopico = base + (i < resto ? 1 : 0);
+            return { nome, quantidade: qtdTopico };
+          }).filter(t => t.quantidade > 0);
+
+          const distribuicaoText = topicosSelecionados
+            .map(t => `${t.quantidade} questões de ${materiaNome}\n  Tópicos OBRIGATÓRIOS (use APENAS este assunto, NÃO gere nada fora):\n- ${t.nome}`)
+            .join("\n\n");
+
+          bodyPayload = {
+            ...bodyPayload,
+            quantidade: total,
+            materia: materiaId || undefined,
+            banca: bancaId || undefined,
+            carreira: carreiraId || undefined,
+            area: areaId || undefined,
+            state: stateId || undefined,
+            esfera: esferaId || undefined,
+            ano: anoConcurso ? parseInt(anoConcurso) : undefined,
+            provaCompleta: true,
+            distribuicao: distribuicaoText,
+            distribuicao_json: topicosSelecionados.map(t => ({
+              quantidade: t.quantidade,
+              materia_nome: materiaNome,
+              topicos: [t.nome],
+            })),
+            ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
+          };
+        } else {
+          bodyPayload = {
+            ...bodyPayload,
+            materia: materiaId || undefined,
+            banca: bancaId || undefined,
+            carreira: carreiraId || undefined,
+            area: areaId || undefined,
+            state: stateId || undefined,
+            esfera: esferaId || undefined,
+            ano: anoConcurso ? parseInt(anoConcurso) : undefined,
+            topic: topicId || (multiTopicIds.length === 1 ? multiTopicIds[0] : undefined),
+            subtopic: subtopicId || undefined,
+            ...(excludeEnunciados.length > 0 ? { exclude_enunciados: excludeEnunciados } : {}),
+          };
+        }
       } else {
         bodyPayload = { ...bodyPayload, area: ENEM_AREAS.find(a => a.id === areaEnem)?.nome, ano: anoEnem || undefined };
       }
