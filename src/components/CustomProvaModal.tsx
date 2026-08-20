@@ -250,7 +250,7 @@ export default function CustomProvaModal({ open, onOpenChange, modo = "concurso"
       const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-questions", {
         body: bodyPayload,
       });
-      if (aiError) throw new Error(aiError.message || "Erro ao gerar questões");
+      if (aiError) throw new Error(await extractEdgeError(aiError, "Erro ao gerar questões"));
       if (!aiData || !aiData.questoes || aiData.questoes.length === 0) {
         throw new Error("IA não retornou questões. Tente reduzir a quantidade.");
       }

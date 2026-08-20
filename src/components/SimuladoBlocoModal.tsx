@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchBancas } from "@/services/simuladoRepository";
+import { extractEdgeError } from "@/lib/edgeError";
 
 export interface BlocoItem {
   materia: string;
@@ -130,7 +131,7 @@ export default function SimuladoBlocoModal({
           distribuicao_json: distribuicao,
         },
       });
-      if (aiError) throw new Error(aiError.message || "Erro ao gerar questões");
+      if (aiError) throw new Error(await extractEdgeError(aiError, "Erro ao gerar questões"));
       if (!aiData?.questoes?.length) throw new Error("IA não retornou questões. Tente reduzir a quantidade.");
 
       const generated = aiData.questoes as Array<{
