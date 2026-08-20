@@ -194,10 +194,24 @@ export default function AnalisarEdital() {
       const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const storagePath = `${user!.id}/${fileName}`;
 
-      const { error: uploadErr } = await supabase.storage
-        .from("editais")
-        .upload(storagePath, file, { contentType: "application/pdf" });
-      if (uploadErr) throw uploadErr;
+      // Upload com retry (conexões móveis instáveis costumam falhar com "Failed to fetch")
+      let uploadErr: { message?: string } | null = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const res = await supabase.storage
+          .from("editais")
+          .upload(storagePath, file, { contentType: "application/pdf", upsert: true });
+        uploadErr = res.error;
+        if (!uploadErr) break;
+        if (attempt < 3) await new Promise((r) => setTimeout(r, attempt * 1500));
+      }
+      if (uploadErr) {
+        const raw = uploadErr.message || "";
+        throw new Error(
+          /failed to fetch|network/i.test(raw)
+            ? "Falha de conexão ao enviar o PDF. Verifique sua internet (ou tente pelo Wi-Fi) e envie novamente."
+            : raw || "Não foi possível enviar o arquivo."
+        );
+      }
 
       const { data: analysisRow, error: insertErr } = await supabase
         .from("edital_analyses")
