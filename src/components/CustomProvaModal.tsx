@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Plus, Trash2, Sparkles, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { extractEdgeError } from "@/lib/edgeError";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
