@@ -42,18 +42,8 @@ export default function Register() {
 
       trackFBEvent("CompleteRegistration", { content_name: "ProvaX Google Signup" });
 
-      // Check onboarding status
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase.from("profiles").select("onboarding_completo").eq("id", user.id).single();
-        if (profile && profile.onboarding_completo) {
-          toast({ title: "Bem-vindo de volta!" });
-          navigate("/dashboard");
-        } else {
-          toast({ title: "Conta criada com sucesso! 🎉" });
-          navigate("/onboarding");
-        }
-      }
+       toast({ title: "Conta criada com sucesso!" });
+       navigate("/dashboard", { replace: true });
     } catch (e: any) {
       toast({ title: "Erro ao entrar com Google", description: e.message, variant: "destructive" });
     } finally {
@@ -116,7 +106,7 @@ export default function Register() {
           title: "Conta criada com sucesso! 🎉", 
           description: "Bem-vindo ao ProvaX! Redirecionando...",
         });
-        navigate("/simulado");
+         navigate("/dashboard", { replace: true });
       }
     } catch (err: any) {
       toast({ title: "Erro ao criar conta", description: err.message, variant: "destructive" });

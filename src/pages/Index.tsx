@@ -1,390 +1,306 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpenCheck,
+  Brain,
+  Check,
+  CheckCircle2,
+  FileSearch,
+  Instagram,
+  Mail,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Trophy,
+  WandSparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOptionalAuth } from "@/contexts/AuthContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import ThemeSelector from "@/components/ThemeSelector";
-import {
-  ArrowRight, CheckCircle, Zap, Brain, Target, BarChart3,
-  Shield, Lock, Star, Crown, Mail, Instagram, MessageCircle
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { trackFBEvent } from "@/lib/fbPixel";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
-const getYouTubeEmbedUrl = (url: string, autoplay = false) => {
-  if (!url) return "";
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (!match) return "";
-  const id = match[1];
-  if (autoplay) {
-    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&disablekb=1&fs=0&modestbranding=1&showinfo=0&iv_load_policy=3&rel=0&playsinline=1`;
-  }
-  return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1&playsinline=1`;
+const reveal = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-80px" },
+  transition: { duration: 0.45 },
 };
 
-const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5 } };
-const stagger = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true } };
+const benefits = [
+  {
+    icon: Brain,
+    title: "Estudo reverso",
+    description: "Resolva primeiro, descubra suas lacunas e concentre seu tempo no que realmente precisa melhorar.",
+  },
+  {
+    icon: FileSearch,
+    title: "Edital transformado em plano",
+    description: "Organize conteúdos, cronograma e simulados com base no concurso que você escolheu.",
+  },
+  {
+    icon: BarChart3,
+    title: "Desempenho por matéria",
+    description: "Veja sua porcentagem de acertos e identifique rapidamente qual conteúdo merece prioridade.",
+  },
+  {
+    icon: WandSparkles,
+    title: "Treino do seu jeito",
+    description: "Monte provas por banca, matéria, tópico ou bloco do cronograma, na quantidade que desejar.",
+  },
+];
+
+const journey = [
+  { number: "01", title: "Crie sua conta", text: "Cadastro rápido e acesso direto ao seu painel." },
+  { number: "02", title: "Escolha seu objetivo", text: "Concurso, ENEM, edital ou uma matéria específica." },
+  { number: "03", title: "Treine e ajuste", text: "Use seus resultados para decidir o próximo conteúdo." },
+];
+
+function ProductPreview() {
+  return (
+    <div className="relative mx-auto w-full max-w-2xl" aria-label="Prévia do painel de desempenho ProvaX">
+      <div className="absolute -inset-4 rounded-lg bg-primary/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-lg border border-border bg-card shadow-2xl shadow-primary/10">
+        <div className="flex h-12 items-center justify-between border-b border-border px-4 sm:px-5">
+          <div className="flex items-center gap-2 font-display text-sm font-bold">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs text-primary-foreground">PX</span>
+            ProvaX
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-accent" />
+            <span className="text-[11px] font-medium text-muted-foreground">Seu progresso hoje</span>
+          </div>
+        </div>
+
+        <div className="grid min-h-[360px] grid-cols-[76px_1fr] sm:grid-cols-[150px_1fr]">
+          <aside className="border-r border-border bg-secondary/40 p-3 sm:p-4">
+            <div className="space-y-2">
+              {[BarChart3, Target, BookOpenCheck, Trophy].map((Icon, index) => (
+                <div
+                  key={index}
+                  className={`flex h-10 items-center gap-2 rounded-md px-2.5 ${index === 0 ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="hidden text-xs font-medium sm:inline">{["Visão geral", "Simulados", "Editais", "Ranking"][index]}</span>
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          <div className="min-w-0 p-4 sm:p-6">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase text-accent">Rota de aprovação</p>
+                <h3 className="mt-1 font-display text-lg font-bold sm:text-xl">Bom ritmo, continue assim</h3>
+              </div>
+              <span className="rounded-md bg-accent/10 px-2.5 py-1 text-xs font-bold text-accent">+12% esta semana</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              {[
+                ["72%", "Taxa de acerto"],
+                ["148", "Questões resolvidas"],
+                ["6", "Dias de sequência"],
+              ].map(([value, label], index) => (
+                <div key={label} className={`rounded-md border border-border bg-background p-3 ${index === 2 ? "col-span-2 lg:col-span-1" : ""}`}>
+                  <p className="font-display text-xl font-bold text-foreground sm:text-2xl">{value}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-md border border-border bg-background p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-xs font-semibold sm:text-sm">Acertos por matéria</p>
+                <TrendingUp className="h-4 w-4 text-accent" />
+              </div>
+              <div className="space-y-3">
+                {[
+                  ["Português", "82%", "w-[82%]"],
+                  ["Direito Constitucional", "68%", "w-[68%]"],
+                  ["Matemática", "54%", "w-[54%]"],
+                ].map(([subject, value, width]) => (
+                  <div key={subject}>
+                    <div className="mb-1.5 flex justify-between gap-3 text-[10px] sm:text-xs">
+                      <span className="truncate text-muted-foreground">{subject}</span>
+                      <span className="font-bold text-foreground">{value}</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+                      <div className={`h-full rounded-full bg-primary ${width}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Index() {
   const { user } = useOptionalAuth();
   const navigate = useNavigate();
   const [showSticky, setShowSticky] = useState(false);
 
-  const { data: dbPlans } = useQuery({
-    queryKey: ["landing-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("plans")
-        .select("slug, nome, stripe_link_mensal, preco_mensal")
-        .eq("ativo", true)
-        .order("preco_mensal");
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: landingVideoUrl } = useQuery({
-    queryKey: ["site-setting-landing-video"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("valor")
-        .eq("chave", "video_landing_url")
-        .maybeSingle();
-      return data?.valor || "";
-    },
-    staleTime: 10 * 60 * 1000,
-  });
-
-  const handlePremiumCTA = () => {
-    if (!user) {
-      navigate("/register");
-      return;
-    }
-    const plan = dbPlans?.find(p => p.slug === "premium" || p.slug === "start");
-    const link = plan?.stripe_link_mensal;
-    if (!link) {
-      navigate("/planos");
-      return;
-    }
-    trackFBEvent("InitiateCheckout", { content_name: "Premium", value: 29.90, currency: "BRL" });
-    window.open(link, "_blank");
-  };
-
   useEffect(() => {
     if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
 
   useEffect(() => {
-    const onScroll = () => setShowSticky(window.scrollY > 400);
-    window.addEventListener("scroll", onScroll);
+    const onScroll = () => setShowSticky(window.scrollY > 520);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-md">
-        <div className="container flex h-14 items-center justify-between">
-          <span className="font-display text-xl font-bold">
-            <span className="text-primary">P</span>
-            <span className="text-accent">X</span>{" "}
-            <span className="hidden sm:inline text-foreground">ProvaX</span>
-          </span>
-          <div className="flex items-center gap-1">
-            <ThemeSelector />
+    <div className="min-h-screen overflow-x-hidden bg-background">
+      <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xl">
+        <div className="container flex h-16 items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 font-display text-xl font-bold" aria-label="ProvaX - página inicial">
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-xs text-primary-foreground">PX</span>
+            <span>ProvaX</span>
+          </Link>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="hidden sm:flex"><ThemeSelector /></div>
             <ThemeToggle />
-            {user ? (
-              <Button asChild size="sm"><Link to="/dashboard">Dashboard</Link></Button>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" asChild><Link to="/login">Entrar</Link></Button>
-                <Button size="sm" asChild><Link to="/register">Começar grátis</Link></Button>
-              </>
-            )}
+            <Button variant="ghost" size="sm" asChild><Link to="/login">Entrar</Link></Button>
+            <Button size="sm" asChild><Link to="/register">Criar conta</Link></Button>
           </div>
         </div>
       </nav>
 
-      {/* ══════ HERO ══════ */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,hsl(var(--primary)/0.15),transparent)]" />
-        <div className="container relative py-16 md:py-28 text-center">
-          <motion.div {...fadeUp}>
-            <h1 className="mx-auto max-w-3xl font-display text-3xl font-bold leading-[1.15] md:text-5xl lg:text-6xl">
-              Treine com simulados e descubra{" "}
-              <span className="text-gradient">exatamente onde você erra</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
-              Um sistema inteligente que analisa seu desempenho e acelera sua aprovação em concursos públicos.
-            </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Button size="lg" className="h-13 text-base px-8 shadow-lg shadow-primary/25 group" asChild>
-                <Link to="/register">
-                  Começar grátis
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Sem cartão de crédito • 100% gratuito
-            </p>
-
-            {/* Video */}
-            {landingVideoUrl && getYouTubeEmbedUrl(landingVideoUrl) && (
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="mt-10 mx-auto max-w-2xl"
-              >
-                <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl shadow-primary/10 ring-1 ring-border" style={{ paddingBottom: "56.25%" }}>
-                  <iframe
-                    className="absolute inset-0 w-full h-full"
-                    src={getYouTubeEmbedUrl(landingVideoUrl, true)}
-                    title="ProvaX"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen={false}
-                    loading="lazy"
-                  />
-                  {/* Block all user interaction — no pause, no seek */}
-                  <div className="absolute inset-0 z-10" />
-                </div>
-              </motion.div>
-            )}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ══════ COMO FUNCIONA ══════ */}
-      <section className="border-t bg-card/50 py-16 md:py-20">
-        <div className="container max-w-3xl">
-          <motion.div {...fadeUp} className="text-center mb-10">
-            <h2 className="font-display text-2xl font-bold md:text-3xl">Como funciona</h2>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: Target, step: "1", title: "Resolva questões", desc: "Simulados com questões no padrão real das bancas." },
-              { icon: BarChart3, step: "2", title: "Veja onde erra", desc: "Diagnóstico automático dos seus pontos fracos." },
-              { icon: Zap, step: "3", title: "Melhore mais rápido", desc: "Estude só o que precisa e evolua com dados." },
-            ].map((item, i) => (
-              <motion.div key={item.step} {...stagger} transition={{ delay: i * 0.12 }}>
-                <Card className="border-0 bg-secondary/50 h-full text-center">
-                  <div className={`mx-auto -mt-4 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground shadow-md`}>
-                    {item.step}
-                  </div>
-                  <CardHeader className="pt-4 pb-2">
-                    <item.icon className="mx-auto mb-1 h-8 w-8 text-primary" />
-                    <CardTitle className="font-display text-base">{item.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent><p className="text-sm text-muted-foreground">{item.desc}</p></CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════ DIFERENCIAL ══════ */}
-      <section className="py-16 md:py-20">
-        <div className="container max-w-3xl">
-          <motion.div {...fadeUp} className="text-center mb-10">
-            <h2 className="font-display text-2xl font-bold md:text-3xl">Por que o ProvaX funciona</h2>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              { icon: Brain, title: "Simulados inteligentes", desc: "Questões geradas no padrão CESPE, FGV, FCC e ENEM." },
-              { icon: Target, title: "Foco nos seus erros", desc: "O sistema identifica suas fraquezas e prioriza o que importa." },
-              { icon: BarChart3, title: "Evolução acompanhada", desc: "Métricas reais de progresso para você saber onde está." },
-            ].map((item, i) => (
-              <motion.div key={item.title} {...stagger} transition={{ delay: i * 0.1 }}>
-                <Card className="border-0 bg-secondary/50 h-full">
-                  <CardHeader className="pb-2">
-                    <item.icon className="mb-1 h-7 w-7 text-primary" />
-                    <CardTitle className="font-display text-base">{item.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent><p className="text-sm text-muted-foreground">{item.desc}</p></CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════ CARROSSEL DE AUTORIDADE ══════ */}
-      <section className="border-t bg-card/50 py-10 overflow-hidden">
-        <div className="container text-center mb-5">
-          <p className="text-sm text-muted-foreground font-medium">Usado por estudantes que querem resultado</p>
-        </div>
-        <div className="relative">
-          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-card/50 to-transparent z-10" />
-          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-card/50 to-transparent z-10" />
-          <div
-            className="flex animate-[scroll_30s_linear_infinite] gap-12 items-center w-max"
-            style={{ willChange: "transform", backfaceVisibility: "hidden" }}
-          >
-            {[...["Google", "Microsoft", "Meta", "Amazon", "Apple", "IBM", "Oracle", "Cisco"], ...["Google", "Microsoft", "Meta", "Amazon", "Apple", "IBM", "Oracle", "Cisco"]].map((brand, idx) => (
-              <div
-                key={`${idx}-${brand}`}
-                className="px-5 py-2 opacity-30 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0 shrink-0"
-              >
-                <span className="text-lg md:text-xl font-bold text-foreground tracking-tight whitespace-nowrap">{brand}</span>
+      <main>
+        <section className="relative overflow-hidden border-b border-border">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,hsl(var(--accent)/0.10),transparent_32%),radial-gradient(circle_at_15%_10%,hsl(var(--primary)/0.10),transparent_28%)]" />
+          <div className="container relative grid min-h-[calc(100svh-4rem)] items-center gap-12 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:py-16">
+            <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-md border border-accent/25 bg-accent/10 px-3 py-1.5 text-xs font-bold text-accent">
+                <Sparkles className="h-3.5 w-3.5" />
+                Estude com direção, não por tentativa
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════ PLANOS ══════ */}
-      <section id="planos" className="py-16 md:py-20">
-        <div className="container max-w-3xl">
-          <motion.div {...fadeUp} className="text-center mb-10">
-            <h2 className="font-display text-2xl font-bold md:text-3xl">Escolha seu plano</h2>
-            <p className="mt-2 text-muted-foreground text-sm">Comece grátis e faça upgrade quando quiser</p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* FREE */}
-            <motion.div {...stagger}>
-              <Card className="h-full border bg-card">
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="font-display text-lg">Free</CardTitle>
-                  <p className="text-3xl font-bold mt-2">R$ 0</p>
-                  <p className="text-xs text-muted-foreground">Para sempre</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {[
-                      "10 questões por dia",
-                      "Simulados básicos",
-                      "Histórico de desempenho",
-                      "Radar de concursos",
-                    ].map(f => (
-                      <li key={f} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-muted-foreground shrink-0" />{f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button className="w-full" variant="outline" asChild>
-                    <Link to="/register">Começar grátis</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+              <h1 className="max-w-2xl font-display text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl">
+                Descubra o que estudar para <span className="text-gradient">avançar mais rápido.</span>
+              </h1>
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                O ProvaX transforma seus erros, seu edital e seus resultados em uma rota clara de estudos para concursos, ENEM e redação.
+              </p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <Button size="lg" className="h-12 px-6 text-base shadow-lg shadow-primary/20" asChild>
+                  <Link to="/register">Começar gratuitamente <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                </Button>
+                <Button size="lg" variant="outline" className="h-12 px-6 text-base" asChild>
+                  <Link to="/login">Já tenho conta</Link>
+                </Button>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+                {["Sem cartão", "Acesso direto ao painel", "Comece no plano gratuito"].map((item) => (
+                  <span key={item} className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-accent" />{item}</span>
+                ))}
+              </div>
             </motion.div>
+            <motion.div initial={{ opacity: 0, x: 28 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.12 }}>
+              <ProductPreview />
+            </motion.div>
+          </div>
+        </section>
 
-            {/* PREMIUM */}
-            <motion.div {...stagger} transition={{ delay: 0.1 }}>
-              <Card className="h-full border-2 border-accent relative ring-2 ring-accent/20 shadow-xl shadow-accent/10">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-accent text-accent-foreground gap-1 px-3 py-1 text-xs font-bold shadow-md">
-                    <Crown className="h-3 w-3" /> Mais popular
-                  </Badge>
-                </div>
-                <CardHeader className="text-center pt-8 pb-4">
-                  <CardTitle className="font-display text-lg">Premium</CardTitle>
-                  <p className="text-3xl font-bold mt-2 text-accent">R$ 29,90<span className="text-sm font-normal text-muted-foreground"> /mês</span></p>
-                  <p className="text-xs text-muted-foreground">Cancele quando quiser</p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {[
-                      "Simulados ilimitados",
-                      "Sistema adaptativo",
-                      "Análise completa de desempenho",
-                      "Professor IA 24h",
-                      "Redação corrigida por IA",
-                      "Análise de edital por IA",
-                      "Filtro por banca e estado",
-                      "Ranking e estatísticas",
-                    ].map(f => (
-                      <li key={f} className="flex items-center gap-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-accent shrink-0" />{f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className="w-full h-12 text-base bg-accent text-accent-foreground hover:bg-accent/90 shadow-md shadow-accent/20"
-                    onClick={handlePremiumCTA}
-                  >
-                    Assinar Premium <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  <div className="flex items-center justify-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Shield className="h-3 w-3" /> Garantia 7 dias</span>
-                    <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Pagamento seguro</span>
+        <section className="border-b border-border bg-card py-14">
+          <div className="container">
+            <div className="grid gap-8 sm:grid-cols-3">
+              {[
+                [Target, "Treino direcionado", "Questões alinhadas à banca e aos assuntos escolhidos."],
+                [ShieldCheck, "Decisão com dados", "Seu histórico mostra onde insistir e onde você já evoluiu."],
+                [CheckCircle2, "Tudo em um só lugar", "Edital, cronograma, simulados e redação conectados."],
+              ].map(([Icon, title, text]) => {
+                const FeatureIcon = Icon as typeof Target;
+                return (
+                  <div key={title as string} className="flex gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"><FeatureIcon className="h-5 w-5" /></div>
+                    <div><h2 className="font-display text-base font-bold">{title as string}</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{text as string}</p></div>
                   </div>
-                </CardContent>
-              </Card>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20">
+          <div className="container">
+            <motion.div {...reveal} className="max-w-2xl">
+              <p className="text-sm font-bold uppercase text-primary">Uma plataforma que se adapta a você</p>
+              <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">Menos conteúdo aleatório. Mais prática com propósito.</h2>
+              <p className="mt-4 text-muted-foreground">Cada ferramenta ajuda você a transformar tempo de estudo em uma decisão mais inteligente.</p>
+            </motion.div>
+            <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
+              {benefits.map((item, index) => (
+                <motion.article key={item.title} {...reveal} transition={{ duration: 0.4, delay: index * 0.06 }} className="bg-card p-6 sm:p-8">
+                  <item.icon className="h-7 w-7 text-primary" />
+                  <h3 className="mt-5 font-display text-xl font-bold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+                </motion.article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-y border-border bg-foreground py-20 text-background">
+          <div className="container grid items-start gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+            <motion.div {...reveal}>
+              <p className="text-sm font-bold uppercase text-accent">Simples desde o primeiro acesso</p>
+              <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">Do cadastro ao primeiro treino, sem vídeo obrigatório.</h2>
+              <p className="mt-4 max-w-lg text-sm leading-relaxed text-background/70">Você entra no painel imediatamente e escolhe o melhor caminho para começar.</p>
+              <Button size="lg" className="mt-7" asChild><Link to="/register">Acessar meu painel <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
+            </motion.div>
+            <div className="space-y-3">
+              {journey.map((item) => (
+                <motion.div key={item.number} {...reveal} className="grid grid-cols-[48px_1fr] gap-4 border-b border-background/15 py-5 first:pt-0">
+                  <span className="font-display text-lg font-bold text-accent">{item.number}</span>
+                  <div><h3 className="font-display text-lg font-bold">{item.title}</h3><p className="mt-1 text-sm text-background/65">{item.text}</p></div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20">
+          <div className="container text-center">
+            <motion.div {...reveal} className="mx-auto max-w-2xl">
+              <Trophy className="mx-auto h-9 w-9 text-accent" />
+              <h2 className="mt-5 font-display text-3xl font-bold sm:text-4xl">Seu próximo estudo já pode ter direção.</h2>
+              <p className="mx-auto mt-4 max-w-xl text-muted-foreground">Crie sua conta gratuita, entre no painel e comece pelo simulado, edital ou matéria que mais importa para você.</p>
+              <Button size="lg" className="mt-7 h-12 px-8 text-base" asChild><Link to="/register">Criar conta grátis <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
             </motion.div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ══════ CTA FINAL ══════ */}
-      <section className="border-t bg-card py-16 md:py-20">
-        <div className="container text-center max-w-xl">
-          <motion.div {...fadeUp}>
-            <h2 className="font-display text-2xl font-bold md:text-3xl mb-3">
-              Sua aprovação{" "}
-              <span className="text-gradient">começa agora.</span>
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              Cada dia sem prática é um dia a mais longe do seu objetivo.
-            </p>
-            <Button size="lg" className="h-13 text-base px-8 shadow-lg shadow-primary/25 group" asChild>
-              <Link to="/register">
-                Começar grátis
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-          </motion.div>
-        </div>
-      </section>
+        <section className="border-t border-border bg-card py-10">
+          <div className="container flex flex-col items-center justify-between gap-5 sm:flex-row">
+            <div><h2 className="font-display text-lg font-bold">Precisa falar com a equipe?</h2><p className="mt-1 text-sm text-muted-foreground">Escolha o canal que preferir.</p></div>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button variant="outline" size="sm" asChild><a href="mailto:provax.online@gmail.com"><Mail className="mr-2 h-4 w-4" />Email</a></Button>
+              <Button variant="outline" size="sm" asChild><a href="https://www.instagram.com/provax_online/" target="_blank" rel="noopener noreferrer"><Instagram className="mr-2 h-4 w-4" />Instagram</a></Button>
+              <Button variant="outline" size="sm" asChild><a href="https://chat.whatsapp.com/CaQMyka3CMU4QBUcl6WQxr" target="_blank" rel="noopener noreferrer"><MessageCircle className="mr-2 h-4 w-4" />WhatsApp</a></Button>
+            </div>
+          </div>
+        </section>
+      </main>
 
-      {/* STICKY CTA — mobile */}
+      <footer className="border-t border-border py-7 text-center text-xs text-muted-foreground">
+        <p>© 2026 ProvaX. Todos os direitos reservados.</p>
+        <Link to="/termos" className="mt-1 inline-block text-primary hover:underline">Termos de Uso e Política de Privacidade</Link>
+      </footer>
+
       {showSticky && !user && (
-        <motion.div
-          initial={{ y: 100 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur-md p-3 md:hidden"
-        >
-          <Button className="w-full h-12 text-base shadow-lg shadow-primary/20 group" asChild>
-            <Link to="/register">
-              Começar grátis
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </Button>
+        <motion.div initial={{ y: 100 }} animate={{ y: 0 }} className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 p-3 backdrop-blur-xl md:hidden">
+          <Button className="h-12 w-full text-base" asChild><Link to="/register">Começar gratuitamente <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
         </motion.div>
       )}
-
-      {/* CONTATO */}
-      <section className="border-t py-12">
-        <div className="container max-w-xl text-center">
-          <motion.div {...fadeUp}>
-            <h3 className="font-display text-lg font-bold mb-4">Dúvidas? Fale conosco</h3>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button variant="outline" size="sm" className="gap-2" asChild>
-                <a href="mailto:provax.online@gmail.com"><Mail className="h-4 w-4" /> Email</a>
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" asChild>
-                <a href="https://www.instagram.com/provax_online/" target="_blank" rel="noopener noreferrer"><Instagram className="h-4 w-4" /> Instagram</a>
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" asChild>
-                <a href="https://chat.whatsapp.com/CaQMyka3CMU4QBUcl6WQxr" target="_blank" rel="noopener noreferrer"><MessageCircle className="h-4 w-4" /> WhatsApp</a>
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <footer className="border-t py-6 text-center text-xs text-muted-foreground space-y-1">
-        <p>© 2026 ProvaX. Todos os direitos reservados.</p>
-        <p><Link to="/termos" className="text-primary hover:underline">Termos de Uso e Política de Privacidade</Link></p>
-      </footer>
     </div>
   );
 }
