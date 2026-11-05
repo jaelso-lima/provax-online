@@ -622,16 +622,22 @@ export default function Simulado() {
       }).select().single();
       if (sErr) throw sErr;
 
-      const questoesInsert = generatedQuestoes.map(q => ({
+      // Questões que já vêm do servidor com id (banco compartilhado) não precisam ser salvas de novo.
+      const questoesInsert = generatedQuestoes.filter(q => !q.id).map(q => ({
         enunciado: q.enunciado, alternativas: q.alternativas as any, resposta_correta: q.resposta_correta,
         explicacao: q.explicacao || null, modo, materia_id: materiaId || null,
         area_id: areaId || null,
         topic_id: topicId || null, banca_id: bancaId || null, subtopic_id: subtopicId || null, source: "ai_generated",
       }));
-      const { data: savedQuestoes, error: qErr } = await supabase.from("questoes").insert(questoesInsert).select("id");
-      if (qErr) console.error("Erro ao salvar questões:", qErr);
+      let savedQuestoes: { id: string }[] | null = null;
+      if (questoesInsert.length > 0) {
+        const { data: savedData, error: qErr } = await supabase.from("questoes").insert(questoesInsert).select("id");
+        if (qErr) console.error("Erro ao salvar questões:", qErr);
+        savedQuestoes = savedData as { id: string }[] | null;
+      }
 
-      const questoesComId = generatedQuestoes.map((q, i) => ({ ...q, id: savedQuestoes?.[i]?.id || undefined }));
+      let novaIdx = 0;
+      const questoesComId = generatedQuestoes.map((q) => q.id ? q : ({ ...q, id: savedQuestoes?.[novaIdx++]?.id || undefined }));
       const respostasInsert = questoesComId.filter(q => q.id).map(q => ({
         simulado_id: sim.id, questao_id: q.id!, resposta_usuario: null, acertou: null, tempo_resposta: 0,
       }));
