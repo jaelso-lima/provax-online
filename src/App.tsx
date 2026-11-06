@@ -24,6 +24,7 @@ const SimuladoResultado = lazy(() => import("./pages/SimuladoResultado"));
 const Redacao = lazy(() => import("./pages/Redacao"));
 const ComprarMoedas = lazy(() => import("./pages/ComprarMoedas"));
 const Planos = lazy(() => import("./pages/Planos"));
+const PagamentoConfirmado = lazy(() => import("./pages/PagamentoConfirmado"));
 const Ranking = lazy(() => import("./pages/Ranking"));
 const Perfil = lazy(() => import("./pages/Perfil"));
 const ConcursosAbertos = lazy(() => import("./pages/ConcursosAbertos"));
@@ -98,6 +99,7 @@ const App = () => (
               <Route path="/redacao" element={<ProtectedRoute><Redacao /></ProtectedRoute>} />
               <Route path="/comprar-moedas" element={<ProtectedRoute><ComprarMoedas /></ProtectedRoute>} />
               <Route path="/planos" element={<ProtectedRoute><Planos /></ProtectedRoute>} />
+              <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
               <Route path="/ranking" element={<ProtectedRoute><Ranking /></ProtectedRoute>} />
               <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
               <Route path="/concursos" element={<ProtectedRoute><ConcursosAbertos /></ProtectedRoute>} />
