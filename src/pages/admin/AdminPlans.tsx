@@ -257,7 +257,7 @@ export default function AdminPlans() {
                     {broken} link(s) com problema
                   </p>
                    <p className="text-xs text-muted-foreground mt-1">
-                     Produtos indisponíveis na Cakto não funcionarão para os clientes. Verifique se os produtos estão ativos no painel da Cakto.
+                     Links de pagamento indisponíveis na Stripe não funcionarão para os clientes. Verifique se os links estão ativos no painel da Stripe.
                    </p>
                 </div>
               </div>
@@ -437,14 +437,14 @@ export default function AdminPlans() {
                   />
                 </div>
                 <div className="space-y-2 border-t border-border pt-4">
-                  <Label className="text-sm font-semibold">Links de Checkout (Cakto)</Label>
+                  <Label className="text-sm font-semibold">Links de Checkout (Stripe)</Label>
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Link Mensal</Label>
                       <Input
                         value={editingPlan.stripe_link_mensal}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_mensal: e.target.value })}
-                        placeholder="https://pay.cakto.com.br/..."
+                        placeholder="https://buy.stripe.com/..."
                       />
                     </div>
                     <div className="space-y-1">
@@ -452,7 +452,7 @@ export default function AdminPlans() {
                       <Input
                         value={editingPlan.stripe_link_semestral}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_semestral: e.target.value })}
-                        placeholder="https://pay.cakto.com.br/..."
+                        placeholder="https://buy.stripe.com/..."
                       />
                     </div>
                     <div className="space-y-1">
@@ -460,7 +460,7 @@ export default function AdminPlans() {
                       <Input
                         value={editingPlan.stripe_link_anual}
                         onChange={(e) => setEditingPlan({ ...editingPlan, stripe_link_anual: e.target.value })}
-                        placeholder="https://pay.cakto.com.br/..."
+                        placeholder="https://buy.stripe.com/..."
                       />
                     </div>
                   </div>
