@@ -303,13 +303,13 @@ export default function Perfil() {
                 <div className="min-w-0">
                   <p className="text-sm font-medium">Meta Diária</p>
                   <p className="text-xs text-muted-foreground">
-                    {dailyLimit ? `${dailyLimit.usado} de ${dailyLimit.limite} questões resolvidas hoje` : "Carregando..."}
+                    {dailyLimit ? (dailyLimit.limite >= 99999 ? `${dailyLimit.usado} questões resolvidas hoje · ilimitado` : `${dailyLimit.usado} de ${dailyLimit.limite} questões resolvidas hoje`) : "Carregando..."}
                   </p>
                 </div>
               </div>
             </div>
             {dailyLimit && (
-              <Progress value={dailyLimit.limite > 0 ? (dailyLimit.usado / dailyLimit.limite) * 100 : 0} className="mt-2 h-1.5" />
+              <Progress value={dailyLimit.limite > 0 && dailyLimit.limite < 99999 ? (dailyLimit.usado / dailyLimit.limite) * 100 : 0} className="mt-2 h-1.5" />
             )}
           </CardContent>
         </Card>

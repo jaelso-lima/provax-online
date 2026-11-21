@@ -197,8 +197,10 @@ export default function Simulado() {
         }
 
         if (allQuestoes.length === 0) {
-          toast({ title: "Simulado sem questões salvas", description: "Este simulado será arquivado.", variant: "destructive" });
-          await supabase.from("simulados").update({ status: "finalizado", finished_at: new Date().toISOString(), pontuacao: 0, acertos: 0 }).eq("id", continuarId);
+          // Simulado sem questões (geração interrompida): cancela em vez de finalizar com nota zero,
+          // para não aparecer no histórico como se o aluno tivesse errado tudo.
+          toast({ title: "Este simulado não foi gerado corretamente", description: "Ele foi removido. Gere um novo simulado.", variant: "destructive" });
+          await supabase.from("simulados").update({ status: "cancelado", finished_at: new Date().toISOString() }).eq("id", continuarId);
           navigate(`/simulado?modo=${sim.modo}`); return;
         }
 
@@ -641,7 +643,18 @@ export default function Simulado() {
       const respostasInsert = questoesComId.filter(q => q.id).map(q => ({
         simulado_id: sim.id, questao_id: q.id!, resposta_usuario: null, acertou: null, tempo_resposta: 0,
       }));
-      if (respostasInsert.length > 0) await supabase.from("respostas").insert(respostasInsert);
+      let respErr: any = null;
+      if (respostasInsert.length > 0) {
+        const { error } = await supabase.from("respostas").insert(respostasInsert);
+        respErr = error;
+      }
+      // Se nenhuma questão foi vinculada ao simulado, cancela para não deixar um simulado vazio
+      // (que depois seria arquivado como se o aluno tivesse errado tudo).
+      if (respostasInsert.length === 0 || respErr) {
+        console.error("Falha ao vincular questões ao simulado:", respErr);
+        await supabase.from("simulados").update({ status: "cancelado", finished_at: new Date().toISOString() }).eq("id", sim.id);
+        throw new Error("Não foi possível salvar as questões do simulado. Tente novamente.");
+      }
 
       setSimuladoId(sim.id); setQuestoes(questoesComId); setCurrentIdx(0);
       setRespostas({}); setStartTime(Date.now()); setTempoAcumulado(0);

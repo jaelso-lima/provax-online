@@ -311,7 +311,7 @@ export default function Dashboard() {
                 <Target className="h-4 w-4 text-primary shrink-0" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium">
-                    {dailyLimit ? `${dailyLimit.usado}/${dailyLimit.limite} questões hoje` : "Meta diária"}
+                    {dailyLimit ? (dailyLimit.limite >= 99999 ? `${dailyLimit.usado} questões hoje · ilimitado` : `${dailyLimit.usado}/${dailyLimit.limite} questões hoje`) : "Meta diária"}
                   </p>
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function Dashboard() {
                 Praticar
               </Button>
             </div>
-            {dailyLimit && (
+            {dailyLimit && dailyLimit.limite < 99999 && (
               <Progress value={(dailyLimit.usado / dailyLimit.limite) * 100} className="mt-2 h-1.5" />
             )}
           </CardContent>
